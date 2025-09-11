@@ -1,0 +1,6 @@
+@ZiyoMarket.Api_HostAddress = http://localhost:5270
+
+GET {{ZiyoMarket.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
