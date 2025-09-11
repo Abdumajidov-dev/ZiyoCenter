@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36408.4 d17.14
+VisualStudioVersion = 17.14.36408.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Api", "ZiyoMarket.Api\ZiyoMarket.Api.csproj", "{E8C97B0B-E57A-44B0-9C3A-5C603D9213B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Api", "src\ZiyoMarket.Api\ZiyoMarket.Api.csproj", "{59DCD87A-9760-F777-B1DF-D2BB9606AD8E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,9 +19,17 @@ Global
 		{E8C97B0B-E57A-44B0-9C3A-5C603D9213B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E8C97B0B-E57A-44B0-9C3A-5C603D9213B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E8C97B0B-E57A-44B0-9C3A-5C603D9213B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59DCD87A-9760-F777-B1DF-D2BB9606AD8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59DCD87A-9760-F777-B1DF-D2BB9606AD8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59DCD87A-9760-F777-B1DF-D2BB9606AD8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59DCD87A-9760-F777-B1DF-D2BB9606AD8E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E8C97B0B-E57A-44B0-9C3A-5C603D9213B0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{59DCD87A-9760-F777-B1DF-D2BB9606AD8E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {27DDC81E-34D4-4484-93DB-6D18B23B5E24}
