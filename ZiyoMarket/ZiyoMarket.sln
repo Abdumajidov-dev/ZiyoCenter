@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Api", "src\ZiyoMarket.Api\ZiyoMarket.Api.csproj", "{A9F770E1-C3FD-45E3-9C3B-F72355F0C973}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Domain", "src\ZiyoMarket.Domain\ZiyoMarket.Domain.csproj", "{C52ED300-02E1-498A-A42F-6F0817B1F23B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,12 +19,17 @@ Global
 		{A9F770E1-C3FD-45E3-9C3B-F72355F0C973}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9F770E1-C3FD-45E3-9C3B-F72355F0C973}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9F770E1-C3FD-45E3-9C3B-F72355F0C973}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A9F770E1-C3FD-45E3-9C3B-F72355F0C973} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{C52ED300-02E1-498A-A42F-6F0817B1F23B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {27DDC81E-34D4-4484-93DB-6D18B23B5E24}
