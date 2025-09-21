@@ -1,7 +1,9 @@
-﻿using System.Text.Json;
-using ZiyoMarket.Domain.Common;
+﻿using ZiyoMarket.Domain.Common;
+using System.Text;
 
-namespace ZiyoMarket.Domain.Entities.System;
+
+
+namespace ZiyoMarket.Domain.Entities.Systems;
 
 /// <summary>
 /// Kunlik sotuvlar xulosasi entity'si
