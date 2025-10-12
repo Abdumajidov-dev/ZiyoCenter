@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Threading.Tasks;
-using ZiyoMarket.Data.DbContexts;
+using ZiyoMarket.Data.Context;
+using ZiyoMarket.Data.Repositories;
 using ZiyoMarket.Data.IRepositories;
-using ZiyoMarket.Data.Services; // 👈 RepositoryService shu namespace ichida
 using ZiyoMarket.Domain.Entities.Content;
 using ZiyoMarket.Domain.Entities.Delivery;
 using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
-using ZiyoMarket.Domain.Entities.System;
+using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Entities.Users;
 
 namespace ZiyoMarket.Data
@@ -53,45 +53,46 @@ namespace ZiyoMarket.Data
         // Content
         public IRepository<Content> Contents { get; private set; }
 
+        public IRepository<DiscountReason> DiscountReasons => throw new NotImplementedException();
 
         public UnitOfWork(ZiyoMarketDbContext context)
         {
             _context = context;
 
             // Users
-            Customers = new RepositoryService<Customer>(_context);
-            Sellers = new RepositoryService<Seller>(_context);
-            Admins = new RepositoryService<Admin>(_context);
+            Customers = new Repository<Customer>(_context);
+            Sellers = new Repository<Seller>(_context);
+            Admins = new Repository<Admin>(_context);
 
             // Products
-            Products = new RepositoryService<Product>(_context);
-            Categories = new RepositoryService<Category>(_context);
-            CartItems = new RepositoryService<CartItem>(_context);
-            ProductLikes = new RepositoryService<ProductLike>(_context);
+            Products = new Repository<Product>(_context);
+            Categories = new Repository<Category>(_context);
+            CartItems = new Repository<CartItem>(_context);
+            ProductLikes = new Repository<ProductLike>(_context);
 
             // Orders
-            Orders = new RepositoryService<Order>(_context);
-            OrderItems = new RepositoryService<OrderItem>(_context);
-            OrderDiscounts = new RepositoryService<OrderDiscount>(_context);
-            CashbackTransactions = new RepositoryService<CashbackTransaction>(_context);
+            Orders = new Repository<Order>(_context);
+            OrderItems = new Repository<OrderItem>(_context);
+            OrderDiscounts = new Repository<OrderDiscount>(_context);
+            CashbackTransactions = new Repository<CashbackTransaction>(_context);
 
             // Delivery
-            DeliveryPartners = new RepositoryService<DeliveryPartner>(_context);
-            OrderDeliveries = new RepositoryService<OrderDelivery>(_context);
+            DeliveryPartners = new Repository<DeliveryPartner>(_context);
+            OrderDeliveries = new Repository<OrderDelivery>(_context);
 
             // Support
-            SupportChats = new RepositoryService<SupportChat>(_context);
-            SupportMessages = new RepositoryService<SupportMessage>(_context);
+            SupportChats = new Repository<SupportChat>(_context);
+            SupportMessages = new Repository<SupportMessage>(_context);
 
             // Notifications
-            Notifications = new RepositoryService<Notification>(_context);
+            Notifications = new Repository<Notification>(_context);
 
             // System
-            SystemSettings = new RepositoryService<SystemSetting>(_context);
-            DailySalesSummaries = new RepositoryService<DailySalesSummary>(_context);
+            SystemSettings = new Repository<SystemSetting>(_context);
+            DailySalesSummaries = new Repository<DailySalesSummary>(_context);
 
             // Content
-            Contents = new RepositoryService<Content>(_context);
+            Contents = new Repository<Content>(_context);
         }
 
         public async Task<bool> SaveChangesAsync()
@@ -99,5 +100,25 @@ namespace ZiyoMarket.Data
 
         public void Dispose()
             => _context.Dispose();
+
+        Task<int> IUnitOfWork.SaveChangesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task BeginTransactionAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task CommitTransactionAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task RollbackTransactionAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -39,46 +39,46 @@ public interface IOrderService
     /// <summary>
     /// Cancel order
     /// </summary>
-    Task<r> CancelOrderAsync(int orderId, int userId, string userType, string? reason);
+    Task<Result> CancelOrderAsync(int orderId, int userId, string userType, string? reason);
     
     // ============ Order Status Management ============
     
     /// <summary>
     /// Update order status
     /// </summary>
-    Task<r> UpdateOrderStatusAsync(UpdateOrderStatusDto request, int updatedBy);
+    Task<Result> UpdateOrderStatusAsync(UpdateOrderStatusDto request, int updatedBy);
     
     /// <summary>
     /// Confirm order (by seller or admin)
     /// </summary>
-    Task<r> ConfirmOrderAsync(int orderId, int sellerId);
+    Task<Result> ConfirmOrderAsync(int orderId, int sellerId);
     
     /// <summary>
     /// Mark order as ready for pickup
     /// </summary>
-    Task<r> MarkAsReadyForPickupAsync(int orderId, int updatedBy);
+    Task<Result> MarkAsReadyForPickupAsync(int orderId, int updatedBy);
     
     /// <summary>
     /// Mark order as shipped
     /// </summary>
-    Task<r> MarkAsShippedAsync(int orderId, int updatedBy);
+    Task<Result> MarkAsShippedAsync(int orderId, int updatedBy);
     
     /// <summary>
     /// Mark order as delivered
     /// </summary>
-    Task<r> MarkAsDeliveredAsync(int orderId, int updatedBy);
+    Task<Result> MarkAsDeliveredAsync(int orderId, int updatedBy);
     
     // ============ Discount Management ============
     
     /// <summary>
     /// Apply discount to order
     /// </summary>
-    Task<r> ApplyDiscountAsync(ApplyDiscountDto request, int sellerId);
+    Task<Result> ApplyDiscountAsync(ApplyDiscountDto request, int sellerId);
     
     /// <summary>
     /// Remove discount from order
     /// </summary>
-    Task<r> RemoveDiscountAsync(int orderDiscountId, int sellerId);
+    Task<Result> RemoveDiscountAsync(int orderDiscountId, int sellerId);
     
     /// <summary>
     /// Get discount reasons
@@ -90,12 +90,12 @@ public interface IOrderService
     /// <summary>
     /// Process payment for order
     /// </summary>
-    Task<r> ProcessPaymentAsync(int orderId, string paymentMethod, string? reference);
+    Task<Result> ProcessPaymentAsync(int orderId, string paymentMethod, string? reference);
     
     /// <summary>
     /// Refund order
     /// </summary>
-    Task<r> RefundOrderAsync(int orderId, int adminId, string reason);
+    Task<Result> RefundOrderAsync(int orderId, int adminId, string reason);
     
     // ============ Order Summary ============
     
@@ -124,17 +124,17 @@ public interface ICashbackService
     /// <summary>
     /// Earn cashback from order (2%)
     /// </summary>
-    Task<r> EarnCashbackAsync(int customerId, int orderId, decimal orderAmount);
+    Task<Result> EarnCashbackAsync(int customerId, int orderId, decimal orderAmount);
     
     /// <summary>
     /// Use cashback for order (FIFO)
     /// </summary>
-    Task<r> UseCashbackAsync(int customerId, int orderId, decimal amount);
+    Task<Result> UseCashbackAsync(int customerId, int orderId, decimal amount);
     
     /// <summary>
     /// Expire old cashback transactions (background job)
     /// </summary>
-    Task<r> ExpireCashbackAsync();
+    Task<Result> ExpireCashbackAsync();
     
     /// <summary>
     /// Get available cashback balance
@@ -176,12 +176,12 @@ public interface ICartService
     /// <summary>
     /// Remove item from cart
     /// </summary>
-    Task<r> RemoveFromCartAsync(int cartItemId, int customerId);
+    Task<Result> RemoveFromCartAsync(int cartItemId, int customerId);
     
     /// <summary>
     /// Clear all cart items
     /// </summary>
-    Task<r> ClearCartAsync(int customerId);
+    Task<Result> ClearCartAsync(int customerId);
     
     /// <summary>
     /// Get cart total price
@@ -196,5 +196,5 @@ public interface ICartService
     /// <summary>
     /// Validate cart for checkout
     /// </summary>
-    Task<r> ValidateCartForCheckoutAsync(int customerId);
+    Task<Result> ValidateCartForCheckoutAsync(int customerId);
 }

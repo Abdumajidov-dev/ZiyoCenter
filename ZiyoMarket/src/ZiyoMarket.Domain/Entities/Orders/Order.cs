@@ -11,6 +11,20 @@ namespace ZiyoMarket.Domain.Entities.Orders;
 public class Order : BaseAuditableEntity
 {
     /// <summary>
+    /// Buyurtma uchun to‘lov talab qilinadimi
+    /// </summary>
+    public bool RequiresPayment
+    {
+        get
+        {
+            // Naqd to‘lov (Cash) bo‘lmasa yoki hali to‘lanmagan bo‘lsa — to‘lov talab qilinadi
+            return PaymentMethod != PaymentMethod.Cash
+                   && Status != OrderStatus.Delivered
+                   && Status != OrderStatus.Cancelled;
+        }
+    }
+
+    /// <summary>
     /// Mijoz ID
     /// </summary>
     public int CustomerId { get; set; }

@@ -48,6 +48,12 @@ public class ZiyoMarketDbContext : DbContext
         // Apply configurations
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ZiyoMarketDbContext).Assembly);
 
+        modelBuilder.Entity<CashbackTransaction>()
+      .HasOne(ct => ct.Order)
+      .WithMany(o => o.CashbackTransactions)
+      .HasForeignKey(ct => ct.OrderId)
+      .OnDelete(DeleteBehavior.Restrict);
+
         // Global query filters for soft delete
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {

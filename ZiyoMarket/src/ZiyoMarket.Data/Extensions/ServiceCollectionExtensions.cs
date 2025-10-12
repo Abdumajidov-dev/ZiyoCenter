@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions
 
 
         // Unit of Work
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+       // services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }

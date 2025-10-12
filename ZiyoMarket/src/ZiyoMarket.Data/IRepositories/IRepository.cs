@@ -1,71 +1,56 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using ZiyoMarket.Domain.Entities.Users;
+﻿using System.Linq.Expressions;
+using ZiyoMarket.Domain.Common;
 
-namespace ZiyoMarket.Data.IRepositories
+namespace ZiyoMarket.Data.IRepositories;
+
+public interface IRepository<T> where T : BaseEntity
 {
-    public interface IRepository<TEntity>
-    {
-        Task<TEntity> UpdateAsync(TEntity entity);
+    // Query operations
+    Task<T?> GetByIdAsync(long id, string[]? includes = null);
+    Task<IEnumerable<T>> GetAllAsync();
+    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
+    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+    Task<bool> AnyAsync(Expression<Func<T, bool>> expression);
 
-        IQueryable<TEntity> Table { get; }
+    // Select methods
+    Task<T?> SelectAsync(Expression<Func<T, bool>> expression, string[]? includes = null);
+    IQueryable<T> SelectAll(Expression<Func<T, bool>>? expression = null, string[]? includes = null);
+    Task<IList<T>> SelectAllAsync(Expression<Func<T, bool>>? expression = null, string[]? includes = null);
 
+    // Paging
+    Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        int page, int pageSize,
+        Expression<Func<T, bool>>? filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
 
-        /// <summary>
-        /// Yangi obyektni bazaga qo‘shish
-        /// </summary>
-        Task<TEntity> InsertAsync(TEntity entity);
+    // Command operations
+    Task<T> InsertAsync(T entity);
+    Task<T> AddAsync(T entity);
+    Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
 
-        /// <summary>
-        /// Bazadan obyektni o‘chirish (by Id)
-        /// </summary>
-        Task<bool> DeleteAsync(long id);
+    // Update operations
+    Task<T> Update(T entity, long id);
+    Task<T> UpdateAsync(T entity);
+    Task<T> UpdateByAsync(Expression<Func<T, bool>> predicate, T entity);
+    void UpdateRange(IEnumerable<T> entities);
 
-        /// <summary>
-        /// Ma’lumotni yangilash
-        /// </summary>
-        Task<TEntity> Update(TEntity entity, long id);
-        /// <summary>
-        /// Ma’lumotni yangilash — shart (predicate) bo‘yicha (masalan: telefon bo'yicha)
-        /// Odatda mavjud yozuv topilib, uning qiymatlari yangi entity qiymatlari bilan almashtiriladi.
-        /// </summary>
-        Task<TEntity> UpdateByAsync(Expression<Func<TEntity, bool>> predicate, TEntity entity);
+    // Delete operations
+    Task<bool> DeleteAsync(long id);
+    void Delete(T entity);
+    void DeleteRange(IEnumerable<T> entities);
 
-        /// <summary>
-        /// Ma’lumotni olish (bitta obyekt)
-        /// </summary>
-        Task<TEntity> SelectAsync(Expression<Func<TEntity, bool>> expression, string[] includes = null);
+    // Soft Delete
+    void SoftDelete(T entity);
+    void SoftDeleteRange(IEnumerable<T> entities);
 
-        /// <summary>
-        /// Barcha ma’lumotlarni olish (IQueryable)
-        /// </summary>
-        IQueryable<TEntity> SelectAll(Expression<Func<TEntity, bool>> expression = null, string[] includes = null);
-        /// <summary>
-        /// ID orqali obyektni olish
-        /// </summary>
-        Task<TEntity> GetByIdAsync(long id, string[] includes = null);
-        /// <summary>
-        /// Barcha ma’lumotlarni olish (ToList)
-        /// </summary>
-        Task<IList<TEntity>> SelectAllAsync(Expression<Func<TEntity, bool>> expression = null, string[] includes = null);
+    // Include for eager loading
+    IQueryable<T> Include(params Expression<Func<T, object>>[] includes);
 
-        /// <summary>
-        /// Ma’lumot bazasida shu shart bo‘yicha yozuv bormi?
-        /// </summary>
-        Task<bool> AnyAsync(Expression<Func<TEntity, bool>> expression);
+    // Table access
+    IQueryable<T> Table { get; }
 
-        /// <summary>
-        /// Yozuvlar soni (filtrlash bilan)
-        /// </summary>
-        Task<int> CountAsync(Expression<Func<TEntity, bool>> expression = null);
-
-        /// <summary>
-        /// O‘zgarishlarni saqlash
-        /// </summary>
-        Task<bool> SaveAsync();
-        Task UpdateByAsync(Customer user);
-    }
+    // Save
+    Task<bool> SaveAsync();
 }

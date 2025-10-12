@@ -1,5 +1,6 @@
-﻿using ZiyoMarket.Data.Context;
-using ZiyoMarket.Data.Interfaces;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using ZiyoMarket.Data.Context;
+using ZiyoMarket.Data.IRepositories;
 using ZiyoMarket.Data.Repositories;
 using ZiyoMarket.Domain.Entities.Content;
 using ZiyoMarket.Domain.Entities.Delivery;
@@ -9,9 +10,6 @@ using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
 using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Entities.Users;
-using Microsoft.EntityFrameworkCore.Storage;
-
-
 
 namespace ZiyoMarket.Data.UnitOfWorks;
 
@@ -20,24 +18,36 @@ public class UnitOfWork : IUnitOfWork
     private readonly ZiyoMarketDbContext _context;
     private IDbContextTransaction? _transaction;
 
-    // Repository properties
+    // User Repositories
     public IRepository<Customer> Customers { get; private set; }
     public IRepository<Seller> Sellers { get; private set; }
     public IRepository<Admin> Admins { get; private set; }
+
+    // Product Repositories
     public IRepository<Category> Categories { get; private set; }
     public IRepository<Product> Products { get; private set; }
     public IRepository<ProductLike> ProductLikes { get; private set; }
     public IRepository<CartItem> CartItems { get; private set; }
+
+    // Order Repositories
     public IRepository<Order> Orders { get; private set; }
     public IRepository<OrderItem> OrderItems { get; private set; }
     public IRepository<OrderDiscount> OrderDiscounts { get; private set; }
     public IRepository<DiscountReason> DiscountReasons { get; private set; }
     public IRepository<CashbackTransaction> CashbackTransactions { get; private set; }
+
+    // Delivery Repositories
     public IRepository<DeliveryPartner> DeliveryPartners { get; private set; }
     public IRepository<OrderDelivery> OrderDeliveries { get; private set; }
+
+    // Notification Repositories
     public IRepository<Notification> Notifications { get; private set; }
+
+    // Support Repositories
     public IRepository<SupportChat> SupportChats { get; private set; }
     public IRepository<SupportMessage> SupportMessages { get; private set; }
+
+    // Content & System Repositories
     public IRepository<Content> Contents { get; private set; }
     public IRepository<SystemSetting> SystemSettings { get; private set; }
     public IRepository<DailySalesSummary> DailySalesSummaries { get; private set; }
@@ -46,7 +56,7 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
 
-        // Initialize repositories
+        // Initialize all repositories
         Customers = new Repository<Customer>(_context);
         Sellers = new Repository<Seller>(_context);
         Admins = new Repository<Admin>(_context);

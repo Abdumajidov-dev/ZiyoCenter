@@ -1,168 +1,257 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
-using ZiyoMarket.Data.DbContexts;
+using ZiyoMarket.Data.Context;
 using ZiyoMarket.Data.IRepositories;
 using ZiyoMarket.Domain.Common;
-using ZiyoMarket.Domain.Entities.Users;
 
-namespace ZiyoMarket.Data.Services
+namespace ZiyoMarket.Data.Repositories;
+
+/// <summary>
+/// Generic Repository implementation for all entities
+/// </summary>
+public class Repository<T> : IRepository<T> where T : BaseEntity
 {
-    public class RepositoryService<TEntity> : IRepository<TEntity> where TEntity : BaseEntity
-    {
-        private readonly ZiyoMarketDbContext _context;
-        private readonly DbSet<TEntity> _dbSet;
+    private readonly ZiyoMarketDbContext _context;
+    private readonly DbSet<T> _dbSet;
 
-        public RepositoryService(ZiyoMarketDbContext context)
+    public Repository(ZiyoMarketDbContext context)
     {
         _context = context;
-            _dbSet = _context.Set<TEntity>();
+        _dbSet = _context.Set<T>();
     }
 
-        public IQueryable<TEntity> Table => _dbSet;
+    public IQueryable<T> Table => _dbSet.AsNoTracking();
 
-        // ➕ Create
-        public async Task<TEntity> InsertAsync(TEntity entity)
+    // ===================== CREATE =====================
+
+    public async Task<T> InsertAsync(T entity)
     {
-            var entry = await _dbSet.AddAsync(entity);
-            return entry.Entity;
+        var entry = await _dbSet.AddAsync(entity);
+        return entry.Entity;
     }
 
-        // 🗑 Delete
-        public async Task<bool> DeleteAsync(long id)
+    public async Task<T> AddAsync(T entity)
     {
-            var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id);
-            if (entity == null)
-                return false;
-
-            _dbSet.Remove(entity);
-            return true;
+        return await InsertAsync(entity);
     }
 
-        // 🔄 Update
-        public async Task<TEntity> Update(TEntity entity, long id)
+    public async Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities)
     {
-            var existing = await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
-            if (existing == null)
-                throw new Exception("Entity topilmadi.");
-
-            _context.Entry(entity).State = EntityState.Modified;
-            return _dbSet.Update(entity).Entity;
+        await _dbSet.AddRangeAsync(entities);
+        return entities;
     }
 
-        // 📄 Get one (with include)
-        public async Task<TEntity> SelectAsync(Expression<Func<TEntity, bool>> expression, string[] includes = null)
+    // ===================== READ =====================
+
+    public async Task<T?> GetByIdAsync(long id, string[]? includes = null)
     {
-            IQueryable<TEntity> query = _dbSet;
+        IQueryable<T> query = _dbSet;
 
-            if (includes != null)
-    {
-                foreach (var include in includes)
-                    query = query.Include(include);
-    }
-
-            return await query.FirstOrDefaultAsync(expression);
-    }
-
-        // 📋 Get all (IQueryable)
-        public IQueryable<TEntity> SelectAll(Expression<Func<TEntity, bool>> expression = null, string[] includes = null)
-    {
-            IQueryable<TEntity> query = _dbSet;
-
-            if (includes != null)
-            {
-                foreach (var include in includes)
-                    query = query.Include(include);
-            }
-
-            if (expression != null)
-                query = query.Where(expression);
-
-            return query;
-        }
-        public async Task<TEntity> UpdateByAsync(Expression<Func<TEntity, bool>> predicate, TEntity entity)
+        if (includes != null && includes.Length > 0)
         {
-            // Topilgan yozuvni bazadan olamiz (tracking bilan)
-            var existing = await _dbSet.FirstOrDefaultAsync(predicate);
-            if (existing == null)
-                throw new Exception($"{typeof(TEntity).Name} not found by given predicate.");
-
-            // Agar siz Id saqlab qolmoqchi bo'lsangiz:
-            entity.Id = existing.Id;
-
-            // Barcha propertylarni yangilash (EF Core CurrentValues)
-            _context.Entry(existing).CurrentValues.SetValues(entity);
-
-            // Agar kerak bo'lsa: UpdatedAt/UpdatedBy kabi audit maydonlarini yangilash shu yerda qiling
-            return existing;
-    }
-
-        public async Task<TEntity> UpdateAsync(TEntity entity)
-    {
-            var existing = await _dbSet.FindAsync(entity.Id);
-            if (existing == null)
-                throw new Exception($"{typeof(TEntity).Name} not found with Id = {entity.Id}");
-
-            _context.Entry(existing).CurrentValues.SetValues(entity);
-            return existing;
-    }
-
-        // 📋 Get all async (List)
-        public async Task<IList<TEntity>> SelectAllAsync(Expression<Func<TEntity, bool>> expression = null, string[] includes = null)
-    {
-            IQueryable<TEntity> query = _dbSet;
-
-            if (includes != null)
-    {
-                foreach (var include in includes)
-                    query = query.Include(include);
-    }
-
-            if (expression != null)
-                query = query.Where(expression);
-
-            return await query.ToListAsync();
+            foreach (var include in includes)
+                query = query.Include(include);
         }
-        // 🔍 Get by Id
-        public async Task<TEntity> GetByIdAsync(long id, string[] includes = null)
-    {
-            IQueryable<TEntity> query = _dbSet;
 
-            if (includes != null)
-    {
-                foreach (var include in includes)
-                    query = query.Include(include);
+        return await query.FirstOrDefaultAsync(e => e.Id == id);
     }
 
-            return await query.FirstOrDefaultAsync(e => e.Id == id);
-        }
-        // ❓ AnyAsync
-        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> expression)
+    public async Task<IEnumerable<T>> GetAllAsync()
     {
-            return await _dbSet.AnyAsync(expression);
+        return await _dbSet.ToListAsync();
     }
 
-        // 🔢 CountAsync
-        public async Task<int> CountAsync(Expression<Func<TEntity, bool>> expression = null)
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
-            if (expression != null)
-                return await _dbSet.CountAsync(expression);
-            return await _dbSet.CountAsync();
+        return await _dbSet.Where(predicate).ToListAsync();
     }
 
-        // 💾 Save changes
-        public async Task<bool> SaveAsync()
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.FirstOrDefaultAsync(predicate);
+    }
+
+    public async Task<T?> SelectAsync(Expression<Func<T, bool>> expression, string[]? includes = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (includes != null && includes.Length > 0)
         {
-            return await _context.SaveChangesAsync() > 0;
+            foreach (var include in includes)
+                query = query.Include(include);
+        }
+
+        return await query.FirstOrDefaultAsync(expression);
     }
 
-        public Task UpdateByAsync(Customer user)
+    public IQueryable<T> SelectAll(Expression<Func<T, bool>>? expression = null, string[]? includes = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (includes != null && includes.Length > 0)
         {
-            throw new NotImplementedException();
+            foreach (var include in includes)
+                query = query.Include(include);
         }
+
+        if (expression != null)
+            query = query.Where(expression);
+
         return query;
+    }
+
+    public async Task<IList<T>> SelectAllAsync(Expression<Func<T, bool>>? expression = null, string[]? includes = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (includes != null && includes.Length > 0)
+        {
+            foreach (var include in includes)
+                query = query.Include(include);
+        }
+
+        if (expression != null)
+            query = query.Where(expression);
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AnyAsync(predicate);
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> expression)
+    {
+        return await _dbSet.AnyAsync(expression);
+    }
+
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+    {
+        if (predicate != null)
+            return await _dbSet.CountAsync(predicate);
+        return await _dbSet.CountAsync();
+    }
+
+    // ===================== PAGINATION =====================
+
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        int page, int pageSize,
+        Expression<Func<T, bool>>? filter = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+    {
+        var query = _dbSet.AsQueryable();
+
+        if (filter != null)
+            query = query.Where(filter);
+
+        var totalCount = await query.CountAsync();
+
+        if (orderBy != null)
+            query = orderBy(query);
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
+    // ===================== UPDATE =====================
+
+    public async Task<T> Update(T entity, long id)
+    {
+        var existing = await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id);
+        if (existing == null)
+            throw new Exception($"{typeof(T).Name} with Id = {id} not found");
+
+        entity.Id = (int)id; // Ensure ID is preserved
+        _context.Entry(entity).State = EntityState.Modified;
+        return entity;
+    }
+
+    public async Task<T> UpdateAsync(T entity)
+    {
+        var existing = await _dbSet.FindAsync(entity.Id);
+        if (existing == null)
+            throw new Exception($"{typeof(T).Name} with Id = {entity.Id} not found");
+
+        _context.Entry(existing).CurrentValues.SetValues(entity);
+        return existing;
+    }
+
+    public async Task<T> UpdateByAsync(Expression<Func<T, bool>> predicate, T entity)
+    {
+        var existing = await _dbSet.FirstOrDefaultAsync(predicate);
+        if (existing == null)
+            throw new Exception($"{typeof(T).Name} not found by given predicate");
+
+        entity.Id = existing.Id;
+        _context.Entry(existing).CurrentValues.SetValues(entity);
+        return existing;
+    }
+
+    public void UpdateRange(IEnumerable<T> entities)
+    {
+        _dbSet.UpdateRange(entities);
+    }
+
+    // ===================== DELETE =====================
+
+    public async Task<bool> DeleteAsync(long id)
+    {
+        var entity = await _dbSet.FirstOrDefaultAsync(e => e.Id == id);
+        if (entity == null)
+            return false;
+
+        _dbSet.Remove(entity);
+        return true;
+    }
+
+    public void Delete(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
+
+    public void DeleteRange(IEnumerable<T> entities)
+    {
+        _dbSet.RemoveRange(entities);
+    }
+
+    // ===================== SOFT DELETE =====================
+
+    public void SoftDelete(T entity)
+    {
+        entity.DeletedAt = DateTime.UtcNow.ToString();
+        _context.Entry(entity).State = EntityState.Modified;
+    }
+
+    public void SoftDeleteRange(IEnumerable<T> entities)
+    {
+        foreach (var entity in entities)
+        {
+            entity.DeletedAt = DateTime.UtcNow.ToString();
+            _context.Entry(entity).State = EntityState.Modified;
+        }
+    }
+
+    // ===================== INCLUDE =====================
+
+    public IQueryable<T> Include(params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _dbSet;
+
+        foreach (var include in includes)
+            query = query.Include(include);
+
+        return query;
+    }
+
+    // ===================== SAVE =====================
+
+    public async Task<bool> SaveAsync()
+    {
+        return await _context.SaveChangesAsync() > 0;
     }
 }

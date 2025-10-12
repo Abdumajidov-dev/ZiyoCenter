@@ -7,6 +7,7 @@ using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.DTOs.Orders;
 using ZiyoMarket.Service.DTOs.Customers;
 using ZiyoMarket.Service.DTOs.Cashback;
+using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
 
@@ -40,7 +41,7 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ProductStatus.Active));
         
         CreateMap<UpdateProductDto, Product>()
-            .ForMember(dest => dest.QRCode, opt => opt.Ignore())
+            .ForMember(dest => dest.QrCode, opt => opt.Ignore())
             .ForMember(dest => dest.StockQuantity, opt => opt.Ignore());
         
         CreateMap<Product, LowStockProductDto>();
@@ -123,16 +124,18 @@ public class OrderProfile : Profile
             .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => 
                 src.Seller != null ? $"{src.Seller.FirstName} {src.Seller.LastName}" : null))
             .ForMember(dest => dest.ItemsCount, opt => opt.MapFrom(src => src.OrderItems.Count));
-        
+
         CreateMap<Order, OrderDetailDto>()
-            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => 
-                $"{src.Customer.FirstName} {src.Customer.LastName}"))
-            .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
-            .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => 
-                src.Seller != null ? $"{src.Seller.FirstName} {src.Seller.LastName}" : null))
-            .ForMember(dest => dest.CanBeCancelled, opt => opt.MapFrom(src => src.CanBeCancelled()))
-            .ForMember(dest => dest.RequiresPayment, opt => opt.MapFrom(src => src.RequiresPayment()));
-        
+     .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src =>
+         $"{src.Customer.FirstName} {src.Customer.LastName}"))
+     .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
+     .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src =>
+         src.Seller != null ? $"{src.Seller.FirstName} {src.Seller.LastName}" : null))
+     .ForMember(dest => dest.CanBeCancelled, opt => opt.MapFrom(src => src.CanBeCancelled))
+     .ForMember(dest => dest.RequiresPayment, opt => opt.MapFrom(src => src.RequiresPayment));
+
+
+
         // Order item mappings
         CreateMap<OrderItem, OrderItemDto>()
             .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product.ImageUrl));
@@ -140,8 +143,12 @@ public class OrderProfile : Profile
         // Order discount mappings
         CreateMap<OrderDiscount, OrderDiscountDto>()
             .ForMember(dest => dest.ReasonName, opt => opt.MapFrom(src => src.DiscountReason.Name))
-            .ForMember(dest => dest.AppliedBy, opt => opt.MapFrom(src => 
-                $"{src.Seller.FirstName} {src.Seller.LastName}"))
+            .ForMember(dest => dest.AppliedBy, opt => opt.MapFrom(src =>
+                                src.AppliedBySeller != null
+                                    ? $"{src.AppliedBySeller.FirstName} {src.AppliedBySeller.LastName}"
+                                    : "Tizim tomonidan"))
+
+
             .ForMember(dest => dest.AppliedAt, opt => opt.MapFrom(src => 
                 DateTime.Parse(src.CreatedAt)));
         
