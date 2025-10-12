@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using ZiyoMarket.Domain.Common;
 
-namespace ZiyoMarket.Domain.Entities.System;
+namespace ZiyoMarket.Domain.Entities.Systems;
 
 /// <summary>
 /// Tizim sozlamalari entity'si
