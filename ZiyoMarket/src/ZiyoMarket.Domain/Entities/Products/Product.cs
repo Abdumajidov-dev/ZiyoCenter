@@ -14,6 +14,8 @@ public class Product : BaseAuditableEntity
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
+    public string? SearchText { get; set; }
+
     /// <summary>
     /// Mahsulot tavsifi
     /// </summary>

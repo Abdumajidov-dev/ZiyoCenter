@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Api", "src\ZiyoM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Domain", "src\ZiyoMarket.Domain\ZiyoMarket.Domain.csproj", "{C52ED300-02E1-498A-A42F-6F0817B1F23B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Service", "src\ZiyoMarket.Service\ZiyoMarket.Service.csproj", "{A2D86433-1D9A-4516-8DA8-A255DBE20ABF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZiyoMarket.Data", "src\ZiyoMarket.Data\ZiyoMarket.Data.csproj", "{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +27,14 @@ Global
 		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C52ED300-02E1-498A-A42F-6F0817B1F23B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2D86433-1D9A-4516-8DA8-A255DBE20ABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2D86433-1D9A-4516-8DA8-A255DBE20ABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2D86433-1D9A-4516-8DA8-A255DBE20ABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2D86433-1D9A-4516-8DA8-A255DBE20ABF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -30,6 +42,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A9F770E1-C3FD-45E3-9C3B-F72355F0C973} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{C52ED300-02E1-498A-A42F-6F0817B1F23B} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{A2D86433-1D9A-4516-8DA8-A255DBE20ABF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{5A517310-FB5A-4E49-A3C9-5F6E42B0BCC6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {27DDC81E-34D4-4484-93DB-6D18B23B5E24}
