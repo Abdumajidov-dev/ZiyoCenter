@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using ZiyoMarket.Data.IRepositories;
+using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.Extensions;

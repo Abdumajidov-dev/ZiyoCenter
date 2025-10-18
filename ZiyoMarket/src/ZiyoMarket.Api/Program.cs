@@ -1,21 +1,22 @@
 using Microsoft.EntityFrameworkCore;
-using System;
+using ZiyoMarket.Api.Extensions;
 using ZiyoMarket.Data.Context;
+using ZiyoMarket.Service.Interfaces;
+using ZiyoMarket.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-//builder.Services.AddDataLayer(builder.Configuration);
-
 
 // ? PostgreSQL bazaga ulash
 builder.Services.AddDbContext<ZiyoMarketDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ? Servislarni DI konteynerga qo‘shamiz
+builder.Services.AddCustomServices();
 
 
 
@@ -29,9 +30,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

@@ -14,9 +14,9 @@ namespace ZiyoMarket.Service.Mapping;
 /// <summary>
 /// Product mapping profile
 /// </summary>
-public class ProductProfile : Profile
+public class MappingProfiles : Profile
 {
-    public ProductProfile()
+    public MappingProfiles()
     {
         // Product mappings
         CreateMap<Product, ProductListDto>()

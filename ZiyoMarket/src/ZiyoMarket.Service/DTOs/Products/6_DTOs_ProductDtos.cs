@@ -221,3 +221,72 @@ public class SaveCategoryDto
     
     public bool IsActive { get; set; } = true;
 }
+/// <summary>
+/// Kategoriya va unga tegishli mahsulotlar soni haqida ma’lumot DTO
+/// </summary>
+public class CategoryWithProductCountDto
+{
+    /// <summary>
+    /// Kategoriya ID raqami
+    /// </summary>
+    public int CategoryId { get; set; }
+
+    /// <summary>
+    /// Kategoriya nomi
+    /// </summary>
+    public string CategoryName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Kategoriyaning ota kategoriyasi ID raqami
+    /// </summary>
+    public int? ParentId { get; set; }
+
+    /// <summary>
+    /// Ota kategoriya nomi
+    /// </summary>
+    public string? ParentName { get; set; }
+
+    /// <summary>
+    /// Kategoriyadagi faol mahsulotlar soni
+    /// </summary>
+    public int ActiveProductCount { get; set; }
+
+    /// <summary>
+    /// Kategoriyadagi umumiy mahsulotlar soni
+    /// </summary>
+    public int TotalProductCount { get; set; }
+
+    /// <summary>
+    /// Kategoriya faolmi yoki yo‘qmi
+    /// </summary>
+    public bool IsActive { get; set; }
+
+    /// <summary>
+    /// Oxirgi yangilangan sana
+    /// </summary>
+    public DateTime? UpdatedAt { get; set; }
+}
+/// <summary>
+/// Kategoriyalar tartibini (sort order) o‘zgartirish uchun DTO
+/// </summary>
+public class ReorderCategoryDto
+{
+    /// <summary>
+    /// Kategoriya ID
+    /// </summary>
+    [Required]
+    [Range(1, int.MaxValue)]
+    public int Id { get; set; }
+
+    /// <summary>
+    /// Yangi tartib raqami (sort order)
+    /// </summary>
+    [Required]
+    [Range(0, int.MaxValue)]
+    public int SortOrder { get; set; }
+
+    /// <summary>
+    /// Ota kategoriya ID (agar mavjud bo‘lsa)
+    /// </summary>
+    public int? ParentId { get; set; }
+}

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using ZiyoMarket.Service.DTOs.Common;
@@ -145,6 +145,7 @@ public class OrderItemDto
 /// </summary>
 public class CreateOrderDto
 {
+    public int CustomerId { get; set; }
     public bool CreateFromCart { get; set; } = true;
     
     public List<CreateOrderItemDto>? Items { get; set; }
@@ -164,6 +165,11 @@ public class CreateOrderDto
     
     [MaxLength(500)]
     public string? CustomerNotes { get; set; }
+    [Range(0, double.MaxValue)]
+    public decimal DiscountAmount { get; set; } = 0;  // ← QO'SHING!
+
+    [MaxLength(500)]
+    public string? SellerNotes { get; set; }
 }
 
 /// <summary>
@@ -269,4 +275,7 @@ public class OrderSummaryDto
     public int ConfirmedOrders { get; set; }
     public int DeliveredOrders { get; set; }
     public int CancelledOrders { get; set; }
+
+    public int OnlineOrders { get; set; }
+    public int OfflineOrders { get; set; }
 }

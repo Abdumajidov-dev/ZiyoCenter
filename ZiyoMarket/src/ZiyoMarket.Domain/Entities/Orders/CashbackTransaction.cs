@@ -5,56 +5,71 @@ using ZiyoMarket.Domain.Entities.Users;
 namespace ZiyoMarket.Domain.Entities.Orders;
 
 /// <summary>
-/// Cashback tranzaksiya entity'si
+/// Cashback tranzaksiya entity'si - FIFO tizimi bilan
 /// </summary>
 public class CashbackTransaction : BaseEntity
 {
+    // ==================== PROPERTIES ====================
+
     /// <summary>
     /// Mijoz ID
     /// </summary>
     public int CustomerId { get; set; }
 
     /// <summary>
-    /// Buyurtma ID (agar earned bo'lsa)
+    /// Buyurtma ID (qaysi buyurtmadan yig'ildi)
     /// </summary>
     public int? OrderId { get; set; }
 
     /// <summary>
-    /// Tranzaksiya turi
+    /// Tranzaksiya turi: Earned, Used, Expired
     /// </summary>
-    public CashbackTransactionType TransactionType { get; set; }
+    public CashbackTransactionType Type { get; set; }
 
     /// <summary>
     /// Cashback summasi
+    /// - Earned: musbat (masalan: +5000)
+    /// - Used: manfiy (masalan: -3000)
+    /// - Expired: manfiy (masalan: -2000)
     /// </summary>
     public decimal Amount { get; set; }
 
     /// <summary>
+    /// Qolgan summa (FIFO uchun)
+    /// - Earned: Amount bilan bir xil boshlanadi
+    /// - Ishlatilgan sari kamayadi
+    /// - 0 bo'lsa to'liq ishlatilgan yoki muddati tugagan
+    /// </summary>
+    public decimal RemainingAmount { get; set; }
+
+    /// <summary>
+    /// Yig'ilgan sana (string format: "yyyy-MM-dd HH:mm:ss")
+    /// </summary>
+    public string EarnedAt { get; set; } = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+    /// <summary>
     /// Amal qilish muddati (30 kun)
+    /// String format: "yyyy-MM-dd HH:mm:ss"
     /// </summary>
-    public DateTime ExpiresAt { get; set; }
+    public string ExpiresAt { get; set; } = DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss");
 
     /// <summary>
-    /// Ishlatilgan sana
+    /// Ishlatilgan sana (string format: "yyyy-MM-dd HH:mm:ss")
     /// </summary>
-    public DateTime? UsedAt { get; set; }
+    public string? UsedAt { get; set; }
 
     /// <summary>
-    /// Qaysi buyurtmada ishlatilgan
+    /// Izoh/Tavsif
     /// </summary>
-    public int? UsedInOrderId { get; set; }
+    public string? Description { get; set; }
 
     /// <summary>
-    /// Izohlar
-    /// </summary>
-    public string? Notes { get; set; }
-
-    /// <summary>
-    /// Tranzaksiya raqami
+    /// Tranzaksiya raqami (unique)
+    /// Format: CB-20250118-123456
     /// </summary>
     public string TransactionNumber { get; set; } = string.Empty;
 
-    // Navigation Properties
+    // ==================== NAVIGATION PROPERTIES ====================
 
     /// <summary>
     /// Mijoz
@@ -66,40 +81,40 @@ public class CashbackTransaction : BaseEntity
     /// </summary>
     public virtual Order? Order { get; set; }
 
-    /// <summary>
-    /// Buyurtma (cashback ishlatilgan)
-    /// </summary>
-    public virtual Order? UsedInOrder { get; set; }
-
-    // Business Methods
+    // ==================== COMPUTED PROPERTIES ====================
 
     /// <summary>
-    /// Cashback faolmi (muddati tugamaganmi)
+    /// Cashback faolmi (muddati tugamaganmi va ishlatilmaganmi)
     /// </summary>
-    public bool IsActive => TransactionType == CashbackTransactionType.Earned &&
-                           !UsedAt.HasValue &&
-                           ExpiresAt > DateTime.UtcNow &&
+    public bool IsActive => Type == CashbackTransactionType.Earned &&
+                           RemainingAmount > 0 &&
+                           DateTime.Parse(ExpiresAt) > DateTime.UtcNow &&
                            !IsDeleted;
 
     /// <summary>
-    /// Cashback ishlatilganmi
+    /// Cashback ishlatilganmi (to'liq)
     /// </summary>
-    public bool IsUsed => UsedAt.HasValue;
+    public bool IsUsed => Type == CashbackTransactionType.Earned &&
+                         RemainingAmount == 0 &&
+                         !string.IsNullOrEmpty(UsedAt);
 
     /// <summary>
     /// Cashback muddati tugaganmi
     /// </summary>
-    public bool IsExpired => ExpiresAt <= DateTime.UtcNow &&
-                            TransactionType == CashbackTransactionType.Earned &&
-                            !IsUsed;
+    public bool IsExpired => Type == CashbackTransactionType.Earned &&
+                            DateTime.Parse(ExpiresAt) <= DateTime.UtcNow &&
+                            RemainingAmount > 0;
 
     /// <summary>
-    /// Ishlatish uchun mavjudmi
+    /// Ishlatish uchun mavjudmi (FIFO uchun)
     /// </summary>
     public bool IsAvailableForUse => IsActive && !IsUsed && !IsExpired;
 
+    // ==================== STATIC FACTORY METHODS ====================
+
     /// <summary>
     /// Tranzaksiya raqamini generate qilish
+    /// Format: CB-20250118-123456
     /// </summary>
     public static string GenerateTransactionNumber()
     {
@@ -109,79 +124,157 @@ public class CashbackTransaction : BaseEntity
     }
 
     /// <summary>
-    /// Earned cashback yaratish
+    /// Earned cashback yaratish (buyurtmadan keyin)
     /// </summary>
-    public static CashbackTransaction CreateEarned(int customerId, int orderId, decimal amount, string? notes = null)
+    /// <param name="customerId">Mijoz ID</param>
+    /// <param name="orderId">Buyurtma ID</param>
+    /// <param name="amount">Cashback summasi (2% dan)</param>
+    /// <param name="description">Izoh</param>
+    /// <returns>Yangi CashbackTransaction entity</returns>
+    public static CashbackTransaction CreateEarned(
+        int customerId,
+        int orderId,
+        decimal amount,
+        string? description = null)
     {
         if (amount <= 0)
-            throw new ArgumentException("Cashback summasi musbat bo'lishi kerak");
+            throw new ArgumentException("Cashback summasi musbat bo'lishi kerak", nameof(amount));
+
+        if (customerId <= 0)
+            throw new ArgumentException("Mijoz ID noto'g'ri", nameof(customerId));
+
+        if (orderId <= 0)
+            throw new ArgumentException("Buyurtma ID noto'g'ri", nameof(orderId));
+
+        var now = DateTime.UtcNow;
+        var nowString = now.ToString("yyyy-MM-dd HH:mm:ss");
+        var expiresAtString = now.AddDays(30).ToString("yyyy-MM-dd HH:mm:ss");
 
         return new CashbackTransaction
         {
             CustomerId = customerId,
             OrderId = orderId,
-            TransactionType = CashbackTransactionType.Earned,
+            Type = CashbackTransactionType.Earned,
             Amount = amount,
-            ExpiresAt = DateTime.UtcNow.AddDays(30), // 30 kun amal qiladi
-            Notes = notes,
+            RemainingAmount = amount, // To'liq summa mavjud
+            EarnedAt = nowString,
+            ExpiresAt = expiresAtString,
+            Description = description ?? $"Earned from Order #{orderId}",
             TransactionNumber = GenerateTransactionNumber()
         };
     }
 
     /// <summary>
-    /// Used cashback yaratish
+    /// Used cashback yaratish (buyurtmada ishlatilganda)
     /// </summary>
-    public static CashbackTransaction CreateUsed(int customerId, int usedInOrderId, decimal amount, string? notes = null)
+    /// <param name="customerId">Mijoz ID</param>
+    /// <param name="orderId">Qaysi buyurtmada ishlatildi</param>
+    /// <param name="amount">Ishlatilgan summa (musbat)</param>
+    /// <param name="description">Izoh</param>
+    /// <returns>Yangi CashbackTransaction entity (Used)</returns>
+    public static CashbackTransaction CreateUsed(
+        int customerId,
+        int orderId,
+        decimal amount,
+        string? description = null)
     {
         if (amount <= 0)
-            throw new ArgumentException("Cashback summasi musbat bo'lishi kerak");
+            throw new ArgumentException("Ishlatilgan summa musbat bo'lishi kerak", nameof(amount));
+
+        if (customerId <= 0)
+            throw new ArgumentException("Mijoz ID noto'g'ri", nameof(customerId));
+
+        if (orderId <= 0)
+            throw new ArgumentException("Buyurtma ID noto'g'ri", nameof(orderId));
+
+        var now = DateTime.UtcNow;
+        var nowString = now.ToString("yyyy-MM-dd HH:mm:ss");
 
         return new CashbackTransaction
         {
             CustomerId = customerId,
-            UsedInOrderId = usedInOrderId,
-            TransactionType = CashbackTransactionType.Used,
+            OrderId = orderId,
+            Type = CashbackTransactionType.Used,
             Amount = -amount, // Manfiy summa (kamayish)
-            UsedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow, // Used cashback uchun ahamiyati yo'q
-            Notes = notes,
+            RemainingAmount = 0, // Used transaction'da RemainingAmount 0
+            EarnedAt = nowString,
+            ExpiresAt = now.AddYears(1).ToString("yyyy-MM-dd HH:mm:ss"), // Ahamiyati yo'q
+            UsedAt = nowString,
+            Description = description ?? $"Used for Order #{orderId}",
             TransactionNumber = GenerateTransactionNumber()
         };
     }
 
     /// <summary>
-    /// Expired cashback yaratish
+    /// Expired cashback yaratish (muddati tugaganda)
     /// </summary>
-    public static CashbackTransaction CreateExpired(int customerId, int originalOrderId, decimal amount, string? notes = null)
+    /// <param name="customerId">Mijoz ID</param>
+    /// <param name="originalOrderId">Qaysi buyurtmadan yig'ilgan edi</param>
+    /// <param name="amount">Muddati tugagan summa (musbat)</param>
+    /// <param name="description">Izoh</param>
+    /// <returns>Yangi CashbackTransaction entity (Expired)</returns>
+    public static CashbackTransaction CreateExpired(
+        int customerId,
+        int originalOrderId,
+        decimal amount,
+        string? description = null)
     {
+        if (amount <= 0)
+            throw new ArgumentException("Muddati tugagan summa musbat bo'lishi kerak", nameof(amount));
+
+        if (customerId <= 0)
+            throw new ArgumentException("Mijoz ID noto'g'ri", nameof(customerId));
+
+        var now = DateTime.UtcNow;
+        var nowString = now.ToString("yyyy-MM-dd HH:mm:ss");
+
         return new CashbackTransaction
         {
             CustomerId = customerId,
             OrderId = originalOrderId,
-            TransactionType = CashbackTransactionType.Expired,
+            Type = CashbackTransactionType.Expired,
             Amount = -amount, // Manfiy summa (yo'qolgan)
-            ExpiresAt = DateTime.UtcNow,
-            Notes = notes ?? "Muddati tugadi",
+            RemainingAmount = 0, // Expired transaction'da RemainingAmount 0
+            EarnedAt = nowString,
+            ExpiresAt = nowString,
+            Description = description ?? "Cashback expired",
             TransactionNumber = GenerateTransactionNumber()
         };
     }
 
+    // ==================== BUSINESS METHODS ====================
+
     /// <summary>
-    /// Cashback'ni ishlatish
+    /// Cashback'ni qisman ishlatish (FIFO uchun)
     /// </summary>
-    public void Use(int usedInOrderId)
+    /// <param name="amountToUse">Ishlatmoqchi bo'lgan summa</param>
+    /// <exception cref="InvalidOperationException">Faqat Earned cashback'ni ishlatish mumkin</exception>
+    public void UsePartially(decimal amountToUse)
     {
-        if (TransactionType != CashbackTransactionType.Earned)
+        if (Type != CashbackTransactionType.Earned)
             throw new InvalidOperationException("Faqat earned cashback'ni ishlatish mumkin");
 
-        if (IsUsed)
+        if (RemainingAmount <= 0)
             throw new InvalidOperationException("Bu cashback allaqachon ishlatilgan");
 
         if (IsExpired)
             throw new InvalidOperationException("Bu cashback muddati tugagan");
 
-        UsedAt = DateTime.UtcNow;
-        UsedInOrderId = usedInOrderId;
+        if (amountToUse <= 0)
+            throw new ArgumentException("Ishlatilayotgan summa musbat bo'lishi kerak");
+
+        if (amountToUse > RemainingAmount)
+            throw new ArgumentException($"Yetarli cashback yo'q. Mavjud: {RemainingAmount}, Talab: {amountToUse}");
+
+        // Qolgan summani kamaytirish
+        RemainingAmount -= amountToUse;
+
+        // Agar to'liq ishlatilgan bo'lsa
+        if (RemainingAmount == 0)
+        {
+            UsedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
         MarkAsUpdated();
     }
 
@@ -190,32 +283,36 @@ public class CashbackTransaction : BaseEntity
     /// </summary>
     public void MarkAsExpired()
     {
-        if (TransactionType != CashbackTransactionType.Earned)
+        if (Type != CashbackTransactionType.Earned)
             throw new InvalidOperationException("Faqat earned cashback'ni expire qilish mumkin");
 
         if (IsUsed)
             throw new InvalidOperationException("Ishlatilgan cashback'ni expire qilib bo'lmaydi");
 
-        TransactionType = CashbackTransactionType.Expired;
-        Notes = (Notes ?? "") + " - Muddati tugadi";
+        // RemainingAmount 0 ga teng bo'lishi kerak
+        RemainingAmount = 0;
+        Description = (Description ?? "") + " - Muddati tugadi";
         MarkAsUpdated();
     }
 
     /// <summary>
     /// Muddatgacha qolgan vaqt
     /// </summary>
+    /// <returns>TimeSpan yoki null</returns>
     public TimeSpan? GetTimeUntilExpiry()
     {
-        if (TransactionType != CashbackTransactionType.Earned || IsUsed)
+        if (Type != CashbackTransactionType.Earned || RemainingAmount <= 0)
             return null;
 
-        var timeLeft = ExpiresAt.Subtract(DateTime.UtcNow);
+        var expiryDate = DateTime.Parse(ExpiresAt);
+        var timeLeft = expiryDate.Subtract(DateTime.UtcNow);
         return timeLeft.TotalSeconds > 0 ? timeLeft : TimeSpan.Zero;
     }
 
     /// <summary>
     /// Muddatgacha qolgan kunlar
     /// </summary>
+    /// <returns>Kunlar soni</returns>
     public int GetDaysUntilExpiry()
     {
         var timeLeft = GetTimeUntilExpiry();
@@ -225,6 +322,7 @@ public class CashbackTransaction : BaseEntity
     /// <summary>
     /// Cashback tez orada tugayaptimi (3 kun qolgan)
     /// </summary>
+    /// <returns>true agar 3 kun yoki undan kam qolgan bo'lsa</returns>
     public bool IsExpiringSoon()
     {
         return IsAvailableForUse && GetDaysUntilExpiry() <= 3;
@@ -233,15 +331,17 @@ public class CashbackTransaction : BaseEntity
     /// <summary>
     /// Izohni yangilash
     /// </summary>
-    public void UpdateNotes(string? notes)
+    /// <param name="description">Yangi izoh</param>
+    public void UpdateDescription(string? description)
     {
-        Notes = notes?.Trim();
+        Description = description?.Trim();
         MarkAsUpdated();
     }
 
     /// <summary>
     /// Cashback tranzaksiyasini validatsiya qilish
     /// </summary>
+    /// <returns>Validation result</returns>
     public Result Validate()
     {
         var errors = new List<string>();
@@ -249,27 +349,49 @@ public class CashbackTransaction : BaseEntity
         if (CustomerId <= 0)
             errors.Add("Mijoz ID noto'g'ri");
 
-        if (TransactionType == CashbackTransactionType.Earned)
+        if (string.IsNullOrWhiteSpace(TransactionNumber))
+            errors.Add("Tranzaksiya raqami bo'sh bo'lishi mumkin emas");
+
+        if (Type == CashbackTransactionType.Earned)
         {
             if (Amount <= 0)
                 errors.Add("Earned cashback summasi musbat bo'lishi kerak");
 
+            if (RemainingAmount < 0 || RemainingAmount > Amount)
+                errors.Add("RemainingAmount noto'g'ri");
+
             if (!OrderId.HasValue)
                 errors.Add("Earned cashback uchun buyurtma ID kerak");
 
-            if (ExpiresAt <= DateTime.UtcNow.AddMinutes(-1)) // 1 minut tolerance
-                errors.Add("Cashback amal qilish muddati kelajakda bo'lishi kerak");
+            // ExpiresAt kelajakda bo'lishi kerak
+            if (DateTime.TryParse(ExpiresAt, out var expiryDate))
+            {
+                if (expiryDate <= DateTime.UtcNow.AddMinutes(-1))
+                    errors.Add("Cashback amal qilish muddati kelajakda bo'lishi kerak");
+            }
+            else
+            {
+                errors.Add("ExpiresAt noto'g'ri format");
+            }
         }
-        else if (TransactionType == CashbackTransactionType.Used)
+        else if (Type == CashbackTransactionType.Used)
         {
             if (Amount >= 0)
                 errors.Add("Used cashback summasi manfiy bo'lishi kerak");
 
-            if (!UsedInOrderId.HasValue)
-                errors.Add("Used cashback uchun ishlatilgan buyurtma ID kerak");
+            if (RemainingAmount != 0)
+                errors.Add("Used cashback'da RemainingAmount 0 bo'lishi kerak");
 
-            if (!UsedAt.HasValue)
+            if (string.IsNullOrWhiteSpace(UsedAt))
                 errors.Add("Used cashback uchun ishlatilgan sana kerak");
+        }
+        else if (Type == CashbackTransactionType.Expired)
+        {
+            if (Amount >= 0)
+                errors.Add("Expired cashback summasi manfiy bo'lishi kerak");
+
+            if (RemainingAmount != 0)
+                errors.Add("Expired cashback'da RemainingAmount 0 bo'lishi kerak");
         }
 
         return errors.Any() ? Result.Failure(errors) : Result.Success();
@@ -278,31 +400,101 @@ public class CashbackTransaction : BaseEntity
     /// <summary>
     /// Tranzaksiya ma'lumotlarini to'liq formatda
     /// </summary>
-    public string GetDescription()
+    /// <returns>To'liq tavsif</returns>
+    public string GetFullDescription()
     {
-        return TransactionType switch
+        return Type switch
         {
-            CashbackTransactionType.Earned => $"Buyurtma #{Order?.OrderNumber} dan {Amount:C} cashback yig'ildi",
-            CashbackTransactionType.Used => $"Buyurtma #{UsedInOrder?.OrderNumber} da {Math.Abs(Amount):C} cashback ishlatildi",
-            CashbackTransactionType.Expired => $"Buyurtma #{Order?.OrderNumber} dan {Math.Abs(Amount):C} cashback muddati tugadi",
-            _ => $"{TransactionType}: {Amount:C}"
+            CashbackTransactionType.Earned =>
+                $"Buyurtma #{OrderId} dan {Amount:N2} so'm cashback yig'ildi. Qolgan: {RemainingAmount:N2} so'm",
+            CashbackTransactionType.Used =>
+                $"Buyurtma #{OrderId} da {Math.Abs(Amount):N2} so'm cashback ishlatildi",
+            CashbackTransactionType.Expired =>
+                $"Buyurtma #{OrderId} dan {Math.Abs(Amount):N2} so'm cashback muddati tugadi",
+            _ => $"{Type}: {Amount:N2} so'm"
         };
     }
 
     /// <summary>
     /// Tranzaksiya status ma'lumoti
     /// </summary>
+    /// <returns>Status text</returns>
     public string GetStatusText()
     {
-        return TransactionType switch
+        return Type switch
         {
-            CashbackTransactionType.Earned when IsUsed => "Ishlatilgan",
-            CashbackTransactionType.Earned when IsExpired => "Muddati tugagan",
-            CashbackTransactionType.Earned when IsExpiringSoon() => $"Tez orada tugaydi ({GetDaysUntilExpiry()} kun)",
-            CashbackTransactionType.Earned => $"Faol ({GetDaysUntilExpiry()} kun qoldi)",
-            CashbackTransactionType.Used => "Ishlatilgan",
-            CashbackTransactionType.Expired => "Muddati tugagan",
-            _ => TransactionType.ToString()
+            CashbackTransactionType.Earned when IsUsed =>
+                "Ishlatilgan",
+            CashbackTransactionType.Earned when IsExpired =>
+                "Muddati tugagan",
+            CashbackTransactionType.Earned when IsExpiringSoon() =>
+                $"Tez orada tugaydi ({GetDaysUntilExpiry()} kun)",
+            CashbackTransactionType.Earned =>
+                $"Faol ({GetDaysUntilExpiry()} kun qoldi, {RemainingAmount:N2} so'm)",
+            CashbackTransactionType.Used =>
+                "Ishlatilgan",
+            CashbackTransactionType.Expired =>
+                "Muddati tugagan",
+            _ => Type.ToString()
         };
+    }
+
+    /// <summary>
+    /// Tranzaksiya qisqacha ma'lumoti
+    /// </summary>
+    /// <returns>Qisqacha text</returns>
+    public string GetSummary()
+    {
+        var typeText = Type switch
+        {
+            CashbackTransactionType.Earned => "Yig'ildi",
+            CashbackTransactionType.Used => "Ishlatildi",
+            CashbackTransactionType.Expired => "Muddati tugadi",
+            _ => Type.ToString()
+        };
+
+        return $"{typeText}: {Math.Abs(Amount):N2} so'm ({TransactionNumber})";
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    /// <summary>
+    /// DateTime parse helper
+    /// </summary>
+    private DateTime ParseDateTime(string dateString)
+    {
+        if (DateTime.TryParse(dateString, out var result))
+            return result;
+
+        return DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Clone this transaction (for testing purposes)
+    /// </summary>
+    /// <returns>Cloned transaction</returns>
+    public CashbackTransaction Clone()
+    {
+        return new CashbackTransaction
+        {
+            CustomerId = this.CustomerId,
+            OrderId = this.OrderId,
+            Type = this.Type,
+            Amount = this.Amount,
+            RemainingAmount = this.RemainingAmount,
+            EarnedAt = this.EarnedAt,
+            ExpiresAt = this.ExpiresAt,
+            UsedAt = this.UsedAt,
+            Description = this.Description,
+            TransactionNumber = this.TransactionNumber
+        };
+    }
+
+    /// <summary>
+    /// Override ToString for debugging
+    /// </summary>
+    public override string ToString()
+    {
+        return $"CashbackTransaction #{TransactionNumber} - {Type}: {Amount:N2} so'm (Customer: {CustomerId})";
     }
 }

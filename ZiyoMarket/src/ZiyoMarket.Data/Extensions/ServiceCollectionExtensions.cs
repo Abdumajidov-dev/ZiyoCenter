@@ -1,5 +1,4 @@
 ﻿using ZiyoMarket.Data.Context;
-using ZiyoMarket.Data.Interfaces;
 using ZiyoMarket.Data.UnitOfWorks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

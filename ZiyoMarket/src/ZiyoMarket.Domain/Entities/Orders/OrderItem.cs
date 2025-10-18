@@ -17,7 +17,7 @@ public class OrderItem : BaseEntity
     /// Mahsulot ID
     /// </summary>
     public int ProductId { get; set; }
-
+    public string ProductName { get; set; }  // ← Bu snapshot!
     /// <summary>
     /// Miqdor
     /// </summary>
@@ -203,4 +203,5 @@ public class OrderItem : BaseEntity
         var productName = Product?.Name ?? "Unknown Product";
         return $"{productName} x{Quantity} = {TotalPrice:C}";
     }
+
 }

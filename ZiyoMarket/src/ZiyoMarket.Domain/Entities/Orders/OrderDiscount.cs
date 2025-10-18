@@ -9,6 +9,15 @@ namespace ZiyoMarket.Domain.Entities.Orders;
 public class OrderDiscount : BaseEntity
 {
     /// <summary>
+    /// Chegirma summasi
+    /// </summary>
+    public decimal Amount { get; set; }   // ✅ nomini "Amount" deb o‘zgartirdik (Order bilan mos)
+
+    /// <summary>
+    /// Kim tomonidan qo‘llangan (admin, operator, yoki sotuvchi)
+    /// </summary>
+    public int AppliedBy { get; set; }    // ✅ Order.ApplyDiscount() metodida ishlatiladi
+    /// <summary>
     /// Buyurtma ID
     /// </summary>
     public int OrderId { get; set; }
