@@ -22,4 +22,9 @@ public interface INotificationService
     // Bulk operations
     Task<Result> DeleteAllNotificationsAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null);
     Task<Result<List<NotificationDto>>> SeedMockNotificationsAsync(int userId, string userType, int count = 10);
+    Task NotifyAdminsAboutNewSupportChatAsync(int id);
+    Task NotifyCustomerChatClosedAsync(int customerId, int chatId);
+    Task NotifyAdminChatAssignedAsync(int adminId, int chatId);
+    Task NotifyAdminNewMessageAsync(int value, int id);
+    Task NotifyCustomerNewMessageAsync(int customerId, int id);
 }

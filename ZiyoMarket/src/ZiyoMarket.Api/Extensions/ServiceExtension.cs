@@ -60,6 +60,8 @@ public static class ServiceExtension
         // ========== Reporting & Analytics ==========
         services.AddScoped<IReportService, ReportService>();
 
+        services.AddScoped<ISupportService, SupportService>();
+
         return services;
     }
 }

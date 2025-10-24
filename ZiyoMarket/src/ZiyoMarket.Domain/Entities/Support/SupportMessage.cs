@@ -9,6 +9,15 @@ namespace ZiyoMarket.Domain.Entities.Support;
 public class SupportMessage : BaseEntity
 {
     /// <summary>
+    /// o'chirilgan mijoz idisi
+    /// </summary>
+    public int? DeletedBy { get; set; }
+    /// <summary>
+    ///     
+    /// Yaratilgan mijoz (ISO formatda)
+    /// </summary>
+    public int UpdatedBy { get; set; }
+    /// <summary>
     /// Chat ID
     /// </summary>
     public int ChatId { get; set; }
@@ -22,7 +31,10 @@ public class SupportMessage : BaseEntity
     /// Jo'natuvchi turi
     /// </summary>
     public UserType SenderType { get; set; }
-
+    /// <summary>
+    /// 
+    /// </summary>
+    public string? AttachmentUrl { get; set; }
     /// <summary>
     /// Xabar matni
     /// </summary>

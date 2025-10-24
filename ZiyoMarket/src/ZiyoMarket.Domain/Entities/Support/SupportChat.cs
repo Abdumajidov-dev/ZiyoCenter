@@ -10,9 +10,32 @@ namespace ZiyoMarket.Domain.Entities.Support;
 public class SupportChat : BaseEntity
 {
     /// <summary>
+    ///     
+    /// yaratgan admin ID
+    ///</summary>
+    public int CreatedBy { get; set; }
+    /// <summary>
+    ///     
+    /// o'chirgan admin ID
+    ///</summary>
+    public int DeletedBy { get; set; }
+    /// <summary>
+    /// permession uhcun rezolutsiya
+    /// </summary>
+    public string Resolution { get; set; } = string.Empty;
+    /// <summary>
     /// Mijoz ID
     /// </summary>
     public int CustomerId { get; set; }
+    /// <summary>
+    /// Order ID (agar mavjud bo'lsa)
+    /// </summary>
+    public DateTime? StartedAt { get; set; }
+    public int? OrderId { get; set; }
+    /// <summary>
+    /// oxirgi yangilagan foydalanuvchi ID
+    /// </summary>
+    public int? UpdatedBy { get; set; }
 
     /// <summary>
     /// Admin ID (javob beruvchi)
@@ -32,7 +55,7 @@ public class SupportChat : BaseEntity
     /// <summary>
     /// Muhimlik darajasi
     /// </summary>
-    public string Priority { get; set; } = "Normal"; // Low, Normal, High, Urgent
+    public string? Priority { get; set; } = "Normal"; // Low, Normal, High, Urgent
 
     /// <summary>
     /// Kategoriya (Buyurtma, Mahsulot, To'lov, etc.)
@@ -42,7 +65,7 @@ public class SupportChat : BaseEntity
     /// <summary>
     /// Yopilgan sana
     /// </summary>
-    public string? ClosedAt { get; set; }
+    public DateTime? ClosedAt { get; set; }
 
     /// <summary>
     /// Yopilish sababi
@@ -177,7 +200,7 @@ public class SupportChat : BaseEntity
             throw new InvalidOperationException("Chat allaqachon yopilgan");
 
         Status = SupportChatStatus.Closed;
-        ClosedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+        ClosedAt = DateTime.UtcNow;
         CloseReason = reason?.Trim();
 
         if (closedByAdminId.HasValue)
@@ -345,7 +368,7 @@ public class SupportChat : BaseEntity
         if (!DateTime.TryParse(CreatedAt, out var created))
             return null;
 
-        var endTime = DateTime.TryParse(ClosedAt, out var closed)
+        var endTime = DateTime.TryParse(DeletedAt, out var closed)
             ? closed
             : DateTime.UtcNow;
 

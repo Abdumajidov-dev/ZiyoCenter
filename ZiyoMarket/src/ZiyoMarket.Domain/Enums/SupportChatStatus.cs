@@ -18,5 +18,6 @@ public enum SupportChatStatus
     /// <summary>
     /// Yopilgan - hal qilindi
     /// </summary>
-    Closed = 3
+    Closed = 3,
+    Escalated = 4
 }
