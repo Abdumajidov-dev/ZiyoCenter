@@ -70,7 +70,7 @@ public class NotificationService : INotificationService
                 Data = r.Data
             }).ToList();
 
-            await _unitOfWork.Notifications.InsertRangeAsync(notifications);
+            await _unitOfWork.Notifications.AddRangeAsync(notifications);
             await _unitOfWork.SaveChangesAsync();
 
             return Result.Success($"{notifications.Count} notifications sent");

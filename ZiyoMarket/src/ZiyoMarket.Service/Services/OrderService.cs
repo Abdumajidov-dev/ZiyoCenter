@@ -75,11 +75,11 @@ public class OrderService : IOrderService
                 query = query.Where(o => o.Status == request.Status.Value);
 
             // Date range
-            if (request.StartDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) >= request.StartDate.Value);
+            if (request.DateFrom.HasValue)
+                query = query.Where(o => DateTime.Parse(o.OrderDate) >= request.DateFrom.Value);
 
-            if (request.EndDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) <= request.EndDate.Value);
+            if (request.DateTo.HasValue)
+                query = query.Where(o => DateTime.Parse(o.OrderDate) <= request.DateTo.Value);
 
             query = query.OrderByDescending(o => o.OrderDate);
 

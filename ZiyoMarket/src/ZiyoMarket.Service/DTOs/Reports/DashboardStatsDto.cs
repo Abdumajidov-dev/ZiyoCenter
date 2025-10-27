@@ -73,6 +73,12 @@ public class DashboardStatsDto
     public decimal ConversionRate { get; set; } // Orders / Customers
     public decimal AverageItemsPerOrder { get; set; }
     public string PerformanceStatus { get; set; } = "Good"; // Excellent, Good, Fair, Poor
+
+    public decimal TotalDiscounts { get; set; }
+    public int OnlineOrders { get; set; }
+    public int OfflineOrders { get; set; }
+    public int CustomerCount { get; set; }
+    public int ProductCount { get; set; }
 }
 
 /// <summary>

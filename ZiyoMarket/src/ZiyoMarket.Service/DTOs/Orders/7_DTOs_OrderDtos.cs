@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Common;
 
 namespace ZiyoMarket.Service.DTOs.Orders;
@@ -255,7 +256,7 @@ public class OrderFilterRequest : BaseFilterRequest
 {
     public int? CustomerId { get; set; }
     public int? SellerId { get; set; }
-    public string? Status { get; set; }
+    public OrderStatus? Status { get; set; }
     public string? PaymentMethod { get; set; }
     public string? DeliveryType { get; set; }
     public decimal? MinAmount { get; set; }

@@ -1,5 +1,4 @@
-﻿using ZiyoMarket.Domain.Enums;
-using ZiyoMarket.Service.DTOs.Delivery;
+﻿using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.Results;
 
 namespace ZiyoMarket.Service.Interfaces;

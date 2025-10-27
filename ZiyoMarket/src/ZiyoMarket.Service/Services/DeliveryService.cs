@@ -4,6 +4,7 @@ using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Delivery;
 using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Delivery;
+using ZiyoMarket.Service.Extensions;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
 
@@ -146,15 +147,15 @@ public class DeliveryService : IDeliveryService
                 CreatedBy = createdBy
             };
 
-            partner.MarkAsCreated();
+            //partner.MarkAsCreated();
 
             // Validate
             var validationResult = partner.Validate();
             if (!validationResult.IsSuccess)
-                return Result<DeliveryPartnerDto>.BadRequest(validationResult.Message);
+                return Result<DeliveryPartnerDto>.BadRequest(validationResult.Error);
 
             await _unitOfWork.DeliveryPartners.InsertAsync(partner);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = new DeliveryPartnerDto
             {
@@ -212,10 +213,10 @@ public class DeliveryService : IDeliveryService
             // Validate
             var validationResult = partner.Validate();
             if (!validationResult.IsSuccess)
-                return Result<DeliveryPartnerDto>.BadRequest(validationResult.Message);
+                return Result<DeliveryPartnerDto>.BadRequest(validationResult.Error);
 
-            _unitOfWork.DeliveryPartners.Update(partner);
-            await _unitOfWork.SaveAsync();
+            _unitOfWork.DeliveryPartners.Update(partner,partner.Id);
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = new DeliveryPartnerDto
             {
@@ -255,9 +256,9 @@ public class DeliveryService : IDeliveryService
                 return Result.BadRequest("Bu hamkor orqali faol yetkazib berishlar mavjud. Avval ularni yakunlang");
 
             partner.DeletedBy = deletedBy;
-            partner.MarkAsDeleted();
+           // partner.MarkAsDeleted();
             _unitOfWork.DeliveryPartners.Delete(partner);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success("Yetkazib berish hamkori muvaffaqiyatli o'chirildi");
         }
@@ -312,8 +313,8 @@ public class DeliveryService : IDeliveryService
             else
                 partner.Deactivate();
 
-            _unitOfWork.DeliveryPartners.Update(partner);
-            await _unitOfWork.SaveAsync();
+            _unitOfWork.DeliveryPartners.Update(partner,partner.Id);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result<bool>.Success(true, $"Hamkor {(isActive ? "faollashtirildi" : "faolsizlashtirildi")}");
         }
@@ -408,10 +409,10 @@ public class DeliveryService : IDeliveryService
             // Validate
             var validationResult = orderDelivery.Validate();
             if (!validationResult.IsSuccess)
-                return Result<OrderDeliveryDto>.BadRequest(validationResult.Message);
+                return Result<OrderDeliveryDto>.BadRequest(validationResult.Error);
 
             await _unitOfWork.OrderDeliveries.InsertAsync(orderDelivery);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = new OrderDeliveryDto
             {
@@ -471,8 +472,8 @@ public class DeliveryService : IDeliveryService
             }
 
             orderDelivery.MarkAsUpdated();
-            _unitOfWork.OrderDeliveries.Update(orderDelivery);
-            await _unitOfWork.SaveAsync();
+            _unitOfWork.OrderDeliveries.Update(orderDelivery,orderDelivery.Id);
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = new OrderDeliveryDto
             {
@@ -611,7 +612,7 @@ public class DeliveryService : IDeliveryService
 
     #region Bulk Operations
 
-    public async Task<Result> DeleteAllDeliveryPartnersAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<Result> DeleteAllDeliveryPartnersAsync(int deletedBy, string? startDate = null, string? endDate = null)
     {
         try
         {
@@ -619,11 +620,11 @@ public class DeliveryService : IDeliveryService
                 .Include(dp => dp.OrderDeliveries)
                 .Where(dp => !dp.IsDeleted);
 
-            if (startDate.HasValue)
-                query = query.Where(dp => dp.CreatedAt >= startDate.Value);
+            if (startDate.IsNullOrEmpty())
+                query = query.Where(dp => dp.CreatedAt == startDate);
 
-            if (endDate.HasValue)
-                query = query.Where(dp => dp.CreatedAt <= endDate.Value);
+            if (endDate.IsNullOrEmpty())
+                query = query.Where(dp => dp.CreatedAt == endDate);
 
             var partners = await query.ToListAsync();
 
@@ -640,11 +641,11 @@ public class DeliveryService : IDeliveryService
             foreach (var partner in deletablePartners)
             {
                 partner.DeletedBy = deletedBy;
-                partner.MarkAsDeleted();
+                //partner.MarkAsDeleted();
                 _unitOfWork.DeliveryPartners.Delete(partner);
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success($"{deletablePartners.Count} ta yetkazib berish hamkori o'chirildi");
         }
@@ -687,12 +688,12 @@ public class DeliveryService : IDeliveryService
                     CreatedBy = createdBy
                 };
 
-                partner.MarkAsCreated();
+               // partner.MarkAsCreated();
                 await _unitOfWork.DeliveryPartners.InsertAsync(partner);
                 mockPartners.Add(partner);
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             var dtos = mockPartners.Select(p => new DeliveryPartnerDto
             {
@@ -712,6 +713,11 @@ public class DeliveryService : IDeliveryService
         {
             return Result<List<DeliveryPartnerDto>>.InternalError($"Xatolik: {ex.Message}");
         }
+    }
+
+    public Task<Result> DeleteAllDeliveryPartnersAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        throw new NotImplementedException();
     }
 
     #endregion

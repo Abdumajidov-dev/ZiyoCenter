@@ -264,7 +264,7 @@ public class CategoryWithProductCountDto
     /// <summary>
     /// Oxirgi yangilangan sana
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedAt { get; set; }
 }
 /// <summary>
 /// Kategoriyalar tartibini (sort order) o‘zgartirish uchun DTO

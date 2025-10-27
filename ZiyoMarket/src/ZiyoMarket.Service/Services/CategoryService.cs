@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Service.DTOs.Products;
+using ZiyoMarket.Service.Extensions;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
 
@@ -166,9 +167,9 @@ public class CategoryService : ICategoryService
                 CreatedBy = createdBy
             };
 
-            category.MarkAsCreated();
+           // category.MarkAsCreated();
             await _unitOfWork.Categories.InsertAsync(category);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<CategoryDto>(category);
             dto.ProductCount = 0;
@@ -223,8 +224,8 @@ public class CategoryService : ICategoryService
             category.UpdatedBy = updatedBy;
             category.MarkAsUpdated();
 
-            _unitOfWork.Categories.Update(category);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.Categories.Update(category,category.Id);
+            await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<CategoryDto>(category);
             dto.ProductCount = category.Products.Count(p => p.IsActive && !p.IsDeleted);
@@ -257,9 +258,9 @@ public class CategoryService : ICategoryService
                 return Result.BadRequest("Bu kategoriyada ichki kategoriyalar mavjud. Avval ichki kategoriyalarni o'chiring");
 
             category.DeletedBy = deletedBy;
-            category.MarkAsDeleted();
+            //category.MarkAsDeleted();
             _unitOfWork.Categories.Delete(category);
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success("Kategoriya muvaffaqiyatli o'chirildi");
         }
@@ -499,11 +500,11 @@ public class CategoryService : ICategoryService
                     category.ChangeDisplayOrder(item.SortOrder);
                     category.UpdatedBy = updatedBy;
                     category.MarkAsUpdated();
-                    _unitOfWork.Categories.Update(category);
+                    _unitOfWork.Categories.Update(category,category.Id);
                 }
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
             return Result.Success("Kategoriyalar tartibi yangilandi");
         }
         catch (Exception ex)
@@ -528,8 +529,8 @@ public class CategoryService : ICategoryService
                 category.Activate();
 
             category.UpdatedBy = updatedBy;
-            _unitOfWork.Categories.Update(category);
-            await _unitOfWork.SaveAsync();
+            _unitOfWork.Categories.Update(category,category.Id);
+            await _unitOfWork.SaveChangesAsync();
 
             var status = category.IsActive ? "faollashtirildi" : "faolsizlashtirildi";
             return Result.Success($"Kategoriya {status}");
@@ -544,7 +545,7 @@ public class CategoryService : ICategoryService
 
     #region Bulk Operations
 
-    public async Task<Result> DeleteAllCategoriesAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<Result> DeleteAllCategoriesAsync(int deletedBy, string? startDate = null, string? endDate = null)
     {
         try
         {
@@ -553,11 +554,11 @@ public class CategoryService : ICategoryService
                 .Include(c => c.Children)
                 .Where(c => !c.IsDeleted);
 
-            if (startDate.HasValue)
-                query = query.Where(c => c.CreatedAt >= startDate.Value);
+            if (startDate.IsNullOrEmpty())
+                query = query.Where(c => c.CreatedAt == startDate);
 
-            if (endDate.HasValue)
-                query = query.Where(c => c.CreatedAt <= endDate.Value);
+            if (endDate.IsNullOrEmpty())
+                query = query.Where(c => c.CreatedAt == endDate);
 
             var categories = await query.ToListAsync();
 
@@ -573,11 +574,11 @@ public class CategoryService : ICategoryService
             foreach (var category in deletableCategories)
             {
                 category.DeletedBy = deletedBy;
-                category.MarkAsDeleted();
+                //category.MarkAsDeleted();
                 _unitOfWork.Categories.Delete(category);
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success($"{deletableCategories.Count} ta kategoriya o'chirildi");
         }
@@ -606,12 +607,12 @@ public class CategoryService : ICategoryService
 
             foreach (var category in rootCategories)
             {
-                category.MarkAsCreated();
+               // category.MarkAsCreated();
                 await _unitOfWork.Categories.InsertAsync(category);
                 mockCategories.Add(category);
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             // Create subcategories
             var subCategories = new[]
@@ -628,12 +629,12 @@ public class CategoryService : ICategoryService
                 if (mockCategories.Count >= count)
                     break;
 
-                category.MarkAsCreated();
+               // category.MarkAsCreated();
                 await _unitOfWork.Categories.InsertAsync(category);
                 mockCategories.Add(category);
             }
 
-            await _unitOfWork.SaveAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             var dtos = _mapper.Map<List<CategoryDto>>(mockCategories);
             return Result<List<CategoryDto>>.Success(dtos, $"{mockCategories.Count} ta mock kategoriya yaratildi");
@@ -666,6 +667,11 @@ public class CategoryService : ICategoryService
         }
 
         return false;
+    }
+
+    public Task<Result> DeleteAllCategoriesAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        throw new NotImplementedException();
     }
 
     #endregion
