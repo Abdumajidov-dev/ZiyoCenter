@@ -8,6 +8,8 @@ namespace ZiyoMarket.Domain.Entities.Support;
 /// </summary>
 public class SupportMessage : BaseEntity
 {
+    public int deletedBy;
+
     /// <summary>
     /// o'chirilgan mijoz idisi
     /// </summary>

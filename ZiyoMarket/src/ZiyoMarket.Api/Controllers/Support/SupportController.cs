@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Api.Controllers;
+using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.DTOs.Support;
 using ZiyoMarket.Service.Interfaces;
 

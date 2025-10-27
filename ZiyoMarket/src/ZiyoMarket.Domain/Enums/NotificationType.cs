@@ -38,5 +38,7 @@ public enum NotificationType
     /// <summary>
     /// Aksiya/chegirma haqida
     /// </summary>
-    Promotion = 7
+    Promotion = 7,
+    SupportMessage = 8,
+    NewOrder = 9
 }

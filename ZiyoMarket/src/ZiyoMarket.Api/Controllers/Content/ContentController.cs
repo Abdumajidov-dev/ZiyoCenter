@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZiyoMarket.Service.DTOs.Content;
+using ZiyoMarket.Service.Interfaces;
 
 namespace ZiyoMarket.Api.Controllers.Content;
 
@@ -29,13 +31,13 @@ public class ContentController : BaseController
         return Ok(new { success = true, data = result.Data });
     }
 
-    [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAllContent()
-    {
-        var result = await _contentService.GetAllContentAsync();
-        return Ok(new { success = true, data = result.Data });
-    }
+    //[HttpGet]
+    //[Authorize(Roles = "Admin")]
+    //public async Task<IActionResult> GetAllContent()
+    //{
+    //    var result = await _contentService.GetAllContentAsync();
+    //    return Ok(new { success = true, data = result.Data });
+    //}
 
     [HttpGet("published")]
     [AllowAnonymous]

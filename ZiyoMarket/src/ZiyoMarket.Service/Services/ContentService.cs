@@ -36,7 +36,7 @@ public class ContentService : IContentService
   }
     }
 
-    public async Task<Result<PaginationResponse<ContentListDto>>> GetAllContentAsync(ContentFilterRequest request)
+    public async Task<Result<Results.PaginationResponse<ContentListDto>>> GetAllContentAsync(ContentFilterRequest request)
     {
         try
         {
@@ -57,8 +57,8 @@ public class ContentService : IContentService
    if (!string.IsNullOrEmpty(request.Author))
      query = query.Where(c => c.Author == request.Author);
 
-        if (request.IsActive.HasValue)
-    query = query.Where(c => c.IsActive == request.IsActive.Value);
+        if (request.IsActive)
+    query = query.Where(c => c.IsActive == request.IsActive);
 
             query = query.OrderByDescending(c => c.CreatedAt);
 
@@ -70,12 +70,12 @@ public class ContentService : IContentService
 
 var dtos = _mapper.Map<List<ContentListDto>>(contents);
 
-            return Result<PaginationResponse<ContentListDto>>.Success(
-            new PaginationResponse<ContentListDto>(dtos, total, request.PageNumber, request.PageSize));
+            return Result<Results.PaginationResponse<ContentListDto>>.Success(
+            new Results.PaginationResponse<ContentListDto>(dtos, total, request.PageNumber, request.PageSize));
         }
 catch (Exception ex)
 {
-          return Result<PaginationResponse<ContentListDto>>.InternalError($"Error: {ex.Message}");
+          return Result<Results.PaginationResponse<ContentListDto>>.InternalError($"Error: {ex.Message}");
         }
     }
 
@@ -122,7 +122,7 @@ catch (Exception ex)
         }
     }
 
-    public async Task<r> DeleteContentAsync(int contentId, int deletedBy)
+    public async Task<Result> DeleteContentAsync(int contentId, int deletedBy)
     {
  try
     {
@@ -144,7 +144,7 @@ catch (Exception ex)
         }
     }
 
-    public async Task<r> PublishContentAsync(int contentId, int publishedBy)
+    public async Task<Result> PublishContentAsync(int contentId, int publishedBy)
     {
         try
         {
@@ -167,7 +167,7 @@ return Result.Success("Content published successfully");
         }
     }
 
-    public async Task<r> UnpublishContentAsync(int contentId, int unpublishedBy)
+    public async Task<Result> UnpublishContentAsync(int contentId, int unpublishedBy)
     {
         try
       {
@@ -232,7 +232,7 @@ await _unitOfWork.Contents.Update(content, contentId);
         }
     }
 
-    public async Task<r> UpdateContentOrderAsync(List<UpdateContentOrderDto> updates, int updatedBy)
+    public async Task<Result> UpdateContentOrderAsync(List<UpdateContentOrderDto> updates, int updatedBy)
     {
         try
       {
@@ -758,5 +758,10 @@ content.Delete();
    {
       return Result<List<ContentDetailDto>>.InternalError($"Error: {ex.Message}");
         }
+    }
+
+    public Task GetAllContentAsync()
+    {
+        throw new NotImplementedException();
     }
 }

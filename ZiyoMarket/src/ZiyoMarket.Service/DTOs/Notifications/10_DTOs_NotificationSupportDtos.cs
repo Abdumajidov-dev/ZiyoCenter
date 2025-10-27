@@ -15,10 +15,13 @@ public class NotificationDto
     public string Type { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    public string Priority { get; set; } = "Normal";
+    public string? Data { get; set; }
+    public string? ActionUrl { get; set; }
+    public string? ActionText { get; set; }
+    public string? ImageUrl { get; set; }
     public bool IsRead { get; set; }
     public DateTime? ReadAt { get; set; }
-    public int? OrderId { get; set; }
-    public int? ProductId { get; set; }
     public bool PushSent { get; set; }
     public bool EmailSent { get; set; }
     public bool SMSSent { get; set; }
@@ -33,24 +36,29 @@ public class CreateNotificationDto
     [Required]
     [Range(1, int.MaxValue)]
     public int UserId { get; set; }
-    
+
     [Required]
     public string UserType { get; set; } = string.Empty;
-    
+
     [Required]
     public string Type { get; set; } = string.Empty;
-    
+
     [Required]
     [MaxLength(200)]
     public string Title { get; set; } = string.Empty;
-    
+
     [Required]
     [MaxLength(1000)]
     public string Message { get; set; } = string.Empty;
-    
-    public int? OrderId { get; set; }
-    public int? ProductId { get; set; }
-    
+
+    [MaxLength(100)]
+    public string Priority { get; set; } = "Normal";
+
+    public string? Data { get; set; }
+    public string? ActionUrl { get; set; }
+    public string? ActionText { get; set; }
+    public string? ImageUrl { get; set; }
+
     public bool SendPush { get; set; } = true;
     public bool SendEmail { get; set; } = false;
     public bool SendSMS { get; set; } = false;

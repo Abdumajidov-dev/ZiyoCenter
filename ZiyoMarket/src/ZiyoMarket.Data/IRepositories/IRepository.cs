@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Domain.Entities.Notifications;
 
 namespace ZiyoMarket.Data.IRepositories;
 

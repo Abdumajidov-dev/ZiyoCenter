@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.Interfaces;
 
 namespace ZiyoMarket.Api.Controllers.Users;

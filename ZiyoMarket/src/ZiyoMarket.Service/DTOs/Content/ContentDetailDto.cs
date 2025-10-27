@@ -126,6 +126,7 @@ public class ContentFilterRequest : PaginationRequest
     public bool? IsScheduled { get; set; }
     public string? SortBy { get; set; } // title, publishedAt, viewCount, sortOrder
     public bool SortDescending { get; set; }
+    public bool IsActive { get; internal set; }
 }
 
 /// <summary>
@@ -135,6 +136,7 @@ public class UpdateContentOrderDto
 {
     public int ContentId { get; set; }
     public int NewSortOrder { get; set; }
+    public int DisplayOrder { get; internal set; }
 }
 
 // ============ TYPE SPECIFIC DTOS ============
@@ -247,6 +249,8 @@ public class ContentStatsDto
     public int MostViewedContentViews { get; set; }
     public string? MostClickedContentTitle { get; set; }
     public int MostClickedContentClicks { get; set; }
+    public int ActiveContent { get; internal set; }
+    public object ContentByType { get; internal set; }
 }
 
 /// <summary>
@@ -262,6 +266,8 @@ public class TopContentDto
     public int ClickCount { get; set; }
     public double EngagementRate { get; set; } // (Clicks / Views) * 100
     public DateTime? PublishedAt { get; set; }
+    public DateTime CreatedAt { get; internal set; }
+    public int ContentId { get; internal set; }
 }
 
 /// <summary>
@@ -297,6 +303,8 @@ public class ContentPerformanceDto
     // Publishing info
     public DateTime? PublishedAt { get; set; }
     public int DaysSincePublished { get; set; }
+    public int ViewCount { get; internal set; }
+    public int ClickCount { get; internal set; }
 }
 
 /// <summary>
@@ -316,6 +324,12 @@ public class ContentViewStatsDto
     public int VideoViews { get; set; }
     public int ArticleViews { get; set; }
     public int AnnouncementViews { get; set; }
+    public int ContentId { get; internal set; }
+    public string Title { get; internal set; }
+    public string Type { get; internal set; }
+    public int ClickCount { get; internal set; }
+    public int ViewCount { get; internal set; }
+    public DateTime CreatedAt { get; internal set; }
 }
 
 // ============ ADDITIONAL DTOS ============

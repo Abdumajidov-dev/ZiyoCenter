@@ -7,7 +7,7 @@ public interface IContentService
 {
     // CRUD operations
     Task<Result<ContentDetailDto>> GetContentByIdAsync(int contentId);
-    Task<Result<DTOs.Content.PaginationResponse<ContentListDto>>> GetAllContentAsync(ContentFilterRequest request);
+    Task<Result<Results.PaginationResponse<ContentListDto>>> GetAllContentAsync(ContentFilterRequest request);
     Task<Result<ContentDetailDto>> CreateContentAsync(SaveContentDto request, int createdBy);
     Task<Result<ContentDetailDto>> UpdateContentAsync(int id, SaveContentDto request, int updatedBy);
     Task<Result> DeleteContentAsync(int contentId, int deletedBy);
@@ -50,4 +50,5 @@ public interface IContentService
     // Bulk operations
     Task<Result> DeleteAllContentAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null);
     Task<Result<List<ContentDetailDto>>> SeedMockContentAsync(int createdBy, int count = 10);
+    Task GetAllContentAsync();
 }

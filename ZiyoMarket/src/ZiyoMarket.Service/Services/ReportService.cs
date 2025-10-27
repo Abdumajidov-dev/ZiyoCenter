@@ -697,4 +697,55 @@ if (filter.MaxAmount.HasValue)
             return Result<List<CustomReportDto>>.InternalError($"Error: {ex.Message}");
         }
     }
+
+    public async Task<Result<SellerAnalyticsDto>> GetSellerPerformanceReportAsync(DateTime startDate, DateTime endDate)
+    {
+        try
+        {
+            var analytics = await GetSellerAnalyticsAsync(startDate, endDate);
+            return analytics;
+        }
+        catch (Exception ex)
+        {
+            return Result<SellerAnalyticsDto>.InternalError($"Error: {ex.Message}");
+        }
+    }
+
+    // Additional methods for controller compatibility
+    public async Task<Result<DashboardStatsDto>> GetDashboardStatisticsAsync()
+    {
+        var endDate = DateTime.UtcNow;
+        var startDate = endDate.AddDays(-30);
+        return await GetDashboardStatsAsync(startDate, endDate);
+    }
+
+    public async Task<Result<DashboardStatsDto>> GetTodayStatisticsAsync()
+    {
+        var today = DateTime.UtcNow.Date;
+        return await GetDashboardStatsAsync(today, today.AddDays(1));
+    }
+
+    public async Task<Result<SalesReportDto>> GetDailySalesAsync(DateTime date)
+    {
+        var startDate = date.Date;
+        var endDate = startDate.AddDays(1);
+        return await GetSalesReportAsync(startDate, endDate);
+    }
+
+    public async Task<Result<List<TopProductDto>>> GetTopSellingProductsAsync(DateTime startDate, DateTime endDate, int count = 10)
+    {
+        return await GetTopProductsAsync(startDate, endDate, count);
+    }
+
+    public async Task<Result<List<TopCustomerDto>>> GetTopCustomersReportAsync(int count = 10)
+    {
+        var endDate = DateTime.UtcNow;
+        var startDate = endDate.AddMonths(-3);
+        return await GetTopCustomersAsync(startDate, endDate, count);
+    }
+
+    public async Task<Result<List<LowStockProductDto>>> GetLowStockReportAsync()
+    {
+        return await GetLowStockProductsAsync(5);
+    }
 }

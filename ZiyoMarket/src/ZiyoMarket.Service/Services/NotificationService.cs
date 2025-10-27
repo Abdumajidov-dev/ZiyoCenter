@@ -123,7 +123,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> MarkAsReadAsync(int notificationId, int userId)
+    public async Task<Result> MarkAsReadAsync(int notificationId, int userId)
     {
         try
         {
@@ -149,7 +149,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> MarkAllAsReadAsync(int userId, string userType)
+    public async Task<Result> MarkAllAsReadAsync(int userId, string userType)
     {
         try
         {
@@ -177,7 +177,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> DeleteNotificationAsync(int notificationId, int userId)
+    public async Task<Result> DeleteNotificationAsync(int notificationId, int userId)
     {
         try
         {
@@ -200,7 +200,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> NotifyOrderCreatedAsync(int customerId, int orderId)
+    public async Task<Result> NotifyOrderCreatedAsync(int customerId, int orderId)
     {
         try
         {
@@ -232,7 +232,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> NotifyOrderStatusChangedAsync(int orderId, string newStatus)
+    public async Task<Result> NotifyOrderStatusChangedAsync(int orderId, string newStatus)
     {
         try
         {
@@ -264,7 +264,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> NotifyCashbackEarnedAsync(int customerId, decimal amount, int orderId)
+    public async Task<Result> NotifyCashbackEarnedAsync(int customerId, decimal amount, int orderId)
     {
         try
         {
@@ -292,7 +292,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> NotifyAdminAboutNewOrderAsync(int orderId)
+    public async Task<Result> NotifyAdminAboutNewOrderAsync(int orderId)
     {
         try
         {
@@ -332,7 +332,7 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<r> DeleteAllNotificationsAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<Result> DeleteAllNotificationsAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
     {
         try
         {
@@ -406,6 +406,145 @@ public class NotificationService : INotificationService
         catch (Exception ex)
         {
             return Result<List<NotificationDto>>.InternalError($"Error: {ex.Message}");
+        }
+    }
+
+    // Support Chat Notifications
+    public async Task NotifyAdminsAboutNewSupportChatAsync(int chatId)
+    {
+        try
+        {
+            var admins = await _unitOfWork.Admins
+                .SelectAll(a => a.IsActive && !a.IsDeleted)
+                .ToListAsync();
+
+            foreach (var admin in admins)
+            {
+                var notification = new Notification
+                {
+                    Title = "Yangi support chat",
+                    Message = "Yangi mijoz support chatni boshladi",
+                    NotificationType = NotificationType.SupportMessage,
+                    Priority = "High",
+                    UserId = admin.Id,
+                    UserType = UserType.Admin,
+                    ActionUrl = $"/admin/support/{chatId}",
+                    ActionText = "Chatni ko'rish",
+                    Data = chatId.ToString()
+                };
+
+                await _unitOfWork.Notifications.InsertAsync(notification);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+        }
+    }
+
+    public async Task NotifyCustomerChatClosedAsync(int customerId, int chatId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                Title = "Chat yopildi",
+                Message = "Sizning support chatgiz yopildi",
+                NotificationType = NotificationType.SupportMessage,
+                Priority = "Normal",
+                UserId = customerId,
+                UserType = UserType.Customer,
+                ActionUrl = $"/support/{chatId}",
+                ActionText = "Chatni ko'rish",
+                Data = chatId.ToString()
+            };
+
+            await _unitOfWork.Notifications.InsertAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+        }
+    }
+
+    public async Task NotifyAdminChatAssignedAsync(int adminId, int chatId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                Title = "Yangi chat tayinlandi",
+                Message = "Sizga yangi support chat tayinlandi",
+                NotificationType = NotificationType.SupportMessage,
+                Priority = "High",
+                UserId = adminId,
+                UserType = UserType.Admin,
+                ActionUrl = $"/admin/support/{chatId}",
+                ActionText = "Chatni ko'rish",
+                Data = chatId.ToString()
+            };
+
+            await _unitOfWork.Notifications.InsertAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+        }
+    }
+
+    public async Task NotifyAdminNewMessageAsync(int adminId, int chatId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                Title = "Yangi xabar",
+                Message = "Sizga yangi xabar keldi",
+                NotificationType = NotificationType.SupportMessage,
+                Priority = "Normal",
+                UserId = adminId,
+                UserType = UserType.Admin,
+                ActionUrl = $"/admin/support/{chatId}",
+                ActionText = "Xabarni ko'rish",
+                Data = chatId.ToString()
+            };
+
+            await _unitOfWork.Notifications.InsertAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+        }
+    }
+
+    public async Task NotifyCustomerNewMessageAsync(int customerId, int chatId)
+    {
+        try
+        {
+            var notification = new Notification
+            {
+                Title = "Yangi javob",
+                Message = "Support jamoasidan yangi javob keldi",
+                NotificationType = NotificationType.SupportMessage,
+                Priority = "Normal",
+                UserId = customerId,
+                UserType = UserType.Customer,
+                ActionUrl = $"/support/{chatId}",
+                ActionText = "Javobni ko'rish",
+                Data = chatId.ToString()
+            };
+
+            await _unitOfWork.Notifications.InsertAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
         }
     }
 }

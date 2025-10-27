@@ -147,6 +147,8 @@ public class SalesReportDto
 
     // Detailed breakdown
     public List<DailySalesDto> DailySales { get; set; } = new();
+    public decimal TotalDiscount { get; internal set; }
+    public Dictionary<string, int> OrdersByStatus { get; internal set; }
 }
 
 /// <summary>
@@ -734,16 +736,81 @@ public class QuarterlySummaryDto
 
 // ============ CUSTOM REPORTS ============
 
-/// <summary>
-/// Custom hisobot
-/// </summary>
+///// <summary>
+///// Custom hisobot
+///// </summary>
+//public class CustomReportDto
+//{
+//    public string ReportType { get; set; } = string.Empty;
+//    public Dictionary<string, object> Data { get; set; } = new();
+//    public DateTime GeneratedAt { get; set; }
+//}
 public class CustomReportDto
 {
-    public string ReportType { get; set; } = string.Empty;
-    public Dictionary<string, object> Data { get; set; } = new();
-    public DateTime GeneratedAt { get; set; }
-}
+    // Meta
+    public string ReportType { get; set; } = string.Empty;   // Sales, Products, Customers, ...
+    public string ReportName { get; set; } = string.Empty;   // Human friendly name
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public string? GeneratedBy { get; set; }
 
+    // Kontekst / filtr (optional, agar mavjud bo'lsa)
+    public ReportFilterDto? Filter { get; set; }
+
+    // Umumiy agregatlar
+    public int TotalRecords { get; set; }
+    public decimal TotalRevenue { get; set; }
+    public int TotalOrders { get; set; }
+    public int TotalCustomers { get; set; }
+    public decimal AverageValue { get; set; }
+
+    // Frontend helperlar: grafiklar, metrikalar, taqqoslashlar
+    public List<ChartDataDto> Charts { get; set; } = new();
+    public List<PerformanceMetricDto> Metrics { get; set; } = new();
+    public List<ComparisonDto> Comparisons { get; set; } = new();
+
+    // Jadval sxemasi + satrlar (dinamik)
+    public List<ReportColumnDto> Columns { get; set; } = new();
+    public List<Dictionary<string, object?>> Rows { get; set; } = new();
+
+    // Backwards-compatible explicit order-level maydonlar (ReportService hozirda shu tarzda to'ldiradi)
+    public int? OrderId { get; set; }
+    public string? OrderNumber { get; set; }
+    public DateTime? OrderDate { get; set; }
+    public string? CustomerName { get; set; }
+    public string? SellerName { get; set; }
+    public string? Status { get; set; }
+    public decimal? TotalAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public decimal? FinalAmount { get; set; }
+    public int? ItemCount { get; set; }
+    public string? PaymentMethod { get; set; }
+
+    // Qo'shimcha erkin ma'lumotlar uchun key/value bag
+    public Dictionary<string, object?> Data { get; set; } = new();
+
+    // Eksport bilan bog'liq maslahatlar
+    public ExportInfoDto? ExportInfo { get; set; }
+
+    // Qulay konstruktor yo'q — property'lar orqali to'ldirish tavsiya etiladi
+}
+public class ExportInfoDto
+{
+    public string? SuggestedFileName { get; set; }
+    public List<string>? SupportedFormats { get; set; } = new() { "PDF", "Excel", "CSV" };
+    public string? DefaultFormat { get; set; } = "Excel";
+}
+/// <summary>
+/// Report column metadata - frontend uchun kolonkalarni tavsiflash
+/// </summary>
+public class ReportColumnDto
+{
+    public string Name { get; set; } = string.Empty;   // key used in Rows dictionaries
+    public string Title { get; set; } = string.Empty;  // header label
+    public string DataType { get; set; } = "string";   // string, number, date, currency, boolean
+    public bool IsSortable { get; set; } = true;
+    public bool IsVisible { get; set; } = true;
+    public string? Format { get; set; }                // e.g. "C2", "dd/MM/yyyy"
+}
 /// <summary>
 /// Hisobot filtri
 /// </summary>

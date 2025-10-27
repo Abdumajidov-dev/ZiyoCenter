@@ -2,11 +2,15 @@ using AutoMapper;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Domain.Entities.Orders;
+using ZiyoMarket.Domain.Entities.Notifications;
+using ZiyoMarket.Domain.Entities.Delivery;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.DTOs.Orders;
 using ZiyoMarket.Service.DTOs.Customers;
 using ZiyoMarket.Service.DTOs.Cashback;
+using ZiyoMarket.Service.DTOs.Notifications;
+using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
@@ -48,11 +52,13 @@ public class MappingProfiles : Profile
         
         // Category mappings
         CreateMap<Category, CategoryDto>()
-            .ForMember(dest => dest.ParentName, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.ParentName, opt => opt.MapFrom(src =>
                 src.Parent != null ? src.Parent.Name : null))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
             .ForMember(dest => dest.ProductCount, opt => opt.Ignore());
-        
-        CreateMap<SaveCategoryDto, Category>();
+
+        CreateMap<SaveCategoryDto, Category>()
+            .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder));
         
         // Cart mappings
         CreateMap<CartItem, CartItemDto>()
@@ -165,5 +171,45 @@ public class CashbackProfile : Profile
     public CashbackProfile()
     {
         CreateMap<CashbackTransaction, CashbackTransactionDto>();
+    }
+}
+
+/// <summary>
+/// Notification mapping profile
+/// </summary>
+public class NotificationProfile : Profile
+{
+    public NotificationProfile()
+    {
+        CreateMap<Notification, NotificationDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.NotificationType.ToString()))
+            .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => src.UserType.ToString()))
+            .ForMember(dest => dest.PushSent, opt => opt.MapFrom(src => src.IsPushSent))
+            .ForMember(dest => dest.EmailSent, opt => opt.MapFrom(src => src.IsEmailSent))
+            .ForMember(dest => dest.SMSSent, opt => opt.MapFrom(src => src.IsSmsSent))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)));
+    }
+}
+
+/// <summary>
+/// Delivery mapping profile
+/// </summary>
+public class DeliveryProfile : Profile
+{
+    public DeliveryProfile()
+    {
+        CreateMap<DeliveryPartner, DeliveryPartnerDto>()
+            .ForMember(dest => dest.TotalDeliveries, opt => opt.Ignore())
+            .ForMember(dest => dest.SuccessRate, opt => opt.Ignore());
+
+        CreateMap<DeliveryPartner, DeliveryPartnerDetailDto>()
+            .ForMember(dest => dest.TotalDeliveries, opt => opt.Ignore())
+            .ForMember(dest => dest.SuccessRate, opt => opt.Ignore())
+            .ForMember(dest => dest.AverageDeliveryDays, opt => opt.Ignore());
+
+        CreateMap<OrderDelivery, OrderDeliveryDto>()
+            .ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
+            .ForMember(dest => dest.DeliveryPartnerName, opt => opt.Ignore())
+            .ForMember(dest => dest.IsDelayed, opt => opt.MapFrom(src => src.IsDelayed));
     }
 }

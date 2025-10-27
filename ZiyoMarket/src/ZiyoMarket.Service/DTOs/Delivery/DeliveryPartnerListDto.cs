@@ -135,3 +135,50 @@ public class OrderDeliveryCreateDto
     public string? Notes { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
 }
+
+/// <summary>
+/// Save (Create/Update) delivery partner DTO
+/// </summary>
+public class SaveDeliveryPartnerDto
+{
+    [Required, MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required, MaxLength(50)]
+    public string DeliveryType { get; set; } = "Courier";
+
+    [Range(0, double.MaxValue)]
+    public decimal PricePerDelivery { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int EstimatedDays { get; set; } = 1;
+
+    [Range(0.1, double.MaxValue)]
+    public decimal? MaxWeight { get; set; }
+
+    [Phone]
+    public string? Phone { get; set; }
+
+    [EmailAddress]
+    public string? Email { get; set; }
+
+    public string? ServiceAreas { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public int DisplayOrder { get; set; } = 0;
+
+    public string? ApiUrl { get; set; }
+
+    public string? ApiKey { get; set; }
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+}
+
+/// <summary>
+/// Alias for CreateOrderDeliveryDto to match controller naming
+/// </summary>
+public class CreateOrderDeliveryDto : OrderDeliveryCreateDto
+{
+}
