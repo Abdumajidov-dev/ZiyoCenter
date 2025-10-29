@@ -101,20 +101,20 @@ public class AuthService : IAuthService
         {
             // Check if phone already exists
             var existingCustomer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Phone == request.Phone && !c.IsDeleted);
+                .SelectAsync(c => c.Phone == request.Phone && !c.IsActive);
 
             if (existingCustomer != null)
                 return Result<LoginResponseDto>.Conflict("Phone number already registered");
 
             // Check if email exists (if provided)
-            if (!string.IsNullOrWhiteSpace(request.Email))
-            {
-                var existingEmail = await _unitOfWork.Customers
-                    .SelectAsync(c => c.Email == request.Email && !c.IsDeleted);
+            //if (!string.IsNullOrWhiteSpace(request.Email))
+            //{
+            //    var existingEmail = await _unitOfWork.Customers
+            //        .SelectAsync(c => c.Email == request.Email && !c.IsDeleted);
 
-                if (existingEmail != null)
-                    return Result<LoginResponseDto>.Conflict("Email already registered");
-            }
+            //    if (existingEmail != null)
+            //        return Result<LoginResponseDto>.Conflict("Email already registered");
+            //}
 
             // Create customer
             var customer = _mapper.Map<Customer>(request);
