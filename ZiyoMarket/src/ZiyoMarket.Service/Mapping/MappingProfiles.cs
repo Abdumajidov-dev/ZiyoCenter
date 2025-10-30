@@ -110,8 +110,7 @@ public class UserProfile : Profile
         // Admin mappings
         CreateMap<Admin, UserProfileDto>()
             .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => "Admin"))
-            .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => string.Empty))
-            .ForMember(dest => dest.Address, opt => opt.Ignore())
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => string.Empty))
             .ForMember(dest => dest.CashbackBalance, opt => opt.MapFrom(src => 0));
     }
 }

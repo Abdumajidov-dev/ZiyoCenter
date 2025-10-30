@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\" /b /s)"
+      "Bash(dir \"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\" /b /s)",
+      "Bash(dotnet build:*)"
     ],
     "deny": [],
     "ask": []

@@ -101,7 +101,7 @@ public class AuthService : IAuthService
         {
             // Check if phone already exists
             var existingCustomer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Phone == request.Phone && !c.IsActive);
+                .SelectAsync(c => c.Phone == request.Phone);
 
             if (existingCustomer != null)
                 return Result<LoginResponseDto>.Conflict("Phone number already registered");
@@ -133,7 +133,7 @@ public class AuthService : IAuthService
             {
                 AccessToken = accessToken.Data!,
                 RefreshToken = refreshToken.Data!,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 User = _mapper.Map<UserProfileDto>(customer)
             };
 
@@ -178,7 +178,7 @@ public class AuthService : IAuthService
             {
                 AccessToken = accessToken.Data!,
                 RefreshToken = refreshToken.Data!,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 User = userProfile!
             };
 
@@ -423,7 +423,7 @@ public class AuthService : IAuthService
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                expires: TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 signingCredentials: credentials
             );
 
@@ -456,7 +456,7 @@ public class AuthService : IAuthService
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
+                expires: TimeHelper.GetCurrentServerTime().AddDays(_jwtSettings.RefreshTokenExpirationDays),
                 signingCredentials: credentials
             );
 
@@ -508,21 +508,21 @@ public class AuthService : IAuthService
     {
         return await _unitOfWork.Customers
             .SelectAsync(c =>
-                (c.Phone == phoneOrEmail || c.Email == phoneOrEmail) && !c.IsDeleted);
+                (c.Phone == phoneOrEmail || c.Email == phoneOrEmail));
     }
 
     private async Task<Seller?> FindSellerByPhoneOrEmailAsync(string phoneOrEmail)
     {
         return await _unitOfWork.Sellers
             .SelectAsync(s =>
-                (s.Phone == phoneOrEmail) && !s.IsDeleted);
+                (s.Phone == phoneOrEmail || s.Phone == phoneOrEmail));
     }
 
     private async Task<Admin?> FindAdminByUsernameOrEmailAsync(string usernameOrEmail)
     {
         return await _unitOfWork.Admins
             .SelectAsync(a =>
-                (a.Username == usernameOrEmail) && !a.IsDeleted);
+                (a.Username == usernameOrEmail || a.Email == usernameOrEmail || a.Phone == usernameOrEmail));
     }
 
     private string GetPasswordHash(object user, string userType)
