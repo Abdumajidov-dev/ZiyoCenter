@@ -11,8 +11,8 @@ COPY src/ZiyoMarket.Domain/ZiyoMarket.Domain.csproj src/ZiyoMarket.Domain/
 COPY src/ZiyoMarket.Service/ZiyoMarket.Service.csproj src/ZiyoMarket.Service/
 COPY src/ZiyoMarket.Data/ZiyoMarket.Data.csproj src/ZiyoMarket.Data/
 
-# Restore dependencies
-RUN dotnet restore
+# Restore dependencies only for API project (excludes Windows-only AdminPanel)
+RUN dotnet restore src/ZiyoMarket.Api/ZiyoMarket.Api.csproj
 
 # Copy source code
 COPY . .
