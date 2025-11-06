@@ -1,0 +1,181 @@
+<UserControl x:Class="ZiyoMarket.AdminPanel.Views.OrdersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="White">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Buyurtmalar boshqaruvi"
+                      FontSize="24"
+                      FontWeight="SemiBold"
+                      VerticalAlignment="Center"/>
+
+            <StackPanel Orientation="Horizontal"
+                       HorizontalAlignment="Right">
+                <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                       Command="{Binding ViewOrderDetailsCommand}"
+                       Height="40"
+                       Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Eye"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,5,0"/>
+                        <TextBlock Text="Ko'rish"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                       Command="{Binding LoadOrdersCommand}"
+                       Height="40">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Refresh"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,5,0"/>
+                        <TextBlock Text="Yangilash"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Search and Filter Bar -->
+        <Grid Grid.Row="1" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0"
+                    materialDesign:HintAssist.Hint="Buyurtma qidirish (raqam, mijoz)..."
+                    Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                    Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    Margin="0,0,10,0">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding SearchCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <ComboBox Grid.Column="1"
+                     materialDesign:HintAssist.Hint="Status bo'yicha filter"
+                     Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                     ItemsSource="{Binding OrderStatuses}"
+                     SelectedItem="{Binding SelectedStatus}"
+                     Margin="0,0,10,0">
+                <ComboBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel/>
+                    </ItemsPanelTemplate>
+                </ComboBox.ItemsPanel>
+            </ComboBox>
+
+            <Button Grid.Column="2"
+                   Style="{StaticResource MaterialDesignRaisedButton}"
+                   Command="{Binding SearchCommand}"
+                   Height="40"
+                   Padding="20,0">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Magnify"
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,5,0"/>
+                    <TextBlock Text="Qidirish"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Orders DataGrid -->
+        <materialDesign:Card Grid.Row="2" Padding="0">
+            <DataGrid ItemsSource="{Binding Orders}"
+                     SelectedItem="{Binding SelectedOrder}"
+                     AutoGenerateColumns="False"
+                     CanUserAddRows="False"
+                     CanUserDeleteRows="False"
+                     IsReadOnly="True"
+                     SelectionMode="Single"
+                     HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Width="60" Binding="{Binding Id}"/>
+                    <DataGridTextColumn Header="Raqam" Width="120" Binding="{Binding OrderNumber}"/>
+                    <DataGridTextColumn Header="Mijoz" Width="*" Binding="{Binding CustomerName}"/>
+                    <DataGridTextColumn Header="Sana" Width="150" Binding="{Binding OrderDate, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}"/>
+                    <DataGridTextColumn Header="Status" Width="120" Binding="{Binding Status}"/>
+                    <!--<DataGridTextColumn Header="Jami summa" Width="120" Binding="{Binding TotalPrice, StringFormat='{}{0:N0} so\'m'}"/>
+                    <DataGridTextColumn Header="Chegirma" Width="100" Binding="{Binding DiscountApplied, StringFormat='{}{0:N0} so\'m'}"/>
+                    <DataGridTextColumn Header="Yakuniy" Width="120" Binding="{Binding FinalPrice, StringFormat='{}{0:N0} so\'m'}"/>
+                    <DataGridTextColumn Header="To'lov" Width="100" Binding="{Binding PaymentMethod}"/>-->
+                    <DataGridTextColumn Header="Yetkazish" Width="100" Binding="{Binding DeliveryType}"/>
+                </DataGrid.Columns>
+
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Batafsil ko'rish" Command="{Binding ViewOrderDetailsCommand}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Eye"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Status o'zgartirish">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Update"/>
+                            </MenuItem.Icon>
+                            <MenuItem Header="Tasdiqlash (Confirmed)" CommandParameter="Confirmed" Command="{Binding UpdateOrderStatusCommand}"/>
+                            <MenuItem Header="Tayyorlanmoqda (Preparing)" CommandParameter="Preparing" Command="{Binding UpdateOrderStatusCommand}"/>
+                            <MenuItem Header="Tayyor (ReadyForPickup)" CommandParameter="ReadyForPickup" Command="{Binding UpdateOrderStatusCommand}"/>
+                            <MenuItem Header="Yetkazilmoqda (Shipped)" CommandParameter="Shipped" Command="{Binding UpdateOrderStatusCommand}"/>
+                            <MenuItem Header="Yetkazildi (Delivered)" CommandParameter="Delivered" Command="{Binding UpdateOrderStatusCommand}"/>
+                            <MenuItem Header="Bekor qilish (Cancelled)" CommandParameter="Cancelled" Command="{Binding UpdateOrderStatusCommand}"/>
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+        </materialDesign:Card>
+
+        <!-- Pagination -->
+        <Grid Grid.Row="3" Margin="0,20,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <TextBlock Text="Jami: " VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text=" ta buyurtma" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource MaterialDesignFlatButton}"
+                       Command="{Binding PreviousPageCommand}">
+                    <materialDesign:PackIcon Kind="ChevronLeft"/>
+                </Button>
+
+                <TextBlock VerticalAlignment="Center" Margin="10,0">
+                    <Run Text="Sahifa "/>
+                    <Run Text="{Binding CurrentPage}" FontWeight="Bold"/>
+                    <Run Text=" / "/>
+                    <Run Text="{Binding TotalPages}" FontWeight="Bold"/>
+                </TextBlock>
+
+                <Button Style="{StaticResource MaterialDesignFlatButton}"
+                       Command="{Binding NextPageCommand}">
+                    <materialDesign:PackIcon Kind="ChevronRight"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.RowSpan="4"
+             Background="#80000000"
+             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                        Width="50"
+                        Height="50"
+                        IsIndeterminate="True"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</UserControl>

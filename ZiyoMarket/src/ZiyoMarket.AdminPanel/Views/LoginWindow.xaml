@@ -1,0 +1,101 @@
+<Window x:Class="ZiyoMarket.AdminPanel.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="ZiyoMarket Admin Panel - Login"
+        Height="500" Width="400"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{DynamicResource PrimaryHueMidBrush}" Padding="20">
+            <StackPanel>
+                <TextBlock Text="ZiyoMarket"
+                          FontSize="28"
+                          FontWeight="Bold"
+                          Foreground="White"
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="Admin Panel"
+                          FontSize="16"
+                          Foreground="White"
+                          Opacity="0.8"
+                          HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Login Form -->
+        <StackPanel Grid.Row="1"
+                    VerticalAlignment="Center"
+                    Margin="40,20">
+
+            <TextBlock Text="Tizimga kirish"
+                      FontSize="20"
+                      FontWeight="SemiBold"
+                      Margin="0,0,0,30"
+                      HorizontalAlignment="Center"/>
+
+            <!-- Phone TextBox -->
+            <TextBox materialDesign:HintAssist.Hint="Telefon raqam"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Margin="0,0,0,20"
+                     FontSize="14"
+                     Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
+                </TextBox.InputBindings>
+            </TextBox>
+
+            <!-- Password Box -->
+            <PasswordBox x:Name="PasswordBox"
+                        materialDesign:HintAssist.Hint="Parol"
+                        Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
+                        Margin="0,0,0,10"
+                        FontSize="14"
+                        PasswordChanged="PasswordBox_PasswordChanged">
+                <PasswordBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
+                </PasswordBox.InputBindings>
+            </PasswordBox>
+
+            <!-- Error Message -->
+            <TextBlock Text="{Binding ErrorMessage}"
+                      Foreground="Red"
+                      FontSize="12"
+                      Margin="0,0,0,15"
+                      TextWrapping="Wrap"
+                      Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+
+            <!-- Login Button -->
+            <Button Command="{Binding LoginCommand}"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Height="45"
+                    FontSize="14"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}">
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                   Width="20"
+                                   Height="20"
+                                   Margin="0,0,10,0"
+                                   IsIndeterminate="True"
+                                   Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <TextBlock Text="Kirish" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+
+            <TextBlock Text="Test: admin / admin123"
+                      FontSize="11"
+                      Foreground="Gray"
+                      Margin="0,20,0,0"
+                      HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -12,17 +12,19 @@ using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("Logs/ziyomarket-log.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
-builder.Host.UseSerilog(); // builder.Build()dan oldin yoziladi ✅
-// Add services to the container.
+builder.Host.UseSerilog();
+
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ✅ Swagger sozlamalari (Bearer token bilan)
+// ✅ Swagger sozlamalari
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -37,7 +39,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    // ✅ Bearer Token konfiguratsiyasi
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -64,18 +65,17 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ✅ PostgreSQL bazaga ulash
+// ✅ PostgreSQL ulanish
 builder.Services.AddDbContext<ZiyoMarketDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ✅ JWT sozlamalarini DI konteynerga yuklash
+// ✅ JWT sozlamalari
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 var key = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
 
-// ✅ JWT Authentication sozlamalari
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -96,60 +96,28 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ClockSkew = TimeSpan.Zero
     };
-
-    // 🔍 JWT xatolarini loglash
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            Log.Error($"JWT Authentication failed: {context.Exception.Message}");
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            Log.Warning($"JWT Challenge: Token is missing or invalid. Path: {context.Request.Path}");
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            var userId = context.Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userType = context.Principal?.FindFirst("UserType")?.Value;
-            Log.Information($"✅ Token validated for UserId={userId}, UserType={userType}");
-            return Task.CompletedTask;
-        }
-    };
 });
 
-
-// ✅ Servislarni DI konteynerga qo‘shish
 builder.Services.AddCustomServices();
 
 var app = builder.Build();
-app.Use(async (context, next) =>
+
+// ✅ Swagger’ni har doim yoqamiz (nafaqat Development’da)
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    var authHeader = context.Request.Headers["Authorization"].ToString();
-    Log.Information($"🧾 AUTH HEADER: {authHeader}");
-    await next();
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "ZiyoMarket API v1");
+    options.RoutePrefix = "swagger"; // => /swagger
 });
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseHttpsRedirection();
-
-// ⚠️ Tartib juda muhim:
-// 1️⃣ Avval Authentication
 app.UseAuthentication();
-// 2️⃣ Keyin Authorization
 app.UseAuthorization();
 
-
-
-
+// Default route
 app.MapControllers();
+
+// ✅ Root’ga “API ishlayapti” degan test endpoint
+app.MapGet("/", () => Results.Ok("🚀 ZiyoMarket API is running! Visit /swagger"));
 
 app.Run();

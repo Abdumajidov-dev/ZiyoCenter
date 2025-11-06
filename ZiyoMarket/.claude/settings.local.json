@@ -3,7 +3,11 @@
     "allow": [
       "Bash(dir \"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\" /b /s)",
       "Bash(dotnet build:*)",
-      "Bash(dotnet add:*)"
+      "Bash(dotnet add:*)",
+      "Bash(del:*)",
+      "Bash(del MainWindow.xaml.cs)",
+      "Bash(dotnet clean:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,153 @@
+<Window x:Class="ZiyoMarket.AdminPanel.Views.AddEditProductDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="{Binding IsEditMode, Converter={StaticResource EditModeTitleConverter}}"
+        Height="650" Width="600"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                  Text="{Binding IsEditMode, Converter={StaticResource EditModeHeaderConverter}}"
+                  FontSize="20"
+                  FontWeight="SemiBold"
+                  Margin="0,0,0,20"/>
+
+        <!-- Form -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Name -->
+                <TextBox materialDesign:HintAssist.Hint="Mahsulot nomi *"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormName, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,0,15"/>
+
+                <!-- Description -->
+                <TextBox materialDesign:HintAssist.Hint="Tavsif"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        MinLines="3"
+                        MaxLines="5"
+                        Margin="0,0,0,15"/>
+
+                <!-- QR Code (only for new products) -->
+                <TextBox materialDesign:HintAssist.Hint="QR Code"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormQrCode, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,0,15"
+                        IsEnabled="{Binding IsEditMode, Converter={StaticResource InverseBooleanConverter}}"/>
+
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Price -->
+                    <TextBox Grid.Column="0"
+                            materialDesign:HintAssist.Hint="Narx (so'm) *"
+                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                            Text="{Binding FormPrice, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,5,0"/>
+
+                    <!-- Stock Quantity -->
+                    <TextBox Grid.Column="1"
+                            materialDesign:HintAssist.Hint="Omborda miqdori *"
+                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                            Text="{Binding FormStockQuantity, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="5,0,0,0"/>
+                </Grid>
+
+                <!-- Category -->
+                <ComboBox materialDesign:HintAssist.Hint="Kategoriya *"
+                         Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                         ItemsSource="{Binding Categories}"
+                         SelectedValue="{Binding FormCategoryId}"
+                         DisplayMemberPath="Name"
+                         SelectedValuePath="Id"
+                         Margin="0,0,0,15"/>
+
+                <!-- Image URL -->
+                <TextBox materialDesign:HintAssist.Hint="Rasm URL"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormImageUrl, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,0,15"/>
+
+                <!-- Min Stock Level -->
+                <TextBox materialDesign:HintAssist.Hint="Minimal ombor darajasi"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormMinStockLevel, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,0,15"/>
+
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Weight -->
+                    <TextBox Grid.Column="0"
+                            materialDesign:HintAssist.Hint="Og'irligi"
+                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                            Text="{Binding FormWeight, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="0,0,5,0"/>
+
+                    <!-- Dimensions -->
+                    <TextBox Grid.Column="1"
+                            materialDesign:HintAssist.Hint="O'lchamlari"
+                            Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                            Text="{Binding FormDimensions, UpdateSourceTrigger=PropertyChanged}"
+                            Margin="5,0,0,0"/>
+                </Grid>
+
+                <!-- Manufacturer -->
+                <TextBox materialDesign:HintAssist.Hint="Ishlab chiqaruvchi"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Text="{Binding FormManufacturer, UpdateSourceTrigger=PropertyChanged}"
+                        Margin="0,0,0,15"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2"
+                   Orientation="Horizontal"
+                   HorizontalAlignment="Right"
+                   Margin="0,20,0,0">
+            <Button Content="Bekor qilish"
+                   Style="{StaticResource MaterialDesignOutlinedButton}"
+                   Width="120"
+                   Height="40"
+                   Margin="0,0,10,0"
+                   Click="CancelButton_Click"/>
+
+            <Button Content="Saqlash"
+                   Style="{StaticResource MaterialDesignRaisedButton}"
+                   Command="{Binding SaveProductCommand}"
+                   Width="120"
+                   Height="40"
+                   IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}"/>
+        </StackPanel>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.RowSpan="3"
+             Background="#80000000"
+             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                        Width="50"
+                        Height="50"
+                        IsIndeterminate="True"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</Window>
