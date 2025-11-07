@@ -816,6 +816,9 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Manufacturer")
                         .HasColumnType("text");
 
@@ -876,6 +879,9 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("LikedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -913,9 +919,6 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("CloseReason")
                         .HasColumnType("text");
-
-                    b.Property<DateTime?>("ClosedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()

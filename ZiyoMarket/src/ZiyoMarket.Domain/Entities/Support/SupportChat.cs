@@ -65,7 +65,7 @@ public class SupportChat : BaseEntity
     /// <summary>
     /// Yopilgan sana
     /// </summary>
-    public DateTime? ClosedAt { get; set; }
+    //public DateTime? ClosedAt { get; set; }
 
     /// <summary>
     /// Yopilish sababi
@@ -200,7 +200,7 @@ public class SupportChat : BaseEntity
             throw new InvalidOperationException("Chat allaqachon yopilgan");
 
         Status = SupportChatStatus.Closed;
-        ClosedAt = DateTime.UtcNow;
+        //ClosedAt = null;
         CloseReason = reason?.Trim();
 
         if (closedByAdminId.HasValue)
@@ -220,7 +220,7 @@ public class SupportChat : BaseEntity
             throw new InvalidOperationException("Faqat yopilgan chat'ni qayta ochish mumkin");
 
         Status = SupportChatStatus.Open;
-        ClosedAt = null;
+        //ClosedAt = null;
         CloseReason = null;
         AutoCloseAt = DateTime.UtcNow.AddDays(7).ToString("yyyy-MM-dd HH:mm:ss");
         UpdateActivity();

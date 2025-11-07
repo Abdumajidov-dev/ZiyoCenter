@@ -110,6 +110,8 @@ public class Product : BaseAuditableEntity
     /// </summary>
     public bool IsLowStock => StockQuantity <= MinStockLevel;
 
+    public bool IsDeleted { get; set; } = false;
+
     /// <summary>
     /// Zaxirada yo'qmi
     /// </summary>

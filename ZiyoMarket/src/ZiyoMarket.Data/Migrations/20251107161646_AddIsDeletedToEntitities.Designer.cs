@@ -12,15 +12,15 @@ using ZiyoMarket.Data.Context;
 namespace ZiyoMarket.Data.Migrations
 {
     [DbContext(typeof(ZiyoMarketDbContext))]
-    [Migration("20251012164246_EditDbNameToZiyodb")]
-    partial class EditDbNameToZiyodb
+    [Migration("20251107161646_AddIsDeletedToEntitities")]
+    partial class AddIsDeletedToEntitities
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -401,38 +401,41 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
 
-                    b.Property<string>("Notes")
+                    b.Property<string>("EarnedAt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExpiresAt")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int?>("OrderId")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("RemainingAmount")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("TransactionNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("TransactionType")
+                    b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.Property<string>("UpdatedAt")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("UsedInOrderId")
-                        .HasColumnType("integer");
+                    b.Property<string>("UsedAt")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("OrderId");
-
-                    b.HasIndex("UsedInOrderId");
 
                     b.ToTable("CashbackTransactions");
                 });
@@ -499,17 +502,11 @@ namespace ZiyoMarket.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CancellationReason")
+                    b.Property<string>("AdminNotes")
                         .HasColumnType("text");
-
-                    b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("CashbackUsed")
                         .HasColumnType("numeric");
-
-                    b.Property<DateTime?>("ConfirmedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
@@ -521,17 +518,20 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("CustomerNotes")
+                        .HasColumnType("text");
+
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("DeliveredAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("DeliveryAddress")
                         .HasColumnType("text");
+
+                    b.Property<decimal>("DeliveryFee")
+                        .HasColumnType("numeric");
 
                     b.Property<int>("DeliveryType")
                         .HasColumnType("integer");
@@ -539,24 +539,31 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<decimal>("DiscountApplied")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
+                    b.Property<decimal>("FinalPrice")
+                        .HasColumnType("numeric");
 
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("OrderDate")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("OrderNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("PaidAt")
+                        .HasColumnType("text");
+
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("integer");
+
+                    b.Property<string>("PaymentReference")
+                        .HasColumnType("text");
 
                     b.Property<int?>("SellerId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("ShippedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("SellerNotes")
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -587,8 +594,14 @@ namespace ZiyoMarket.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
                     b.Property<DateTime>("AppliedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("AppliedBy")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("AppliedBySellerId")
                         .HasColumnType("integer");
@@ -649,6 +662,10 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
@@ -802,6 +819,9 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Manufacturer")
                         .HasColumnType("text");
 
@@ -900,12 +920,12 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<string>("CloseReason")
                         .HasColumnType("text");
 
-                    b.Property<string>("ClosedAt")
-                        .HasColumnType("text");
-
                     b.Property<string>("CreatedAt")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("CustomerFeedback")
                         .HasColumnType("text");
@@ -919,15 +939,27 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
 
+                    b.Property<int>("DeletedBy")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FirstResponseAt")
                         .HasColumnType("text");
 
                     b.Property<string>("LastActivityAt")
                         .HasColumnType("text");
 
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Priority")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Resolution")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -940,6 +972,9 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("UpdatedAt")
                         .HasColumnType("text");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -958,6 +993,9 @@ namespace ZiyoMarket.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AttachmentUrl")
+                        .HasColumnType("text");
+
                     b.Property<int>("ChatId")
                         .HasColumnType("integer");
 
@@ -967,6 +1005,9 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("EditedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1020,6 +1061,9 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("UpdatedAt")
                         .HasColumnType("text");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -1223,13 +1267,32 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Permissions")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -1423,15 +1486,9 @@ namespace ZiyoMarket.Data.Migrations
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ZiyoMarket.Domain.Entities.Orders.Order", "UsedInOrder")
-                        .WithMany()
-                        .HasForeignKey("UsedInOrderId");
-
                     b.Navigation("Customer");
 
                     b.Navigation("Order");
-
-                    b.Navigation("UsedInOrder");
                 });
 
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Orders.Order", b =>

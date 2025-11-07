@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ZiyoMarket.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class EditchatRoomAddICollectionSupports : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,9 +18,14 @@ namespace ZiyoMarket.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    FirstName = table.Column<string>(type: "text", nullable: false),
+                    LastName = table.Column<string>(type: "text", nullable: false),
                     Username = table.Column<string>(type: "text", nullable: false),
+                    Phone = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     Role = table.Column<string>(type: "text", nullable: false),
+                    Permissions = table.Column<string>(type: "text", nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<string>(type: "text", nullable: false),
@@ -327,13 +332,18 @@ namespace ZiyoMarket.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: false),
+                    DeletedBy = table.Column<int>(type: "integer", nullable: false),
+                    Resolution = table.Column<string>(type: "text", nullable: false),
                     CustomerId = table.Column<int>(type: "integer", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    OrderId = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     AdminId = table.Column<int>(type: "integer", nullable: true),
                     Subject = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Priority = table.Column<string>(type: "text", nullable: false),
+                    Priority = table.Column<string>(type: "text", nullable: true),
                     Category = table.Column<string>(type: "text", nullable: true),
-                    ClosedAt = table.Column<string>(type: "text", nullable: true),
                     CloseReason = table.Column<string>(type: "text", nullable: true),
                     CustomerRating = table.Column<int>(type: "integer", nullable: true),
                     CustomerFeedback = table.Column<string>(type: "text", nullable: true),
@@ -419,23 +429,24 @@ namespace ZiyoMarket.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    OrderNumber = table.Column<string>(type: "text", nullable: false),
                     CustomerId = table.Column<int>(type: "integer", nullable: false),
                     SellerId = table.Column<int>(type: "integer", nullable: true),
-                    OrderNumber = table.Column<string>(type: "text", nullable: false),
-                    OrderDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    OrderDate = table.Column<string>(type: "text", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     TotalPrice = table.Column<decimal>(type: "numeric", nullable: false),
                     DiscountApplied = table.Column<decimal>(type: "numeric", nullable: false),
                     CashbackUsed = table.Column<decimal>(type: "numeric", nullable: false),
+                    FinalPrice = table.Column<decimal>(type: "numeric", nullable: false),
                     PaymentMethod = table.Column<int>(type: "integer", nullable: false),
+                    PaymentReference = table.Column<string>(type: "text", nullable: true),
+                    PaidAt = table.Column<string>(type: "text", nullable: true),
                     DeliveryType = table.Column<int>(type: "integer", nullable: false),
                     DeliveryAddress = table.Column<string>(type: "text", nullable: true),
-                    Notes = table.Column<string>(type: "text", nullable: true),
-                    ConfirmedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ShippedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeliveredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CancelledAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CancellationReason = table.Column<string>(type: "text", nullable: true),
+                    DeliveryFee = table.Column<decimal>(type: "numeric", nullable: false),
+                    CustomerNotes = table.Column<string>(type: "text", nullable: true),
+                    SellerNotes = table.Column<string>(type: "text", nullable: true),
+                    AdminNotes = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<string>(type: "text", nullable: true),
                     DeletedAt = table.Column<string>(type: "text", nullable: true),
@@ -527,9 +538,12 @@ namespace ZiyoMarket.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DeletedBy = table.Column<int>(type: "integer", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: false),
                     ChatId = table.Column<int>(type: "integer", nullable: false),
                     SenderId = table.Column<int>(type: "integer", nullable: false),
                     SenderType = table.Column<int>(type: "integer", nullable: false),
+                    AttachmentUrl = table.Column<string>(type: "text", nullable: true),
                     Message = table.Column<string>(type: "text", nullable: false),
                     MessageType = table.Column<string>(type: "text", nullable: false),
                     FileUrl = table.Column<string>(type: "text", nullable: true),
@@ -572,12 +586,13 @@ namespace ZiyoMarket.Data.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CustomerId = table.Column<int>(type: "integer", nullable: false),
                     OrderId = table.Column<int>(type: "integer", nullable: true),
-                    TransactionType = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UsedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UsedInOrderId = table.Column<int>(type: "integer", nullable: true),
-                    Notes = table.Column<string>(type: "text", nullable: true),
+                    RemainingAmount = table.Column<decimal>(type: "numeric", nullable: false),
+                    EarnedAt = table.Column<string>(type: "text", nullable: false),
+                    ExpiresAt = table.Column<string>(type: "text", nullable: false),
+                    UsedAt = table.Column<string>(type: "text", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     TransactionNumber = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<string>(type: "text", nullable: true),
@@ -598,11 +613,6 @@ namespace ZiyoMarket.Data.Migrations
                         principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_CashbackTransactions_Orders_UsedInOrderId",
-                        column: x => x.UsedInOrderId,
-                        principalTable: "Orders",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -656,6 +666,8 @@ namespace ZiyoMarket.Data.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    AppliedBy = table.Column<int>(type: "integer", nullable: false),
                     OrderId = table.Column<int>(type: "integer", nullable: false),
                     DiscountReasonId = table.Column<int>(type: "integer", nullable: false),
                     DiscountAmount = table.Column<decimal>(type: "numeric", nullable: false),
@@ -696,6 +708,7 @@ namespace ZiyoMarket.Data.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     OrderId = table.Column<int>(type: "integer", nullable: false),
                     ProductId = table.Column<int>(type: "integer", nullable: false),
+                    ProductName = table.Column<string>(type: "text", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric", nullable: false),
                     DiscountApplied = table.Column<decimal>(type: "numeric", nullable: false),
@@ -739,11 +752,6 @@ namespace ZiyoMarket.Data.Migrations
                 name: "IX_CashbackTransactions_OrderId",
                 table: "CashbackTransactions",
                 column: "OrderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CashbackTransactions_UsedInOrderId",
-                table: "CashbackTransactions",
-                column: "UsedInOrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_ParentId",

@@ -34,7 +34,7 @@ public class ProductLike : BaseEntity
     /// Mahsulot
     /// </summary>
     public virtual Product Product { get; set; } = null!;
-
+    public bool IsDeleted { get; set; } = false;
     // Business Methods
 
     /// <summary>

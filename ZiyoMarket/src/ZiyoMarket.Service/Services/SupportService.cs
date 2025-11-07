@@ -213,7 +213,7 @@ public class SupportService : ISupportService
 				return Result.BadRequest("Chat is already closed");
 
 			chat.Status = SupportChatStatus.Closed;
-			chat.ClosedAt = TimeHelper.GetCurrentServerTime();
+			//chat.ClosedAt = DateTime.UtcNow;
 			chat.Resolution = closeReason;
 			chat.UpdatedBy = closedBy;
 			chat.MarkAsUpdated();
@@ -244,7 +244,7 @@ public class SupportService : ISupportService
 				return Result.BadRequest("Only closed chats can be reopened");
 
 			chat.Status = SupportChatStatus.Open;
-			chat.ClosedAt = null;
+			//chat.ClosedAt = null;
 			chat.UpdatedBy = reopenedBy;
 			chat.MarkAsUpdated();
 
@@ -702,9 +702,9 @@ public class SupportService : ISupportService
 		{
 			var chats = await _unitOfWork.SupportChats
 				.SelectAll(c => !c.IsDeleted &&
-							   c.CustomerRating.HasValue &&
-							   DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
-							   DateTime.Parse(c.ClosedAt.ToString()!) <= endDate,
+							   c.CustomerRating.HasValue,
+							   //DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
+							   //DateTime.Parse(c.ClosedAt.ToString()!) <= endDate,
 					new[] { "Customer", "Admin" })
 				.ToListAsync();
 
@@ -726,9 +726,9 @@ public class SupportService : ISupportService
 		{
 			var chats = await _unitOfWork.SupportChats
 				.SelectAll(c => !c.IsDeleted &&
-							   c.CustomerRating.HasValue &&
-							   DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
-							   DateTime.Parse(c.ClosedAt.ToString()!) <= endDate)
+							   c.CustomerRating.HasValue )
+							   //DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
+							   //DateTime.Parse(c.ClosedAt.ToString()!) <= endDate)
 				.ToListAsync();
 
 			var stats = new FeedbackStatsDto
@@ -1165,15 +1165,16 @@ public class SupportService : ISupportService
 
 		if (!closedChats.Any()) return 0;
 
-		var resolutionTimes = closedChats.Select(c =>
-		{
-			var startTime = DateTime.Parse(c.StartedAt.ToString());
-			var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
-			return (closeTime - startTime).TotalHours;
-		}).ToList();
+		//var resolutionTimes = closedChats.Select(c =>
+		//{
+		//	var startTime = DateTime.Parse(c.StartedAt.ToString());
+		//	//var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
+		//	return (closeTime - startTime).TotalHours;
+		//}).ToList();
 
-		return resolutionTimes.Average();
-	}
+		//return resolutionTimes.Average();
+		return 0;
+    }
 
 	private async Task<double> CalculateAdminResponseTimeAsync(int adminId)
 	{
@@ -1214,15 +1215,16 @@ public class SupportService : ISupportService
 
 		if (!closedChats.Any()) return 0;
 
-		var resolutionTimes = closedChats.Select(c =>
-		{
-			var startTime = DateTime.Parse(c.StartedAt.ToString());
-			var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
-			return (closeTime - startTime).TotalHours;
-		}).ToList();
+		//var resolutionTimes = closedChats.Select(c =>
+		//{
+		//	var startTime = DateTime.Parse(c.StartedAt.ToString());
+		//	var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
+		//	return (closeTime - startTime).TotalHours;
+		//}).ToList();
 
-		return resolutionTimes.Average();
-	}
+		//return resolutionTimes.Average();
+		return 0;
+    }
 
 	private async Task<double> CalculateOverallResponseTimeAsync(DateTime startDate, DateTime endDate)
 	{
@@ -1265,13 +1267,14 @@ public class SupportService : ISupportService
 
 		if (!closedChats.Any()) return 0;
 
-		var resolutionTimes = closedChats.Select(c =>
-		{
-			var startTime = DateTime.Parse(c.StartedAt.ToString());
-			var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
-			return (closeTime - startTime).TotalHours;
-		}).ToList();
+		//var resolutionTimes = closedChats.Select(c =>
+		//{
+		//	var startTime = DateTime.Parse(c.StartedAt.ToString());
+		//	var closeTime = DateTime.Parse(c.ClosedAt.ToString()!);
+		//	return (closeTime - startTime).TotalHours;
+		//}).ToList();
 
-		return resolutionTimes.Average();
-	}
+		//return resolutionTimes.Average();
+		return 0;
+    }
 }
