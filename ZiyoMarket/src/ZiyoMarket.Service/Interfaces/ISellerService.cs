@@ -18,6 +18,7 @@ public interface ISellerService
 
     // Status
     Task<Result> ToggleSellerStatusAsync(int sellerId, int updatedBy);
+    Task<Result> ChangeSellerRoleAsync(int sellerId, string newRole, int updatedBy);
 
     // Search
     Task<Result<List<SellerListDto>>> SearchSellersAsync(string searchTerm);

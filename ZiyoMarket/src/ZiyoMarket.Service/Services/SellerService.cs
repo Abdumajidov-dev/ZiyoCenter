@@ -270,6 +270,38 @@ public class SellerService : ISellerService
         }
     }
 
+    public async Task<Result> ChangeSellerRoleAsync(int sellerId, string newRole, int updatedBy)
+    {
+        try
+        {
+            var seller = await _unitOfWork.Sellers.GetByIdAsync(sellerId);
+            if (seller == null)
+                return Result.NotFound("Sotuvchi topilmadi");
+
+            // Validate role using entity method
+            try
+            {
+                seller.ChangeRole(newRole);
+            }
+            catch (ArgumentException ex)
+            {
+                return Result.BadRequest(ex.Message);
+            }
+
+            seller.UpdatedBy = updatedBy;
+            seller.MarkAsUpdated();
+
+            await _unitOfWork.Sellers.Update(seller, sellerId);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success($"Sotuvchi roli '{newRole}' ga o'zgartirildi");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
     public async Task<Result<List<SellerListDto>>> SearchSellersAsync(string searchTerm)
     {
         try

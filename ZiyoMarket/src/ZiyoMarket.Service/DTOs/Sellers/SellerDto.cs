@@ -543,6 +543,23 @@ public class ChangeSellerPasswordDto
 }
 
 // ===================================================================
+// CHANGE ROLE DTO - Rolni o'zgartirish uchun
+// ===================================================================
+
+/// <summary>
+/// User rolini o'zgartirish uchun DTO
+/// </summary>
+public class ChangeRoleRequest
+{
+    /// <summary>
+    /// Yangi rol
+    /// Seller uchun: "Seller" yoki "Manager"
+    /// Admin uchun: "Admin" yoki "SuperAdmin"
+    /// </summary>
+    public string NewRole { get; set; } = string.Empty;
+}
+
+// ===================================================================
 // DISCOUNT PERMISSION DTO - Chegirma berish huquqi
 // ===================================================================
 

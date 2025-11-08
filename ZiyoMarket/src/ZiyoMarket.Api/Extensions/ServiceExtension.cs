@@ -41,6 +41,7 @@ public static class ServiceExtension
         // ========== User Management ==========
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ISellerService, SellerService>();
+        services.AddScoped<IAdminService, AdminService>();
 
         // ========== Financial Services ==========
         services.AddScoped<ICashbackService, CashbackService>();

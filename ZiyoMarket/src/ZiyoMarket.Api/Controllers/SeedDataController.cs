@@ -79,9 +79,9 @@ public class SeedDataController : ControllerBase
             .RuleFor(a => a.Phone, f => f.Phone.PhoneNumber("+998#########"))
             .RuleFor(a => a.Email, f => f.Internet.Email())
             .RuleFor(a => a.PasswordHash, f => BCrypt.Net.BCrypt.HashPassword("Admin123!"))
-            .RuleFor(a => a.Role, f => f.PickRandom("Admin", "SuperAdmin"))
+            .RuleFor(a => a.Role, f => f.PickRandom("Admin"))
             .RuleFor(a => a.IsActive, f => f.Random.Bool(0.95f))
-            .RuleFor(a => a.LastLoginAt, f => f.Date.Recent(7))
+            .RuleFor(a => a.LastLoginAt, f => f.Date.Recent(7).ToUniversalTime())
             .RuleFor(a => a.CreatedAt, f => f.Date.Past(1).ToString("yyyy-MM-dd HH:mm:ss"));
 
         var admins = faker.Generate(10);
@@ -190,16 +190,16 @@ public class SeedDataController : ControllerBase
     {
         var reasons = new List<DiscountReason>
         {
-            new() { Name = "Doimiy mijoz", Description = "Doimiy mijozlar uchun chegirma", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Ommaviy xarid", Description = "Ko'p mahsulot sotib olgani uchun", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Promo aksiya", Description = "Promo aksiya chegirmasi", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Maxsus taklif", Description = "Maxsus mijoz uchun taklif", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Shikastlangan mahsulot", Description = "Mahsulot zararlangan", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Amal muddati yaqin", Description = "Amal muddati tugashga yaqin", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "VIP mijoz", Description = "VIP mijozlar uchun maxsus chegirma", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Tug'ilgan kun", Description = "Mijozning tug'ilgan kuni", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Birinchi xarid", Description = "Birinchi bor xarid qilgani uchun", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { Name = "Boshqa", Description = "Boshqa sabablar", IsActive = true, CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
+            new() { Name = "Doimiy mijoz", Description = "Doimiy mijozlar uchun chegirma", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Ommaviy xarid", Description = "Ko'p mahsulot sotib olgani uchun", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Promo aksiya", Description = "Promo aksiya chegirmasi", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Maxsus taklif", Description = "Maxsus mijoz uchun taklif", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Shikastlangan mahsulot", Description = "Mahsulot zararlangan", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Amal muddati yaqin", Description = "Amal muddati tugashga yaqin", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "VIP mijoz", Description = "VIP mijozlar uchun maxsus chegirma", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Tug'ilgan kun", Description = "Mijozning tug'ilgan kuni", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Birinchi xarid", Description = "Birinchi bor xarid qilgani uchun", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { Name = "Boshqa", Description = "Boshqa sabablar", IsActive = true, CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
         };
 
         await _context.DiscountReasons.AddRangeAsync(reasons);
@@ -360,9 +360,9 @@ public class SeedDataController : ControllerBase
             .RuleFor(od => od.DeliveryAddress, f => f.Address.FullAddress())
             .RuleFor(od => od.DeliveryFee, f => f.Random.Decimal(5000, 30000))
             .RuleFor(od => od.TrackingCode, f => $"TRK-{f.Date.Recent(7):yyyyMMdd}-{f.Random.Int(100000, 999999)}")
-            .RuleFor(od => od.AssignedAt, f => f.Date.Recent(7))
-            .RuleFor(od => od.PickedUpAt, f => f.Random.Bool(0.7f) ? f.Date.Recent(5) : (DateTime?)null)
-            .RuleFor(od => od.DeliveredAt, f => f.Random.Bool(0.5f) ? f.Date.Recent(3) : (DateTime?)null)
+            .RuleFor(od => od.AssignedAt, f => f.Date.Recent(7).ToUniversalTime())
+            .RuleFor(od => od.PickedUpAt, f => f.Random.Bool(0.7f) ? f.Date.Recent(5).ToUniversalTime() : (DateTime?)null)
+            .RuleFor(od => od.DeliveredAt, f => f.Random.Bool(0.5f) ? f.Date.Recent(3).ToUniversalTime() : (DateTime?)null)
             .RuleFor(od => od.Notes, f => f.Lorem.Sentence())
             .RuleFor(od => od.CreatedAt, f => f.Date.Past(0).ToString("yyyy-MM-dd HH:mm:ss"));
 
@@ -390,7 +390,7 @@ public class SeedDataController : ControllerBase
             .RuleFor(n => n.Message, f => f.Lorem.Paragraph())
             .RuleFor(n => n.Priority, f => f.PickRandom("Low", "Normal", "High"))
             .RuleFor(n => n.IsRead, f => f.Random.Bool(0.3f))
-            .RuleFor(n => n.ReadAt, (f, n) => n.IsRead ? f.Date.Recent(7) : (DateTime?)null)
+            .RuleFor(n => n.ReadAt, (f, n) => n.IsRead ? f.Date.Recent(7).ToUniversalTime() : (DateTime?)null)
             .RuleFor(n => n.CreatedAt, f => f.Date.Past(0).ToString("yyyy-MM-dd HH:mm:ss"));
 
         var notifications = faker.Generate(10);
@@ -441,7 +441,7 @@ public class SeedDataController : ControllerBase
             .RuleFor(sm => sm.Message, f => f.Lorem.Paragraph())
             .RuleFor(sm => sm.MessageType, f => "Text")
             .RuleFor(sm => sm.IsRead, f => f.Random.Bool(0.8f))
-            .RuleFor(sm => sm.ReadAt, (f, sm) => sm.IsRead ? f.Date.Recent(3) : (DateTime?)null)
+            .RuleFor(sm => sm.ReadAt, (f, sm) => sm.IsRead ? f.Date.Recent(3).ToUniversalTime() : (DateTime?)null)
             .RuleFor(sm => sm.CreatedAt, f => f.Date.Past(0).ToString("yyyy-MM-dd HH:mm:ss"));
 
         var messages = faker.Generate(10);
@@ -463,8 +463,8 @@ public class SeedDataController : ControllerBase
             .RuleFor(c => c.IsActive, f => f.Random.Bool(0.8f))
             .RuleFor(c => c.ViewCount, f => f.Random.Int(0, 1000))
             .RuleFor(c => c.ClickCount, f => f.Random.Int(0, 500))
-            .RuleFor(c => c.ValidFrom, f => f.Date.Past(1))
-            .RuleFor(c => c.ValidUntil, f => f.Random.Bool(0.7f) ? f.Date.Future(1) : (DateTime?)null)
+            .RuleFor(c => c.ValidFrom, f => f.Date.Past(1).ToUniversalTime())
+            .RuleFor(c => c.ValidUntil, f => f.Random.Bool(0.7f) ? f.Date.Future(1).ToUniversalTime() : (DateTime?)null)
             .RuleFor(c => c.CreatedAt, f => f.Date.Past(1).ToString("yyyy-MM-dd HH:mm:ss"));
 
         var contents = faker.Generate(10);
@@ -480,16 +480,16 @@ public class SeedDataController : ControllerBase
     {
         var settings = new List<SystemSetting>
         {
-            new() { SettingKey = "CashbackPercentage", SettingValue = "2", Description = "Cashback foizi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "MinOrderAmount", SettingValue = "10000", Description = "Minimal buyurtma summasi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "DeliveryFeeStandard", SettingValue = "15000", Description = "Standart yetkazish to'lovi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "DeliveryFeeExpress", SettingValue = "25000", Description = "Tezkor yetkazish to'lovi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "FreeDeliveryThreshold", SettingValue = "100000", Description = "Bepul yetkazish chegarasi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "MaxDiscountPercentSeller", SettingValue = "20", Description = "Sotuvchi bera oladigan max chegirma %", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "MaxDiscountPercentManager", SettingValue = "50", Description = "Manager bera oladigan max chegirma %", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "LowStockThreshold", SettingValue = "10", Description = "Kam zaxira chegarasi", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "NotificationExpireDays", SettingValue = "30", Description = "Xabarnoma amal muddati (kunlar)", DataType = "Number", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") },
-            new() { SettingKey = "MaintenanceMode", SettingValue = "false", Description = "Texnik ishlar rejimi", DataType = "Boolean", CreatedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
+            new() { SettingKey = "CashbackPercentage", SettingValue = "2", Description = "Cashback foizi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "MinOrderAmount", SettingValue = "10000", Description = "Minimal buyurtma summasi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "DeliveryFeeStandard", SettingValue = "15000", Description = "Standart yetkazish to'lovi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "DeliveryFeeExpress", SettingValue = "25000", Description = "Tezkor yetkazish to'lovi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "FreeDeliveryThreshold", SettingValue = "100000", Description = "Bepul yetkazish chegarasi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "MaxDiscountPercentSeller", SettingValue = "20", Description = "Sotuvchi bera oladigan max chegirma %", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "MaxDiscountPercentManager", SettingValue = "50", Description = "Manager bera oladigan max chegirma %", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "LowStockThreshold", SettingValue = "10", Description = "Kam zaxira chegarasi", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "NotificationExpireDays", SettingValue = "30", Description = "Xabarnoma amal muddati (kunlar)", DataType = "Number", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+            new() { SettingKey = "MaintenanceMode", SettingValue = "false", Description = "Texnik ishlar rejimi", DataType = "Boolean", CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
         };
 
         await _context.SystemSettings.AddRangeAsync(settings);

@@ -11,6 +11,8 @@ using ZiyoMarket.Service.DTOs.Customers;
 using ZiyoMarket.Service.DTOs.Cashback;
 using ZiyoMarket.Service.DTOs.Notifications;
 using ZiyoMarket.Service.DTOs.Delivery;
+using ZiyoMarket.Service.DTOs.Admins;
+using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
@@ -106,12 +108,23 @@ public class UserProfile : Profile
             .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => "Seller"))
             .ForMember(dest => dest.Address, opt => opt.Ignore())
             .ForMember(dest => dest.CashbackBalance, opt => opt.MapFrom(src => 0));
-        
+
+        CreateMap<Seller, SellerListDto>()
+            .ForMember(dest => dest.TotalOrders, opt => opt.Ignore());
+
+        CreateMap<Seller, SellerDetailDto>()
+            .ForMember(dest => dest.TotalOrders, opt => opt.Ignore())
+            .ForMember(dest => dest.TotalSales, opt => opt.Ignore());
+
         // Admin mappings
         CreateMap<Admin, UserProfileDto>()
             .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => "Admin"))
             .ForMember(dest => dest.Address, opt => opt.MapFrom(src => string.Empty))
             .ForMember(dest => dest.CashbackBalance, opt => opt.MapFrom(src => 0));
+
+        CreateMap<Admin, AdminListDto>();
+
+        CreateMap<Admin, AdminDetailDto>();
     }
 }
 
