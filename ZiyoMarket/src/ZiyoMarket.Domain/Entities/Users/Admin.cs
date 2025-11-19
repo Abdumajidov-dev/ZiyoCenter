@@ -35,11 +35,6 @@ public class Admin : BaseAuditableEntity
     public string Phone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email manzili (unique)
-    /// </summary>
-    public string Email { get; set; } = string.Empty;
-
-    /// <summary>
     /// Parol hash'i
     /// </summary>
     public string PasswordHash { get; set; } = string.Empty;

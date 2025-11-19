@@ -25,7 +25,6 @@ public class LoginRequestDto
 public class LoginResponseDto
 {
     public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
     public UserProfileDto User { get; set; } = null!;
 }
@@ -46,10 +45,7 @@ public class RegisterCustomerDto
     [Required(ErrorMessage = "Phone number is required")]
     [Phone(ErrorMessage = "Invalid phone number")]
     public string Phone { get; set; } = string.Empty;
-    
-    [EmailAddress(ErrorMessage = "Invalid email address")]
-    public string? Email { get; set; }
-    
+
     [Required(ErrorMessage = "Password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
@@ -71,21 +67,12 @@ public class UserProfileDto
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
     public string Phone { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public string UserType { get; set; } = string.Empty;
     public string? Address { get; set; }
     public decimal CashbackBalance { get; set; }
     public bool IsActive { get; set; }
 }
 
-/// <summary>
-/// Refresh token request DTO
-/// </summary>
-public class RefreshTokenRequestDto
-{
-    [Required(ErrorMessage = "Refresh token is required")]
-    public string RefreshToken { get; set; } = string.Empty;
-}
 
 /// <summary>
 /// Change password DTO
@@ -157,6 +144,60 @@ public class VerifyCodeDto
 }
 
 /// <summary>
+/// Register seller DTO
+/// </summary>
+public class RegisterSellerDto
+{
+    [Required(ErrorMessage = "First name is required")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Last name is required")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Invalid phone number")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+
+    [Compare("Password", ErrorMessage = "Passwords do not match")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Register admin DTO
+/// </summary>
+public class RegisterAdminDto
+{
+    [Required(ErrorMessage = "First name is required")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Last name is required")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Username is required")]
+    [MaxLength(100)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Invalid phone number")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+
+    [Compare("Password", ErrorMessage = "Passwords do not match")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// JWT settings configuration
 /// </summary>
 public class JwtSettings
@@ -165,5 +206,4 @@ public class JwtSettings
     public string Issuer { get; set; } = string.Empty;
     public string Audience { get; set; } = string.Empty;
     public int AccessTokenExpirationMinutes { get; set; } = 1440; // 24 hours
-    public int RefreshTokenExpirationDays { get; set; } = 30;
 }

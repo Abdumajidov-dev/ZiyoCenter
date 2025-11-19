@@ -34,7 +34,6 @@ public class SeedDataController : ControllerBase
             .RuleFor(c => c.FirstName, f => f.Name.FirstName())
             .RuleFor(c => c.LastName, f => f.Name.LastName())
             .RuleFor(c => c.Phone, f => f.Phone.PhoneNumber("+998#########"))
-            .RuleFor(c => c.Email, f => f.Internet.Email())
             .RuleFor(c => c.PasswordHash, f => BCrypt.Net.BCrypt.HashPassword("Test123!"))
             .RuleFor(c => c.Address, f => f.Address.FullAddress())
             .RuleFor(c => c.CashbackBalance, f => f.Random.Decimal(0, 50000))
@@ -77,7 +76,6 @@ public class SeedDataController : ControllerBase
             .RuleFor(a => a.LastName, f => f.Name.LastName())
             .RuleFor(a => a.Username, f => f.Internet.UserName())
             .RuleFor(a => a.Phone, f => f.Phone.PhoneNumber("+998#########"))
-            .RuleFor(a => a.Email, f => f.Internet.Email())
             .RuleFor(a => a.PasswordHash, f => BCrypt.Net.BCrypt.HashPassword("Admin123!"))
             .RuleFor(a => a.Role, f => f.PickRandom("Admin"))
             .RuleFor(a => a.IsActive, f => f.Random.Bool(0.95f))
@@ -88,7 +86,7 @@ public class SeedDataController : ControllerBase
         await _context.Admins.AddRangeAsync(admins);
         await _context.SaveChangesAsync();
 
-        return Ok(new { message = "10 admins created successfully", data = admins.Select(a => new { a.Id, a.Username, a.Email, a.Role }) });
+        return Ok(new { message = "10 admins created successfully", data = admins.Select(a => new { a.Id, a.Username, a.Role }) });
     }
 
     // ==================== CATEGORIES ====================

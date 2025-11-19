@@ -19,7 +19,6 @@ public interface ICustomerService
     // Search
     Task<Result<List<CustomerListDto>>> SearchCustomersAsync(string searchTerm);
     Task<Result<CustomerDetailDto>> GetCustomerByPhoneAsync(string phone);
-    Task<Result<CustomerDetailDto>> GetCustomerByEmailAsync(string email);
 
     // Statistics
     Task<Result<CustomerStatisticsDto>> GetCustomerStatisticsAsync(int customerId);

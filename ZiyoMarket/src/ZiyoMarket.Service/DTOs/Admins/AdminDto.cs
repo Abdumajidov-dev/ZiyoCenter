@@ -33,11 +33,6 @@ public class AdminListDto
     public string Username { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email
-    /// </summary>
-    public string Email { get; set; } = string.Empty;
-
-    /// <summary>
     /// Telefon
     /// </summary>
     public string Phone { get; set; } = string.Empty;
@@ -101,11 +96,6 @@ public class AdminDetailDto
     /// Foydalanuvchi nomi
     /// </summary>
     public string Username { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Email
-    /// </summary>
-    public string Email { get; set; } = string.Empty;
 
     /// <summary>
     /// Telefon
@@ -183,11 +173,6 @@ public class CreateAdminDto
     public string Username { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email (majburiy, unique)
-    /// </summary>
-    public string Email { get; set; } = string.Empty;
-
-    /// <summary>
     /// Telefon raqami (majburiy)
     /// Format: +998XXXXXXXXX
     /// </summary>
@@ -236,11 +221,6 @@ public class UpdateAdminDto
     public string Username { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email (majburiy, unique)
-    /// </summary>
-    public string Email { get; set; } = string.Empty;
-
-    /// <summary>
     /// Telefon raqami (majburiy)
     /// </summary>
     public string Phone { get; set; } = string.Empty;
@@ -267,7 +247,7 @@ public class UpdateAdminDto
 public class AdminFilterRequest : PaginationRequest
 {
     /// <summary>
-    /// Qidiruv matni (ism, familya, username, email)
+    /// Qidiruv matni (ism, familya, username)
     /// </summary>
     public string? SearchTerm { get; set; }
 

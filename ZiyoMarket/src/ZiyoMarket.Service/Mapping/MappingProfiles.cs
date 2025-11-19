@@ -116,6 +116,11 @@ public class UserProfile : Profile
             .ForMember(dest => dest.TotalOrders, opt => opt.Ignore())
             .ForMember(dest => dest.TotalSales, opt => opt.Ignore());
 
+        CreateMap<RegisterSellerDto, Seller>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
+
         // Admin mappings
         CreateMap<Admin, UserProfileDto>()
             .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => "Admin"))
@@ -125,6 +130,11 @@ public class UserProfile : Profile
         CreateMap<Admin, AdminListDto>();
 
         CreateMap<Admin, AdminDetailDto>();
+
+        CreateMap<RegisterAdminDto, Admin>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
     }
 }
 

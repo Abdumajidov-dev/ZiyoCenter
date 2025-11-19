@@ -10,7 +10,10 @@
       "Bash(taskkill:*)",
       "Bash(xargs:*)",
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(NUL)",
+      "Bash(dir:*)",
+      "Bash(dotnet ef migrations add:*)"
     ],
     "deny": [],
     "ask": []

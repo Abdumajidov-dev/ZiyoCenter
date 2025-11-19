@@ -61,10 +61,9 @@ public class AuthService : IAuthService
             if (!IsUserActive(user, request.UserType))
                 return Result<LoginResponseDto>.Forbidden("Account is inactive");
 
-            // Generate tokens
+            // Generate token
             var userId = GetUserId(user, request.UserType);
             var accessToken = await GenerateAccessTokenAsync(userId, request.UserType);
-            var refreshToken = await GenerateRefreshTokenAsync(userId, request.UserType);
 
             // Map to response
             var userProfile = MapUserToProfileDto(user, request.UserType);
@@ -72,7 +71,6 @@ public class AuthService : IAuthService
             var response = new LoginResponseDto
             {
                 AccessToken = accessToken.Data!,
-                RefreshToken = refreshToken.Data!,
                 ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 User = userProfile
             };
@@ -106,16 +104,6 @@ public class AuthService : IAuthService
             if (existingCustomer != null)
                 return Result<LoginResponseDto>.Conflict("Phone number already registered");
 
-            // Check if email exists (if provided)
-            //if (!string.IsNullOrWhiteSpace(request.Email))
-            //{
-            //    var existingEmail = await _unitOfWork.Customers
-            //        .SelectAsync(c => c.Email == request.Email && !c.IsDeleted);
-
-            //    if (existingEmail != null)
-            //        return Result<LoginResponseDto>.Conflict("Email already registered");
-            //}
-
             // Create customer
             var customer = _mapper.Map<Customer>(request);
             customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
@@ -125,14 +113,12 @@ public class AuthService : IAuthService
             await _unitOfWork.Customers.InsertAsync(customer);
             await _unitOfWork.SaveChangesAsync();
 
-            // Generate tokens
+            // Generate token
             var accessToken = await GenerateAccessTokenAsync(customer.Id, "Customer");
-            var refreshToken = await GenerateRefreshTokenAsync(customer.Id, "Customer");
 
             var response = new LoginResponseDto
             {
                 AccessToken = accessToken.Data!,
-                RefreshToken = refreshToken.Data!,
                 ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 User = _mapper.Map<UserProfileDto>(customer)
             };
@@ -145,48 +131,90 @@ public class AuthService : IAuthService
         }
     }
 
-    // ============ Refresh Token ============
+    // ============ Register Seller ============
 
-    public async Task<Result<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request)
+    public async Task<Result<LoginResponseDto>> RegisterSellerAsync(RegisterSellerDto request)
     {
         try
         {
-            // Validate refresh token
-            var principal = GetPrincipalFromToken(request.RefreshToken);
-            if (principal == null)
-                return Result<LoginResponseDto>.Unauthorized("Invalid refresh token");
+            // Check if phone already exists
+            var existingSeller = await _unitOfWork.Sellers
+                .SelectAsync(s => s.Phone == request.Phone);
 
-            var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var userType = principal.FindFirst("UserType")?.Value ?? "";
+            if (existingSeller != null)
+                return Result<LoginResponseDto>.Conflict("Phone number already registered");
 
-            if (userId == 0 || string.IsNullOrEmpty(userType))
-                return Result<LoginResponseDto>.Unauthorized("Invalid token claims");
+            // Create seller
+            var seller = _mapper.Map<Seller>(request);
+            seller.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            seller.Role = "Seller"; // Default role for test mode
+            seller.IsActive = true;
 
-            // Verify user still exists and is active
-            var isActive = await VerifyUserExistsAndActive(userId, userType);
-            if (!isActive)
-                return Result<LoginResponseDto>.Forbidden("User account is inactive or deleted");
+            await _unitOfWork.Sellers.InsertAsync(seller);
+            await _unitOfWork.SaveChangesAsync();
 
-            // Generate new tokens
-            var accessToken = await GenerateAccessTokenAsync(userId, userType);
-            var refreshToken = await GenerateRefreshTokenAsync(userId, userType);
-
-            // Get user profile
-            var userProfile = await GetUserProfileAsync(userId, userType);
+            // Generate token
+            var accessToken = await GenerateAccessTokenAsync(seller.Id, "Seller");
 
             var response = new LoginResponseDto
             {
                 AccessToken = accessToken.Data!,
-                RefreshToken = refreshToken.Data!,
                 ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                User = userProfile!
+                User = _mapper.Map<UserProfileDto>(seller)
             };
 
-            return Result<LoginResponseDto>.Success(response, "Token refreshed");
+            return Result<LoginResponseDto>.Success(response, "Seller registration successful", 201);
         }
         catch (Exception ex)
         {
-            return Result<LoginResponseDto>.InternalError($"Token refresh failed: {ex.Message}");
+            return Result<LoginResponseDto>.InternalError($"Seller registration failed: {ex.Message}");
+        }
+    }
+
+    // ============ Register Admin ============
+
+    public async Task<Result<LoginResponseDto>> RegisterAdminAsync(RegisterAdminDto request)
+    {
+        try
+        {
+            // Check if username already exists
+            var existingUsername = await _unitOfWork.Admins
+                .SelectAsync(a => a.Username == request.Username);
+
+            if (existingUsername != null)
+                return Result<LoginResponseDto>.Conflict("Username already registered");
+
+            // Check if phone already exists
+            var existingPhone = await _unitOfWork.Admins
+                .SelectAsync(a => a.Phone == request.Phone);
+
+            if (existingPhone != null)
+                return Result<LoginResponseDto>.Conflict("Phone number already registered");
+
+            // Create admin
+            var admin = _mapper.Map<Admin>(request);
+            admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            admin.Role = "Admin"; // Default role for test mode
+            admin.IsActive = true;
+
+            await _unitOfWork.Admins.InsertAsync(admin);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Generate token
+            var accessToken = await GenerateAccessTokenAsync(admin.Id, "Admin");
+
+            var response = new LoginResponseDto
+            {
+                AccessToken = accessToken.Data!,
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                User = _mapper.Map<UserProfileDto>(admin)
+            };
+
+            return Result<LoginResponseDto>.Success(response, "Admin registration successful", 201);
+        }
+        catch (Exception ex)
+        {
+            return Result<LoginResponseDto>.InternalError($"Admin registration failed: {ex.Message}");
         }
     }
 
@@ -438,38 +466,6 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<Result<string>> GenerateRefreshTokenAsync(int userId, string userType)
-    {
-        try
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim("UserType", userType),
-                new Claim("TokenType", "Refresh")
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: TimeHelper.GetCurrentServerTime().AddDays(_jwtSettings.RefreshTokenExpirationDays),
-                signingCredentials: credentials
-            );
-
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-            await Task.CompletedTask;
-            return Result<string>.Success(tokenString);
-        }
-        catch (Exception ex)
-        {
-            return Result<string>.InternalError($"Refresh token generation failed: {ex.Message}");
-        }
-    }
 
     public async Task<Result<bool>> ValidateTokenAsync(string token)
     {
@@ -507,22 +503,19 @@ public class AuthService : IAuthService
     private async Task<Customer?> FindCustomerByPhoneOrEmailAsync(string phoneOrEmail)
     {
         return await _unitOfWork.Customers
-            .SelectAsync(c =>
-                (c.Phone == phoneOrEmail || c.Email == phoneOrEmail));
+            .SelectAsync(c => c.Phone == phoneOrEmail);
     }
 
     private async Task<Seller?> FindSellerByPhoneOrEmailAsync(string phoneOrEmail)
     {
         return await _unitOfWork.Sellers
-            .SelectAsync(s =>
-                (s.Phone == phoneOrEmail || s.Phone == phoneOrEmail));
+            .SelectAsync(s => s.Phone == phoneOrEmail);
     }
 
     private async Task<Admin?> FindAdminByUsernameOrEmailAsync(string usernameOrEmail)
     {
         return await _unitOfWork.Admins
-            .SelectAsync(a =>
-                (a.Username == usernameOrEmail || a.Email == usernameOrEmail || a.Phone == usernameOrEmail));
+            .SelectAsync(a => (a.Username == usernameOrEmail || a.Phone == usernameOrEmail));
     }
 
     private string GetPasswordHash(object user, string userType)

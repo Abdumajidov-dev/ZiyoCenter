@@ -5,7 +5,9 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using ZiyoMarket.Api.Extensions;
+using ZiyoMarket.Api.Helpers;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.Interfaces;
@@ -21,7 +23,16 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Use snake_case naming policy for JSON serialization
+        options.JsonSerializerOptions.PropertyNamingPolicy = new SnakeCaseNamingPolicy();
+        // Optional: Configure other JSON options
+        options.JsonSerializerOptions.WriteIndented = false; // Compact JSON
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 
 // ✅ Swagger sozlamalari

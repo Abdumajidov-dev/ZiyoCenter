@@ -46,11 +46,7 @@ public class RegisterCustomerValidator : AbstractValidator<RegisterCustomerDto>
             .NotEmpty().WithMessage("Phone number is required")
             .Matches(@"^(\+?998)?[0-9]{9}$")
             .WithMessage("Invalid phone number format");
-        
-        RuleFor(x => x.Email)
-            .EmailAddress().WithMessage("Invalid email address")
-            .When(x => !string.IsNullOrWhiteSpace(x.Email));
-        
+
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required")
             .MinimumLength(6).WithMessage("Password must be at least 6 characters");

@@ -50,8 +50,7 @@ public class AdminService : IAdminService
                 query = query.Where(a =>
                     a.FirstName.ToLower().Contains(term) ||
                     a.LastName.ToLower().Contains(term) ||
-                    a.Username.ToLower().Contains(term) ||
-                    a.Email.ToLower().Contains(term));
+                    a.Username.ToLower().Contains(term));
             }
 
             if (request.IsActive.HasValue)
@@ -89,18 +88,11 @@ public class AdminService : IAdminService
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
 
-            var existingEmail = await _unitOfWork.Admins
-                .AnyAsync(a => a.Email == request.Email && !a.IsDeleted);
-
-            if (existingEmail)
-                return Result<AdminDetailDto>.BadRequest("Bu email allaqachon mavjud");
-
             var admin = new Admin
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Username = request.Username,
-                Email = request.Email,
                 Phone = request.Phone,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 Role = request.Role ?? "Admin",
@@ -135,16 +127,9 @@ public class AdminService : IAdminService
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
 
-            var existingEmail = await _unitOfWork.Admins
-                .AnyAsync(a => a.Email == request.Email && a.Id != id && !a.IsDeleted);
-
-            if (existingEmail)
-                return Result<AdminDetailDto>.BadRequest("Bu email allaqachon mavjud");
-
             admin.FirstName = request.FirstName;
             admin.LastName = request.LastName;
             admin.Username = request.Username;
-            admin.Email = request.Email;
             admin.Phone = request.Phone;
             admin.Role = request.Role;
             admin.Permissions = request.Permissions;
@@ -249,8 +234,7 @@ public class AdminService : IAdminService
                 .Where(a => !a.IsDeleted &&
                     (a.FirstName.ToLower().Contains(term) ||
                      a.LastName.ToLower().Contains(term) ||
-                     a.Username.ToLower().Contains(term) ||
-                     a.Email.ToLower().Contains(term)))
+                     a.Username.ToLower().Contains(term)))
                 .Take(20)
                 .ToListAsync();
 
