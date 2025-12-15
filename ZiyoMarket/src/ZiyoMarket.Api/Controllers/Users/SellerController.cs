@@ -101,6 +101,18 @@ public class SellerController : BaseController
         return Ok(new { success = true, message = result.Message });
     }
 
+    [HttpPut("{id}/change-role")]
+    public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
+    {
+        var updatedBy = GetCurrentUserId();
+        var result = await _sellerService.ChangeSellerRoleAsync(id, request.NewRole, updatedBy);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
     [HttpDelete("bulk")]
     public async Task<IActionResult> DeleteAllSellers([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {

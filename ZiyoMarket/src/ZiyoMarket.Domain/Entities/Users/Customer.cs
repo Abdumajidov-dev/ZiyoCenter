@@ -27,11 +27,6 @@ public class Customer : BaseAuditableEntity
     public string Phone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email manzili
-    /// </summary>
-    public string? Email { get; set; }
-
-    /// <summary>
     /// Parol hash'i
     /// </summary>
     public string PasswordHash { get; set; } = string.Empty;

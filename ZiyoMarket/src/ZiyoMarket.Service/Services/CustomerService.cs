@@ -58,8 +58,7 @@ public class CustomerService : ICustomerService
                 query = query.Where(c =>
                     c.FirstName.ToLower().Contains(term) ||
                     c.LastName.ToLower().Contains(term) ||
-                    c.Phone.Contains(term) ||
-                    (c.Email != null && c.Email.ToLower().Contains(term)));
+                    c.Phone.Contains(term));
             }
 
             // Status filter
@@ -104,15 +103,6 @@ public class CustomerService : ICustomerService
                 return Result<CustomerDetailDto>.Conflict("Phone number already exists");
 
             // Check if email exists
-            if (!string.IsNullOrWhiteSpace(request.Email))
-            {
-                var existingEmail = await _unitOfWork.Customers
-                    .AnyAsync(c => c.Email == request.Email && !c.IsDeleted);
-
-                if (existingEmail)
-                    return Result<CustomerDetailDto>.Conflict("Email already exists");
-            }
-
             var customer = _mapper.Map<Customer>(request);
             customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password ?? "123456");
             customer.CashbackBalance = 0;
@@ -149,7 +139,6 @@ public class CustomerService : ICustomerService
             customer.FirstName = request.FirstName;
             customer.LastName = request.LastName;
             customer.Phone = request.Phone;
-            customer.Email = request.Email;
             customer.Address = request.Address;
             customer.UpdatedBy = updatedBy;
             customer.MarkAsUpdated();
@@ -222,7 +211,6 @@ public class CustomerService : ICustomerService
 
             customer.FirstName = request.FirstName;
             customer.LastName = request.LastName;
-            customer.Email = request.Email;
             customer.Address = request.Address;
             customer.UpdatedBy = customerId;
             customer.MarkAsUpdated();
@@ -248,8 +236,7 @@ public class CustomerService : ICustomerService
                 .Where(c => !c.IsDeleted &&
                     (c.FirstName.ToLower().Contains(term) ||
                      c.LastName.ToLower().Contains(term) ||
-                     c.Phone.Contains(term) ||
-                     (c.Email != null && c.Email.ToLower().Contains(term))))
+                     c.Phone.Contains(term)))
                 .Take(20)
                 .ToListAsync();
 
@@ -268,25 +255,6 @@ public class CustomerService : ICustomerService
         {
             var customer = await _unitOfWork.Customers
                 .SelectAsync(c => c.Phone == phone && !c.IsDeleted);
-
-            if (customer == null)
-                return Result<CustomerDetailDto>.NotFound("Customer not found");
-
-            var dto = _mapper.Map<CustomerDetailDto>(customer);
-            return Result<CustomerDetailDto>.Success(dto);
-        }
-        catch (Exception ex)
-        {
-            return Result<CustomerDetailDto>.InternalError($"Error: {ex.Message}");
-        }
-    }
-
-    public async Task<Result<CustomerDetailDto>> GetCustomerByEmailAsync(string email)
-    {
-        try
-        {
-            var customer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Email == email && !c.IsDeleted);
 
             if (customer == null)
                 return Result<CustomerDetailDto>.NotFound("Customer not found");
@@ -429,7 +397,6 @@ public class CustomerService : ICustomerService
                     FirstName = firstName,
                     LastName = lastName,
                     Phone = $"+998{random.Next(90, 99)}{random.Next(1000000, 9999999)}",
-                    Email = $"{firstName.ToLower()}.{lastName.ToLower()}@example.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"),
                     Address = $"Tashkent, Street {random.Next(1, 100)}",
                     CashbackBalance = random.Next(0, 50000),

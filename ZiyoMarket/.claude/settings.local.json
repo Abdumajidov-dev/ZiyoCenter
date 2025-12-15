@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\" /b /s)"
+      "Bash(dir \"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\" /b /s)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet add:*)",
+      "Bash(del:*)",
+      "Bash(del MainWindow.xaml.cs)",
+      "Bash(dotnet clean:*)",
+      "Bash(taskkill:*)",
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(NUL)",
+      "Bash(dir:*)",
+      "Bash(dotnet ef migrations add:*)"
     ],
     "deny": [],
     "ask": []

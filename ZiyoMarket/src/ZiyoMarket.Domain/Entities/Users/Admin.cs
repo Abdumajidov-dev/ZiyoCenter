@@ -10,9 +10,29 @@ namespace ZiyoMarket.Domain.Entities.Users;
 public class Admin : BaseAuditableEntity
 {
     /// <summary>
+    /// Ism
+    /// </summary>
+    public string FirstName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Familiya
+    /// </summary>
+    public string LastName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// To'liq ism
+    /// </summary>
+    public string FullName => $"{FirstName} {LastName}";
+
+    /// <summary>
     /// Foydalanuvchi nomi (unique)
     /// </summary>
     public string Username { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Telefon raqami
+    /// </summary>
+    public string Phone { get; set; } = string.Empty;
 
     /// <summary>
     /// Parol hash'i
@@ -23,6 +43,11 @@ public class Admin : BaseAuditableEntity
     /// Rol (Admin, SuperAdmin)
     /// </summary>
     public string Role { get; set; } = "Admin";
+
+    /// <summary>
+    /// Ruxsatlar (vergul bilan ajratilgan)
+    /// </summary>
+    public string? Permissions { get; set; }
 
     /// <summary>
     /// Faolmi

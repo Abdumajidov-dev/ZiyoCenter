@@ -18,11 +18,16 @@ public interface IAuthService
     /// Register new customer
     /// </summary>
     Task<Result<LoginResponseDto>> RegisterCustomerAsync(RegisterCustomerDto request);
-    
+
     /// <summary>
-    /// Refresh access token using refresh token
+    /// Register new seller
     /// </summary>
-    Task<Result<LoginResponseDto>> RefreshTokenAsync(RefreshTokenRequestDto request);
+    Task<Result<LoginResponseDto>> RegisterSellerAsync(RegisterSellerDto request);
+
+    /// <summary>
+    /// Register new admin
+    /// </summary>
+    Task<Result<LoginResponseDto>> RegisterAdminAsync(RegisterAdminDto request);
     
     /// <summary>
     /// Logout user
@@ -58,12 +63,7 @@ public interface IAuthService
     /// Generate JWT access token
     /// </summary>
     Task<Result<string>> GenerateAccessTokenAsync(int userId, string userType);
-    
-    /// <summary>
-    /// Generate refresh token
-    /// </summary>
-    Task<Result<string>> GenerateRefreshTokenAsync(int userId, string userType);
-    
+
     /// <summary>
     /// Validate token
     /// </summary>

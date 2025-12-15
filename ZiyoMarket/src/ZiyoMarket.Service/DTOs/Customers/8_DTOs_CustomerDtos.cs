@@ -14,7 +14,6 @@ public class CustomerListDto
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
     public string Phone { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public decimal CashbackBalance { get; set; }
     public string FormattedCashbackBalance => $"{CashbackBalance:N0} so'm";
     public int OrdersCount { get; set; }
@@ -46,21 +45,15 @@ public class CreateCustomerDto
     /// Telefon raqami (unique)
     /// </summary>
     [Required(ErrorMessage = "Telefon raqami majburiy")]
-    [Phone(ErrorMessage = "Telefon raqami noto‘g‘ri formatda kiritilgan")]
+    [Phone(ErrorMessage = "Telefon raqami notoï¿½gï¿½ri formatda kiritilgan")]
     [MaxLength(20)]
     public string Phone { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Email manzili (ixtiyoriy)
-    /// </summary>
-    [EmailAddress(ErrorMessage = "Email manzili noto‘g‘ri kiritilgan")]
-    public string? Email { get; set; }
 
     /// <summary>
     /// Parol (hash emas, foydalanuvchi tomonidan kiritiladigan)
     /// </summary>
     [Required(ErrorMessage = "Parol majburiy")]
-    [MinLength(6, ErrorMessage = "Parol uzunligi kamida 6 ta belgi bo‘lishi kerak")]
+    [MinLength(6, ErrorMessage = "Parol uzunligi kamida 6 ta belgi boï¿½lishi kerak")]
     public string Password { get; set; } = string.Empty;
 
     /// <summary>
@@ -75,13 +68,13 @@ public class CreateCustomerDto
     public string? FcmToken { get; set; }
 
     /// <summary>
-    /// Boshlang‘ich cashback (default: 0)
+    /// Boshlangï¿½ich cashback (default: 0)
     /// </summary>
-    [Range(0, double.MaxValue, ErrorMessage = "Cashback manfiy bo‘lishi mumkin emas")]
+    [Range(0, double.MaxValue, ErrorMessage = "Cashback manfiy boï¿½lishi mumkin emas")]
     public decimal CashbackBalance { get; set; } = 0;
 
     /// <summary>
-    /// Mijoz faolmi yoki yo‘qmi (default: true)
+    /// Mijoz faolmi yoki yoï¿½qmi (default: true)
     /// </summary>
     public bool IsActive { get; set; } = true;
 } 
@@ -95,7 +88,6 @@ public class CustomerDetailDto
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
     public string Phone { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public string? Address { get; set; }
     public decimal CashbackBalance { get; set; }
     public string FormattedCashbackBalance => $"{CashbackBalance:N0} so'm";
@@ -134,10 +126,6 @@ public class UpdateCustomerDto
     [Phone(ErrorMessage = "Invalid phone number format")]
     [MaxLength(20)]
     public string Phone { get; set; } = string.Empty;
-
-    [EmailAddress(ErrorMessage = "Invalid email address")]
-    [MaxLength(150)]
-    public string? Email { get; set; }
 
     [MaxLength(500)]
     public string? Address { get; set; }
@@ -179,22 +167,21 @@ public class CustomerProfileDto
 {
     public int Id { get; set; }
 
-    // Shaxsiy ma’lumotlar
+    // Shaxsiy maï¿½lumotlar
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string FullName => $"{FirstName} {LastName}";
     public string Phone { get; set; } = string.Empty;
-    public string? Email { get; set; }
     public string? Address { get; set; }
 
-    // Cashback ma’lumotlari
+    // Cashback maï¿½lumotlari
     public decimal CashbackBalance { get; set; }
     public string FormattedCashbackBalance => $"{CashbackBalance:N0} so'm";
 
     // Faollik holati
     public bool IsActive { get; set; }
 
-    // Statistik ma’lumotlar
+    // Statistik maï¿½lumotlar
     public int TotalOrders { get; set; }
     public decimal TotalSpent { get; set; }
 
@@ -203,7 +190,7 @@ public class CustomerProfileDto
     public DateTime? UpdatedAt { get; set; }
 }
 /// <summary>
-/// Eng ko‘p xarid qilgan mijozlar ro‘yxati uchun DTO
+/// Eng koï¿½p xarid qilgan mijozlar roï¿½yxati uchun DTO
 /// </summary>
 public class TopCustomerDto
 {
@@ -213,7 +200,7 @@ public class TopCustomerDto
     public int CustomerId { get; set; }
 
     /// <summary>
-    /// Mijoz to‘liq ismi (FirstName + LastName)
+    /// Mijoz toï¿½liq ismi (FirstName + LastName)
     /// </summary>
     public string CustomerName { get; set; } = string.Empty;
 
