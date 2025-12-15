@@ -4,11 +4,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using ZiyoMarket.Data.IRepositories;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Service.DTOs.Auth;
-using ZiyoMarket.Service.Extensions;
 using ZiyoMarket.Service.Helpers;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
@@ -79,7 +77,7 @@ public class AuthService : IAuthService
             if (request.UserType == "Admin" && user is Admin admin)
             {
                 admin.LastLoginAt = TimeHelper.GetCurrentServerTime();
-                await _unitOfWork.Admins.Update(admin,admin.Id);
+                await _unitOfWork.Admins.Update(admin, admin.Id);
                 await _unitOfWork.SaveChangesAsync();
             }
 
