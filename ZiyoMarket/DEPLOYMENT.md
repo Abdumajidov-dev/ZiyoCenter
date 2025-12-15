@@ -2,13 +2,13 @@
 
 Bu qo'llanma ZiyoMarket loyihasini Railway.app platformasiga deploy qilish bo'yicha to'liq yo'riqnoma.
 
-## =Ë Kerakli narsalar
+## =ï¿½ Kerakli narsalar
 
 1. **Railway Account** - [railway.app](https://railway.app) da ro'yxatdan o'ting
 2. **GitHub Account** - Loyihangiz GitHub da bo'lishi kerak
 3. **Git** - Kompyuteringizda o'rnatilgan bo'lishi kerak
 
-## =€ Deployment Bosqichlari
+## =ï¿½ Deployment Bosqichlari
 
 ### 1-qadam: Loyihani GitHub ga yuklash
 
@@ -40,6 +40,22 @@ git push
 2. "New Project" tugmasini bosing
 3. "Deploy from GitHub repo" ni tanlang
 4. ZiyoMarket repository ni tanlang
+
+**MUHIM: Service Settings sozlash**
+
+Service yaratilgandan keyin, Build xatolarini oldini olish uchun:
+
+1. Railway dashboardda yangi yaratilgan service ni tanlang
+2. "Settings" tabiga o'ting
+3. **"Source"** bo'limida quyidagilarni sozlang:
+   - **Root Directory**: Bo'sh qoldiring yoki `/` kiriting (agar loyihangiz repository root da bo'lsa)
+   - **Build Command**: Bo'sh qoldiring (Dockerfile ishlatiladi)
+
+4. **"Deploy"** bo'limida:
+   - **Builder**: `DOCKERFILE` tanlanganini tekshiring
+   - **Dockerfile Path**: `Dockerfile` (default)
+
+5. O'zgarishlarni saqlang va qayta deploy qiling
 
 ### 3-qadam: PostgreSQL Database qo'shish
 
@@ -134,30 +150,55 @@ Deploy tugagandan keyin:
 2. **API Root**: `https://your-app.up.railway.app/`
 3. **Swagger UI**: `https://your-app.up.railway.app/swagger`
 
-## =Ê Logs ko'rish
+## =ï¿½ Logs ko'rish
 
 Railway dashboardda:
 1. Backend service ni tanlang
 2. "Deployments" tabidan oxirgi deployment ni tanlang
 3. "View Logs" tugmasini bosing
 
-## =à Muammolarni bartaraf etish
+## =ï¿½ Muammolarni bartaraf etish
 
-### Problem: Database connection xatosi
+### Problem 1: Build xatosi - "skipping Dockerfile as it is not rooted at a valid path"
+
+**Sabab:** Railway service settings noto'g'ri sozlangan.
+
+**Yechim:**
+1. Railway dashboardda service ni tanlang
+2. "Settings" -> "Source" ga o'ting
+3. **Root Directory** ni bo'sh qoldiring yoki `/` kiriting
+4. "Settings" -> "Deploy" ga o'ting
+5. **Builder** ni `DOCKERFILE` ga o'zgartiring
+6. **Dockerfile Path** ni `Dockerfile` deb qoldiring
+7. "Redeploy" tugmasini bosing
+
+### Problem 2: Build xatosi - "Script start.sh not found"
+
+**Sabab:** Railway Nixpacks ishlatmoqchi, lekin biz Dockerfile ishlatmoqchimiz.
+
+**Yechim:**
+1. Railway dashboardda service ni tanlang
+2. "Settings" -> "Deploy" ga o'ting
+3. **Builder** ni `NIXPACKS` dan `DOCKERFILE` ga o'zgartiring
+4. O'zgarishlarni saqlang va qayta deploy qiling
+
+### Problem 3: Database connection xatosi
 
 **Yechim:**
 - `ConnectionStrings__DefaultConnection` to'g'ri sozlanganini tekshiring
 - PostgreSQL service ishlayotganini tekshiring
+- Environment variable: `ConnectionStrings__DefaultConnection=${{Postgres.DATABASE_URL}}`
 - Migration qo'llanganini tekshiring
 
-### Problem: 502 Bad Gateway
+### Problem 4: 502 Bad Gateway
 
 **Yechim:**
 - Dockerfile to'g'ri build bo'layotganini tekshiring
 - `ASPNETCORE_URLS=http://+:8080` sozlanganini tekshiring
 - Railway logs dan xatolarni ko'rib chiqing
+- Health check endpoint ishlayotganini tekshiring: `/health`
 
-### Problem: Migration xatolari
+### Problem 5: Migration xatolari
 
 **Yechim:**
 ```bash
@@ -173,7 +214,7 @@ railway run dotnet ef database update --project src/ZiyoMarket.Data --startup-pr
 3. **Database**: PostgreSQL parolini maxfiy saqlang
 4. **HTTPS**: Railway avtomatik HTTPS ni ta'minlaydi
 
-## =È Monitoring va Scaling
+## =ï¿½ Monitoring va Scaling
 
 Railway automatically monitors your application:
 - CPU va memory usage
@@ -184,7 +225,7 @@ Scaling uchun:
 1. "Settings" -> "Resources" ga o'ting
 2. Kerakli plan ni tanlang
 
-## =° Pricing
+## =ï¿½ Pricing
 
 Railway **$5/month** credit beradi bepul. Undan keyin:
 - **Hobby Plan**: $5/month
@@ -198,14 +239,14 @@ Har safar `main` branchga push qilganingizda, Railway avtomatik:
 3. Health check qiladi
 4. Zero-downtime deployment
 
-## =Þ Yordam
+## =ï¿½ Yordam
 
 Muammolar yuzaga kelsa:
 - Railway Documentation: https://docs.railway.app
 - Railway Discord: https://discord.gg/railway
 - Railway Support: support@railway.app
 
-## =Ý Test qilish uchun endpoint
+## =ï¿½ Test qilish uchun endpoint
 
 Deployment muvaffaqiyatli bo'lgandan keyin:
 
@@ -231,4 +272,4 @@ curl -X POST https://your-app.up.railway.app/api/auth/register \
 
 ---
 
-**Muvaffaqiyatli deploy qiling!** =€
+**Muvaffaqiyatli deploy qiling!** =ï¿½
