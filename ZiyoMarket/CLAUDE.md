@@ -17,7 +17,7 @@ ZiyoMarket is a professional multi-user e-commerce platform built with ASP.NET C
 
 ## Solution Structure
 
-The solution follows Clean Architecture with 4 projects:
+The solution follows Clean Architecture with 5 projects:
 
 ```
 ZiyoMarket/
@@ -25,7 +25,8 @@ ZiyoMarket/
 │   ├── ZiyoMarket.Api/          # REST API Controllers, Program.cs, Extensions
 │   ├── ZiyoMarket.Service/       # Business Logic Layer (Services, DTOs, Interfaces, Mapping)
 │   ├── ZiyoMarket.Data/          # Data Access Layer (DbContext, Repositories, UnitOfWork)
-│   └── ZiyoMarket.Domain/        # Domain Layer (Entities, Enums, Common)
+│   ├── ZiyoMarket.Domain/        # Domain Layer (Entities, Enums, Common)
+│   └── ZiyoMarket.AdminPanel/    # WPF Desktop Admin Panel
 ```
 
 **Dependency Flow:** Api → Service → Data → Domain
@@ -39,13 +40,29 @@ The codebase uses a generic repository pattern for all entities:
 - **Generic Repository:** `Repository<T>` provides CRUD operations for all entities inheriting from `BaseEntity`
 - **Unit of Work:** `IUnitOfWork` coordinates multiple repositories and manages transactions
 - All database operations go through repositories, never direct DbContext access in services
+- **Transaction Support:** UnitOfWork provides `BeginTransactionAsync()`, `CommitTransactionAsync()`, and `RollbackTransactionAsync()` for explicit transaction management
 
 **Example Usage in Services:**
 ```csharp
-// Access repositories through UnitOfWork
+// Simple operations
 var product = await _unitOfWork.Products.GetByIdAsync(id);
 await _unitOfWork.Products.InsertAsync(newProduct);
-await _unitOfWork.SaveAsync(); // Commit transaction
+await _unitOfWork.SaveChangesAsync(); // Commit changes
+
+// Complex transactions
+await _unitOfWork.BeginTransactionAsync();
+try
+{
+    await _unitOfWork.Orders.InsertAsync(order);
+    await _unitOfWork.OrderItems.AddRangeAsync(orderItems);
+    await _unitOfWork.SaveChangesAsync();
+    await _unitOfWork.CommitTransactionAsync();
+}
+catch
+{
+    await _unitOfWork.RollbackTransactionAsync();
+    throw;
+}
 ```
 
 ### 2. Service Layer Pattern
@@ -76,6 +93,23 @@ Controllers inherit from `BaseController` and follow RESTful conventions:
 - Return `ActionResult<T>` for type-safe responses
 - Use standard HTTP status codes (200, 201, 400, 404, 401, 403)
 - Controllers are thin - delegate all logic to services
+
+**BaseController Helper Methods:**
+```csharp
+// Access current user information from JWT claims
+int userId = GetCurrentUserId();           // Gets user ID from token
+string userType = GetCurrentUserType();    // Gets user type (Customer/Seller/Admin)
+bool isAuth = IsAuthenticated();           // Check if user is authenticated
+```
+
+### 5. Snake Case JSON Serialization
+
+The API uses snake_case for all JSON responses (not PascalCase or camelCase):
+
+- C# property `FirstName` → JSON `first_name`
+- C# property `TotalAmount` → JSON `total_amount`
+- Custom `SnakeCaseNamingPolicy` configured in `Program.cs`
+- This is transparent to developers - just use C# naming conventions in code
 
 ## Common Development Commands
 
@@ -136,6 +170,14 @@ Located in `src/ZiyoMarket.Api/appsettings.json`:
 
 - **Local Development:** `Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;`
 - **Production:** Currently configured for Render.com PostgreSQL (update for your environment)
+
+**IMPORTANT:** Never commit sensitive connection strings or secrets. Use environment variables or user secrets for local development:
+
+```bash
+# Use user secrets (recommended for local dev)
+dotnet user-secrets init --project src/ZiyoMarket.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "YOUR_CONNECTION_STRING" --project src/ZiyoMarket.Api
+```
 
 ### JWT Settings
 
@@ -209,11 +251,17 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 
 ### Seed Data for Testing
 
-Use the `SeedDataController` endpoints to populate test data:
-- POST `/api/seeddata/seed-categories` - Categories
-- POST `/api/seeddata/seed-products` - Products
-- POST `/api/seeddata/seed-customers` - Customers
-- POST `/api/seeddata/seed-all` - All data at once
+The `SeedDataController` provides endpoints to populate test data for development:
+
+**Usage in Swagger:**
+1. Start the API (`dotnet run` in `src/ZiyoMarket.Api`)
+2. Navigate to `https://localhost:5001/swagger`
+3. No authentication needed for seed endpoints
+4. Execute POST requests to seed specific data types
+
+**Available Seed Endpoints:**
+- POST `/api/seeddata/seed-all` - Seeds all data types at once (recommended for initial setup)
+- Individual seed endpoints for specific entity types (check SeedDataController for complete list)
 
 ## API Structure
 
@@ -279,6 +327,35 @@ var order = await _unitOfWork.Orders.GetByIdAsync(
 );
 ```
 
+### Common Repository Methods
+
+All repositories inherit from `Repository<T>` and provide these methods:
+
+**Create:**
+- `InsertAsync(entity)` / `AddAsync(entity)` - Add single entity
+- `AddRangeAsync(entities)` - Add multiple entities
+
+**Read:**
+- `GetByIdAsync(id, includes)` - Get by ID with optional eager loading
+- `GetAllAsync()` - Get all entities
+- `FindAsync(predicate)` - Find entities matching condition
+- `FirstOrDefaultAsync(predicate)` - Get first match or null
+- `SelectAsync(expression, includes)` - Select single with includes
+- `SelectAllAsync(expression, includes)` - Select multiple with includes
+- `ExistsAsync(predicate)` / `AnyAsync(expression)` - Check existence
+- `CountAsync(predicate)` - Count entities
+
+**Update:**
+- `Update(entity, id)` - Update by ID
+- `UpdateAsync(entity)` - Update entity
+- `UpdateRange(entities)` - Update multiple entities
+
+**Delete:**
+- `DeleteAsync(id)` - Hard delete by ID
+- `Delete(entity)` - Hard delete entity
+- `SoftDelete(entity)` - Soft delete (sets DeletedAt)
+- `DeleteRange(entities)` - Delete multiple entities
+
 ## Testing
 
 **Default Admin Credentials:**
@@ -297,4 +374,34 @@ Add logging in services/controllers via constructor injection: `ILogger<ClassNam
 
 ## Desktop Admin Panel
 
-The solution includes a separate desktop admin panel project (`ZiyoMarket.AdminPanel`) for Windows desktop administration. This is built with WPF/WinForms and consumes the API.
+The solution includes a separate desktop admin panel project (`ZiyoMarket.AdminPanel`) for Windows desktop administration:
+
+- Built with WPF (Windows Presentation Foundation)
+- Consumes the ZiyoMarket API via HTTP client
+- Provides admin dashboard, reports, and management interfaces
+- Located in `src/ZiyoMarket.AdminPanel/`
+
+**Run Admin Panel:**
+```bash
+cd src/ZiyoMarket.AdminPanel
+dotnet run
+```
+
+## Important Development Notes
+
+### API Response Format
+
+All API responses use snake_case JSON formatting. When testing with tools like Postman or Swagger:
+- Request body properties should use snake_case: `{"first_name": "John"}`
+- Response properties will be in snake_case: `{"user_id": 1, "created_at": "..."}`
+
+### Available Repository Properties in UnitOfWork
+
+When working with services, these repositories are available through `_unitOfWork`:
+- `Customers`, `Sellers`, `Admins` - User management
+- `Products`, `Categories`, `ProductLikes`, `CartItems` - Product catalog
+- `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` - Order processing
+- `DeliveryPartners`, `OrderDeliveries` - Delivery management
+- `Notifications` - Push notifications
+- `SupportChats`, `SupportMessages` - Customer support
+- `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration

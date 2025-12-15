@@ -13,7 +13,9 @@
       "Bash(tree:*)",
       "Bash(NUL)",
       "Bash(dir:*)",
-      "Bash(dotnet ef migrations add:*)"
+      "Bash(dotnet ef migrations add:*)",
+      "Bash(findstr:*)",
+      "Bash(dotnet ef migrations:*)"
     ],
     "deny": [],
     "ask": []
