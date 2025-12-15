@@ -7,6 +7,7 @@
 | Dokument | Kimlar Uchun | Tavsif |
 |----------|--------------|--------|
 | **[QUICK_START.md](./QUICK_START.md)** | 🚀 Barchaga | 5 daqiqada ishga tushirish, test credentials, tezkor qo'llanma |
+| **[DEPLOYMENT.md](./DEPLOYMENT.md)** | 🌐 DevOps | Railway.app ga deploy qilish bo'yicha to'liq qo'llanma |
 | **[SWAGGER_GUIDE.md](./SWAGGER_GUIDE.md)** | 🧪 Testerlar | Swagger ishlatish, token olish, API test qilish |
 | **[BACKEND_DEVELOPER_GUIDE.md](./BACKEND_DEVELOPER_GUIDE.md)** | 💻 Backend | Arxitektura, entities, services, 150+ endpoints |
 | **[FLUTTER_DEVELOPER_GUIDE.md](./FLUTTER_DEVELOPER_GUIDE.md)** | 📱 Flutter | API integration, models, state management, FCM |

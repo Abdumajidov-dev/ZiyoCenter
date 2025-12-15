@@ -128,7 +128,33 @@ app.UseAuthorization();
 // Default route
 app.MapControllers();
 
-// ✅ Root’ga “API ishlayapti” degan test endpoint
+// ✅ Root'ga "API ishlayapti" degan test endpoint
 app.MapGet("/", () => Results.Ok("🚀 ZiyoMarket API is running! Visit /swagger"));
+
+// ✅ Health check endpoint for Railway
+app.MapGet("/health", async (ZiyoMarketDbContext dbContext) =>
+{
+    try
+    {
+        // Check database connectivity
+        await dbContext.Database.CanConnectAsync();
+        return Results.Ok(new
+        {
+            status = "healthy",
+            timestamp = DateTime.UtcNow,
+            database = "connected"
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new
+        {
+            status = "unhealthy",
+            timestamp = DateTime.UtcNow,
+            database = "disconnected",
+            error = ex.Message
+        }, statusCode: 503);
+    }
+});
 
 app.Run();
