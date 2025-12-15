@@ -1,11 +1,12 @@
 # Railway.toml configuration for ZiyoMarket
+# Updated: 2025-12-15 - Fixed healthcheck and PORT binding
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "dotnet ZiyoMarket.Api.dll"
+# No startCommand needed - Dockerfile ENTRYPOINT handles it
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

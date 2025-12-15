@@ -2,8 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Cache bust: Force rebuild on 2025-12-15
-ARG CACHEBUST=20251215
+# Cache bust: Force rebuild - Version 2
+ARG CACHEBUST=20251215-v2
+RUN echo "Build timestamp: $(date)" > /tmp/build-info.txt
 
 # Copy solution file
 COPY ZiyoMarket.sln ./
@@ -42,5 +43,5 @@ EXPOSE 8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Run the application
-# Railway sets $PORT automatically, ASP.NET Core will use it
-ENTRYPOINT ["sh", "-c", "dotnet ZiyoMarket.Api.dll --urls http://0.0.0.0:${PORT:-8080}"]
+# Program.cs handles PORT env var automatically
+ENTRYPOINT ["dotnet", "ZiyoMarket.Api.dll"]

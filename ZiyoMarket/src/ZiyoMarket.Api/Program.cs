@@ -11,12 +11,18 @@ using ZiyoMarket.Service.DTOs.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ✅ Railway PORT configuration
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("Logs/ziyomarket-log.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+Log.Information("Starting ZiyoMarket API on port {Port}", port);
 
 // Add services to the container
 builder.Services.AddControllers()
@@ -117,7 +123,12 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger"; // => /swagger
 });
 
-app.UseHttpsRedirection();
+// ✅ HTTPS redirection faqat Development da (Railway proxy HTTPS handle qiladi)
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 
