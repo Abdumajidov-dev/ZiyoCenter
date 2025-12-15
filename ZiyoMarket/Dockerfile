@@ -2,9 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Cache bust: Force rebuild - Version 3
-ARG CACHEBUST=20251215-v3
-RUN echo "Build timestamp: $(date) - Force rebuild v3" > /tmp/build-info.txt
+# Cache bust: Force rebuild - Version 4 (migration deployment)
+ARG CACHEBUST=20251215-v4
+RUN echo "Build timestamp: $(date) - Migration deployment v4" > /tmp/build-info.txt
 
 # Copy solution file
 COPY ZiyoMarket.sln ./
