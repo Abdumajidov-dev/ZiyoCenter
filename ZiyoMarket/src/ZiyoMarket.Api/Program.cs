@@ -135,7 +135,27 @@ builder.Services.AddCustomServices();
 
 var app = builder.Build();
 
-// ✅ Swagger’ni har doim yoqamiz (nafaqat Development’da)
+// ✅ Auto-run migrations on startup (Railway deployment)
+if (app.Environment.IsProduction())
+{
+    try
+    {
+        Log.Information("🗄️  Running database migrations...");
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ZiyoMarketDbContext>();
+            dbContext.Database.Migrate();
+            Log.Information("✅ Migrations completed successfully");
+        }
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "❌ Migration failed: {Message}", ex.Message);
+        // Don't throw - let app start anyway for debugging
+    }
+}
+
+// ✅ Swagger'ni har doim yoqamiz (nafaqat Development'da)
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
