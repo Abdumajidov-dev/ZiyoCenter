@@ -2,6 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Cache bust: Force rebuild on 2025-12-15
+ARG CACHEBUST=20251215
+
 # Copy solution file
 COPY ZiyoMarket.sln ./
 

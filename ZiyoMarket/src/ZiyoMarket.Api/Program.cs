@@ -127,8 +127,19 @@ app.MapControllers();
 // ✅ Root'ga "API ishlayapti" degan test endpoint
 app.MapGet("/", () => Results.Ok("🚀 ZiyoMarket API is running! Visit /swagger"));
 
-// ✅ Health check endpoint for Railway
-app.MapGet("/health", async (ZiyoMarketDbContext dbContext) =>
+// ✅ Health check endpoint for Railway (lightweight - no DB check during startup)
+app.MapGet("/health", () =>
+{
+    return Results.Ok(new
+    {
+        status = "healthy",
+        timestamp = DateTime.UtcNow,
+        service = "ZiyoMarket API"
+    });
+});
+
+// ✅ Detailed health check with database (optional)
+app.MapGet("/health/detailed", async (ZiyoMarketDbContext dbContext) =>
 {
     try
     {
