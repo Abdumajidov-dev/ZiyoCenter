@@ -3,15 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using ZiyoMarket.Api.Extensions;
 using ZiyoMarket.Api.Helpers;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Service.DTOs.Auth;
-using ZiyoMarket.Service.Interfaces;
-using ZiyoMarket.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
