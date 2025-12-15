@@ -18,7 +18,8 @@
       "Bash(dotnet ef migrations:*)",
       "Bash(\"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\\railway.toml\")",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git ls-tree:*)"
     ],
     "deny": [],
     "ask": []
