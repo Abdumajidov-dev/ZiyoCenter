@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ZiyoMarket.Data.Context;
@@ -11,9 +12,11 @@ using ZiyoMarket.Data.Context;
 namespace ZiyoMarket.Data.Migrations
 {
     [DbContext(typeof(ZiyoMarketDbContext))]
-    partial class ZiyoMarketDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215181703_SyncModelChanges")]
+    partial class SyncModelChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -41,6 +41,15 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<SystemSetting> SystemSettings { get; set; }
     public DbSet<DailySalesSummary> DailySalesSummaries { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        // Suppress pending model changes warning for Railway deployment
+        optionsBuilder.ConfigureWarnings(warnings =>
+            warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
