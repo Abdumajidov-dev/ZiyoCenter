@@ -78,9 +78,21 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ✅ PostgreSQL ulanish
+// ✅ PostgreSQL ulanish (Railway environment variable support)
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Database connection string not found! Please set DATABASE_URL environment variable or configure DefaultConnection in appsettings.json");
+}
+
+Log.Information("Using database connection: {ConnectionInfo}",
+    connectionString.Contains("railway") ? "Railway PostgreSQL" : "Local PostgreSQL");
+
 builder.Services.AddDbContext<ZiyoMarketDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ✅ JWT sozlamalari
 builder.Services.Configure<JwtSettings>(
