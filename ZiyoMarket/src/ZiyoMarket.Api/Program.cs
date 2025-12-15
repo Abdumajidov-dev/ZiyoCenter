@@ -81,6 +81,7 @@ builder.Services.AddSwaggerGen(options =>
 // ✅ PostgreSQL ulanish (Railway environment variable support)
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? Environment.GetEnvironmentVariable("DATABASE_PRIVATE_URL")
+    ?? Environment.GetEnvironmentVariable("DATABASE_PUBLIC_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
