@@ -15,19 +15,37 @@ public interface IAuthService
     Task<Result<LoginResponseDto>> LoginAsync(LoginRequestDto request);
     
     /// <summary>
-    /// Register new customer
+    /// Universal register for all user types (Customer, Seller, Admin)
     /// </summary>
+    Task<Result<LoginResponseDto>> RegisterUserAsync(RegisterUserDto request);
+
+    /// <summary>
+    /// Register new customer (DEPRECATED - use RegisterUserAsync instead)
+    /// </summary>
+    [Obsolete("Use RegisterUserAsync instead")]
     Task<Result<LoginResponseDto>> RegisterCustomerAsync(RegisterCustomerDto request);
 
     /// <summary>
-    /// Register new seller
+    /// Register new seller (DEPRECATED - use RegisterUserAsync instead)
     /// </summary>
+    [Obsolete("Use RegisterUserAsync instead")]
     Task<Result<LoginResponseDto>> RegisterSellerAsync(RegisterSellerDto request);
 
     /// <summary>
-    /// Register new admin
+    /// Register new admin (DEPRECATED - use RegisterUserAsync instead)
     /// </summary>
+    [Obsolete("Use RegisterUserAsync instead")]
     Task<Result<LoginResponseDto>> RegisterAdminAsync(RegisterAdminDto request);
+
+    /// <summary>
+    /// Change user role (Admin only)
+    /// </summary>
+    Task<Result<LoginResponseDto>> ChangeUserRoleAsync(ChangeUserRoleDto request, int adminUserId);
+
+    /// <summary>
+    /// Create development admin without authentication (Development only)
+    /// </summary>
+    Task<Result<LoginResponseDto>> CreateDevAdminAsync(CreateDevAdminDto request);
     
     /// <summary>
     /// Logout user

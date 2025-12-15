@@ -42,15 +42,15 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Register a new customer
+    /// Universal register for all user types (Customer, Seller, Admin)
     /// </summary>
-    /// <param name="request">Customer registration data</param>
+    /// <param name="request">User registration data with UserType</param>
     /// <returns>Access token and user profile</returns>
-    [HttpPost("register/customer")]
+    [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> RegisterCustomer([FromBody] RegisterCustomerDto request)
+    public async Task<IActionResult> Register([FromBody] RegisterUserDto request)
     {
-        var result = await _authService.RegisterCustomerAsync(request);
+        var result = await _authService.RegisterUserAsync(request);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
@@ -64,20 +64,26 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Register a new seller
+    /// Change user role (Admin only) - Move user from one role to another
     /// </summary>
-    /// <param name="request">Seller registration data</param>
-    /// <returns>Access token and user profile</returns>
-    [HttpPost("register/seller")]
-    [AllowAnonymous]
-    public async Task<IActionResult> RegisterSeller([FromBody] RegisterSellerDto request)
+    /// <param name="request">User ID, current type, and new type</param>
+    /// <returns>New access token and updated user profile</returns>
+    [HttpPost("change-role")]
+    [Authorize]
+    public async Task<IActionResult> ChangeUserRole([FromBody] ChangeUserRoleDto request)
     {
-        var result = await _authService.RegisterSellerAsync(request);
+        // Only admins can change roles
+        var userType = GetCurrentUserType();
+        if (userType != "Admin")
+            return StatusCode(403, new { message = "Only admins can change user roles" });
+
+        var adminUserId = GetCurrentUserId();
+        var result = await _authService.ChangeUserRoleAsync(request, adminUserId);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
 
-        return StatusCode(201, new
+        return Ok(new
         {
             success = true,
             message = result.Message,
@@ -86,15 +92,15 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Register a new admin
+    /// Create development admin (No authentication required - For development/testing only)
     /// </summary>
     /// <param name="request">Admin registration data</param>
-    /// <returns>Access token and user profile</returns>
-    [HttpPost("register/admin")]
+    /// <returns>Access token and admin profile</returns>
+    [HttpPost("dev/create-admin")]
     [AllowAnonymous]
-    public async Task<IActionResult> RegisterAdmin([FromBody] RegisterAdminDto request)
+    public async Task<IActionResult> CreateDevAdmin([FromBody] CreateDevAdminDto request)
     {
-        var result = await _authService.RegisterAdminAsync(request);
+        var result = await _authService.CreateDevAdminAsync(request);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });

@@ -91,7 +91,115 @@ public class AuthService : IAuthService
         }
     }
 
-    // ============ Register Customer ============
+    // ============ Universal Register ============
+
+    public async Task<Result<LoginResponseDto>> RegisterUserAsync(RegisterUserDto request)
+    {
+        try
+        {
+            // Validate UserType
+            if (request.UserType != "Customer" && request.UserType != "Seller" && request.UserType != "Admin")
+                return Result<LoginResponseDto>.BadRequest("Invalid user type. Must be Customer, Seller, or Admin");
+
+            // Admin requires username
+            if (request.UserType == "Admin" && string.IsNullOrWhiteSpace(request.Username))
+                return Result<LoginResponseDto>.BadRequest("Username is required for Admin registration");
+
+            // Check if phone already exists in any user type
+            var existingCustomer = await _unitOfWork.Customers.SelectAsync(c => c.Phone == request.Phone);
+            var existingSeller = await _unitOfWork.Sellers.SelectAsync(s => s.Phone == request.Phone);
+            var existingAdmin = await _unitOfWork.Admins.SelectAsync(a => a.Phone == request.Phone);
+
+            if (existingCustomer != null || existingSeller != null || existingAdmin != null)
+                return Result<LoginResponseDto>.Conflict("Phone number already registered");
+
+            // For Admin, check if username already exists
+            if (request.UserType == "Admin")
+            {
+                var existingUsername = await _unitOfWork.Admins.SelectAsync(a => a.Username == request.Username);
+                if (existingUsername != null)
+                    return Result<LoginResponseDto>.Conflict("Username already registered");
+            }
+
+            // Create user based on UserType
+            object createdUser;
+            int userId;
+
+            switch (request.UserType)
+            {
+                case "Customer":
+                    var customer = new Customer
+                    {
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Phone = request.Phone,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        Address = request.Address,
+                        CashbackBalance = 0,
+                        IsActive = true
+                    };
+                    await _unitOfWork.Customers.InsertAsync(customer);
+                    await _unitOfWork.SaveChangesAsync();
+                    createdUser = customer;
+                    userId = customer.Id;
+                    break;
+
+                case "Seller":
+                    var seller = new Seller
+                    {
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Phone = request.Phone,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        Role = "Seller",
+                        IsActive = true
+                    };
+                    await _unitOfWork.Sellers.InsertAsync(seller);
+                    await _unitOfWork.SaveChangesAsync();
+                    createdUser = seller;
+                    userId = seller.Id;
+                    break;
+
+                case "Admin":
+                    var admin = new Admin
+                    {
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Username = request.Username!,
+                        Phone = request.Phone,
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        Role = "Admin",
+                        IsActive = true
+                    };
+                    await _unitOfWork.Admins.InsertAsync(admin);
+                    await _unitOfWork.SaveChangesAsync();
+                    createdUser = admin;
+                    userId = admin.Id;
+                    break;
+
+                default:
+                    return Result<LoginResponseDto>.BadRequest("Invalid user type");
+            }
+
+            // Generate token
+            var accessToken = await GenerateAccessTokenAsync(userId, request.UserType);
+
+            var response = new LoginResponseDto
+            {
+                AccessToken = accessToken.Data!,
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                User = MapUserToProfileDto(createdUser, request.UserType)
+            };
+
+            return Result<LoginResponseDto>.Success(response, $"{request.UserType} registration successful", 201);
+        }
+        catch (Exception ex)
+        {
+            return Result<LoginResponseDto>.InternalError($"Registration failed: {ex.Message}");
+        }
+    }
+
+    // ============ Register Customer (DEPRECATED) ============
 
     public async Task<Result<LoginResponseDto>> RegisterCustomerAsync(RegisterCustomerDto request)
     {
@@ -644,5 +752,261 @@ public class AuthService : IAuthService
     {
         var random = new Random();
         return random.Next(100000, 999999).ToString();
+    }
+
+    // ============ Change User Role (Admin Only) ============
+
+    public async Task<Result<LoginResponseDto>> ChangeUserRoleAsync(ChangeUserRoleDto request, int adminUserId)
+    {
+        try
+        {
+            // Verify admin exists and is active
+            var admin = await _unitOfWork.Admins.GetByIdAsync(adminUserId);
+            if (admin == null || !admin.IsActive)
+                return Result<LoginResponseDto>.Forbidden("Admin not found or inactive");
+
+            // Validate user types
+            if (request.CurrentUserType != "Customer" && request.CurrentUserType != "Seller" && request.CurrentUserType != "Admin")
+                return Result<LoginResponseDto>.BadRequest("Invalid current user type");
+
+            if (request.NewUserType != "Customer" && request.NewUserType != "Seller" && request.NewUserType != "Admin")
+                return Result<LoginResponseDto>.BadRequest("Invalid new user type");
+
+            if (request.CurrentUserType == request.NewUserType)
+                return Result<LoginResponseDto>.BadRequest("Current and new user types are the same");
+
+            // Find existing user
+            object? existingUser = null;
+            switch (request.CurrentUserType)
+            {
+                case "Customer":
+                    existingUser = await _unitOfWork.Customers.GetByIdAsync(request.UserId);
+                    break;
+                case "Seller":
+                    existingUser = await _unitOfWork.Sellers.GetByIdAsync(request.UserId);
+                    break;
+                case "Admin":
+                    existingUser = await _unitOfWork.Admins.GetByIdAsync(request.UserId);
+                    break;
+            }
+
+            if (existingUser == null)
+                return Result<LoginResponseDto>.NotFound($"{request.CurrentUserType} user not found");
+
+            // Check if phone already exists in target user type
+            string phone = GetUserPhone(existingUser, request.CurrentUserType);
+            bool phoneExists = await CheckPhoneExistsInUserType(phone, request.NewUserType);
+
+            if (phoneExists)
+                return Result<LoginResponseDto>.Conflict($"Phone number already exists in {request.NewUserType} table");
+
+            // Get user data
+            string firstName = GetUserFirstName(existingUser, request.CurrentUserType);
+            string lastName = GetUserLastName(existingUser, request.CurrentUserType);
+            string passwordHash = GetPasswordHash(existingUser, request.CurrentUserType);
+            string? address = GetUserAddress(existingUser, request.CurrentUserType);
+
+            // Create new user in target table
+            object newUser;
+            int newUserId;
+
+            switch (request.NewUserType)
+            {
+                case "Customer":
+                    var customer = new Customer
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                        Phone = phone,
+                        PasswordHash = passwordHash,
+                        Address = address,
+                        CashbackBalance = 0,
+                        IsActive = true
+                    };
+                    await _unitOfWork.Customers.InsertAsync(customer);
+                    await _unitOfWork.SaveChangesAsync();
+                    newUser = customer;
+                    newUserId = customer.Id;
+                    break;
+
+                case "Seller":
+                    var seller = new Seller
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                        Phone = phone,
+                        PasswordHash = passwordHash,
+                        Role = "Seller",
+                        IsActive = true
+                    };
+                    await _unitOfWork.Sellers.InsertAsync(seller);
+                    await _unitOfWork.SaveChangesAsync();
+                    newUser = seller;
+                    newUserId = seller.Id;
+                    break;
+
+                case "Admin":
+                    // Generate username for new admin
+                    string username = $"{firstName.ToLower()}.{lastName.ToLower()}{new Random().Next(100, 999)}";
+
+                    var newAdmin = new Admin
+                    {
+                        FirstName = firstName,
+                        LastName = lastName,
+                        Username = username,
+                        Phone = phone,
+                        PasswordHash = passwordHash,
+                        Role = "Admin",
+                        IsActive = true
+                    };
+                    await _unitOfWork.Admins.InsertAsync(newAdmin);
+                    await _unitOfWork.SaveChangesAsync();
+                    newUser = newAdmin;
+                    newUserId = newAdmin.Id;
+                    break;
+
+                default:
+                    return Result<LoginResponseDto>.BadRequest("Invalid new user type");
+            }
+
+            // Soft delete old user
+            switch (request.CurrentUserType)
+            {
+                case "Customer":
+                    ((Customer)existingUser).Delete();
+                    await _unitOfWork.Customers.UpdateAsync((Customer)existingUser);
+                    break;
+                case "Seller":
+                    ((Seller)existingUser).Delete();
+                    await _unitOfWork.Sellers.UpdateAsync((Seller)existingUser);
+                    break;
+                case "Admin":
+                    ((Admin)existingUser).Delete();
+                    await _unitOfWork.Admins.UpdateAsync((Admin)existingUser);
+                    break;
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            // Generate new token
+            var accessToken = await GenerateAccessTokenAsync(newUserId, request.NewUserType);
+
+            var response = new LoginResponseDto
+            {
+                AccessToken = accessToken.Data!,
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                User = MapUserToProfileDto(newUser, request.NewUserType)
+            };
+
+            return Result<LoginResponseDto>.Success(response, $"User role changed from {request.CurrentUserType} to {request.NewUserType}");
+        }
+        catch (Exception ex)
+        {
+            return Result<LoginResponseDto>.InternalError($"Failed to change user role: {ex.Message}");
+        }
+    }
+
+    // ============ Create Dev Admin (No Auth Required) ============
+
+    public async Task<Result<LoginResponseDto>> CreateDevAdminAsync(CreateDevAdminDto request)
+    {
+        try
+        {
+            // Check if username already exists
+            var existingUsername = await _unitOfWork.Admins.SelectAsync(a => a.Username == request.Username);
+            if (existingUsername != null)
+                return Result<LoginResponseDto>.Conflict("Username already registered");
+
+            // Check if phone already exists
+            var existingPhone = await _unitOfWork.Admins.SelectAsync(a => a.Phone == request.Phone);
+            if (existingPhone != null)
+                return Result<LoginResponseDto>.Conflict("Phone number already registered");
+
+            // Create admin
+            var admin = new Admin
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Username = request.Username,
+                Phone = request.Phone,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                Role = "Admin",
+                IsActive = true
+            };
+
+            await _unitOfWork.Admins.InsertAsync(admin);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Generate token
+            var accessToken = await GenerateAccessTokenAsync(admin.Id, "Admin");
+
+            var response = new LoginResponseDto
+            {
+                AccessToken = accessToken.Data!,
+                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                User = MapUserToProfileDto(admin, "Admin")
+            };
+
+            return Result<LoginResponseDto>.Success(response, "Development admin created successfully", 201);
+        }
+        catch (Exception ex)
+        {
+            return Result<LoginResponseDto>.InternalError($"Failed to create dev admin: {ex.Message}");
+        }
+    }
+
+    // ============ Helper Methods for Role Change ============
+
+    private string GetUserPhone(object user, string userType)
+    {
+        return userType switch
+        {
+            "Customer" => ((Customer)user).Phone,
+            "Seller" => ((Seller)user).Phone,
+            "Admin" => ((Admin)user).Phone,
+            _ => ""
+        };
+    }
+
+    private string GetUserFirstName(object user, string userType)
+    {
+        return userType switch
+        {
+            "Customer" => ((Customer)user).FirstName,
+            "Seller" => ((Seller)user).FirstName,
+            "Admin" => ((Admin)user).FirstName,
+            _ => ""
+        };
+    }
+
+    private string GetUserLastName(object user, string userType)
+    {
+        return userType switch
+        {
+            "Customer" => ((Customer)user).LastName,
+            "Seller" => ((Seller)user).LastName,
+            "Admin" => ((Admin)user).LastName,
+            _ => ""
+        };
+    }
+
+    private string? GetUserAddress(object user, string userType)
+    {
+        return userType switch
+        {
+            "Customer" => ((Customer)user).Address,
+            _ => null
+        };
+    }
+
+    private async Task<bool> CheckPhoneExistsInUserType(string phone, string userType)
+    {
+        return userType switch
+        {
+            "Customer" => await _unitOfWork.Customers.SelectAsync(c => c.Phone == phone) != null,
+            "Seller" => await _unitOfWork.Sellers.SelectAsync(s => s.Phone == phone) != null,
+            "Admin" => await _unitOfWork.Admins.SelectAsync(a => a.Phone == phone) != null,
+            _ => false
+        };
     }
 }

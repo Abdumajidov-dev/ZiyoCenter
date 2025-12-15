@@ -198,6 +198,85 @@ public class RegisterAdminDto
 }
 
 /// <summary>
+/// Universal register DTO for all user types
+/// </summary>
+public class RegisterUserDto
+{
+    [Required(ErrorMessage = "First name is required")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Last name is required")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Invalid phone number")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+
+    [Compare("Password", ErrorMessage = "Passwords do not match")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "User type is required")]
+    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
+
+    // Optional fields
+    [MaxLength(500)]
+    public string? Address { get; set; }
+
+    [MaxLength(100)]
+    public string? Username { get; set; } // Required only for Admin
+}
+
+/// <summary>
+/// Change user role DTO (Admin only)
+/// </summary>
+public class ChangeUserRoleDto
+{
+    [Required(ErrorMessage = "User ID is required")]
+    public int UserId { get; set; }
+
+    [Required(ErrorMessage = "Current user type is required")]
+    public string CurrentUserType { get; set; } = string.Empty; // Customer, Seller, Admin
+
+    [Required(ErrorMessage = "New user type is required")]
+    public string NewUserType { get; set; } = string.Empty; // Customer, Seller, Admin
+}
+
+/// <summary>
+/// Create development admin DTO (No auth required)
+/// </summary>
+public class CreateDevAdminDto
+{
+    [Required(ErrorMessage = "First name is required")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Last name is required")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Username is required")]
+    [MaxLength(100)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Invalid phone number")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+
+    [Compare("Password", ErrorMessage = "Passwords do not match")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// JWT settings configuration
 /// </summary>
 public class JwtSettings
