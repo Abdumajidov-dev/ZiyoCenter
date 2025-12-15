@@ -89,8 +89,25 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Database connection string not found! Please set DATABASE_URL environment variable or configure DefaultConnection in appsettings.json");
 }
 
+// ✅ Parse Railway PostgreSQL URL format to Npgsql connection string
+if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
+{
+    try
+    {
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':');
+        connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+        Log.Information("✅ Converted Railway PostgreSQL URL to connection string");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Failed to parse Railway PostgreSQL URL");
+        throw;
+    }
+}
+
 Log.Information("Using database connection: {ConnectionInfo}",
-    connectionString.Contains("railway") ? "Railway PostgreSQL" : "Local PostgreSQL");
+    connectionString.Contains("railway") || connectionString.Contains("gondola") ? "Railway PostgreSQL" : "Local PostgreSQL");
 
 builder.Services.AddDbContext<ZiyoMarketDbContext>(options =>
     options.UseNpgsql(connectionString));
