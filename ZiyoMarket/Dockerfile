@@ -35,12 +35,12 @@ WORKDIR /app
 # Copy published files
 COPY --from=publish /app/publish .
 
-# Expose port (Railway will assign port dynamically)
+# Expose port (Railway will assign port dynamically via $PORT env var)
 EXPOSE 8080
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Run the application
-ENTRYPOINT ["dotnet", "ZiyoMarket.Api.dll"]
+# Railway sets $PORT automatically, ASP.NET Core will use it
+ENTRYPOINT ["sh", "-c", "dotnet ZiyoMarket.Api.dll --urls http://0.0.0.0:${PORT:-8080}"]
