@@ -82,7 +82,8 @@ All entities inherit from `BaseEntity` which implements soft delete:
 
 - Entities have `DeletedAt`, `CreatedAt`, `UpdatedAt` fields (stored as strings in "yyyy-MM-dd HH:mm:ss" format)
 - Global query filter in `ZiyoMarketDbContext` automatically excludes soft-deleted records
-- Use `entity.Delete()` for soft delete, not repository `Delete()` for hard delete
+- Use repository `SoftDelete(entity)` or `SoftDeleteRange(entities)` for soft delete
+- Use repository `Delete(entity)` or `DeleteAsync(id)` for hard delete (use cautiously)
 - `SaveChangesAsync` override in DbContext automatically sets audit timestamps
 
 ### 4. API Controller Structure
@@ -146,6 +147,8 @@ dotnet ef migrations remove --project ../ZiyoMarket.Data
 dotnet ef migrations script --project ../ZiyoMarket.Data
 ```
 
+**Note:** On Windows, use `cd src\ZiyoMarket.Api` and `..\ZiyoMarket.Data` with backslashes.
+
 ### Database Setup
 
 ```bash
@@ -161,6 +164,14 @@ dotnet ef database update --project ../ZiyoMarket.Data
 # Seed test data (optional - use Swagger seed endpoints)
 # POST /api/seeddata/seed-all
 ```
+
+### Deployment
+
+For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on:
+- Setting up Railway projects
+- Configuring PostgreSQL database
+- Environment variables and secrets
+- Build configuration and troubleshooting
 
 ## Configuration
 
@@ -223,15 +234,19 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 
 ### When Adding New Entities
 
-1. Create entity in appropriate `Domain/Entities/` subdirectory
-2. Inherit from `BaseEntity`
-3. Add `DbSet<NewEntity>` to `ZiyoMarketDbContext`
-4. Create entity configuration class in `Data/Configurations/` if needed
-5. Create migration and update database
-6. Create corresponding DTOs in `Service/DTOs/`
-7. Add AutoMapper profile mappings in `Service/Mapping/MappingProfiles.cs`
-8. Create service interface and implementation
-9. Register service in `ServiceExtension.cs`
+1. Create entity in appropriate `Domain/Entities/` subdirectory (Users, Products, Orders, etc.)
+2. Inherit from `BaseEntity` to get soft delete and audit fields
+3. Add `DbSet<NewEntity>` to `ZiyoMarketDbContext.cs`
+4. Create entity configuration class in `Data/Configurations/` if needed (for complex mappings)
+5. Create migration: `dotnet ef migrations add AddNewEntity --project ../ZiyoMarket.Data`
+6. Update database: `dotnet ef database update --project ../ZiyoMarket.Data`
+7. Create corresponding DTOs in `Service/DTOs/` (CreateDto, UpdateDto, ResultDto)
+8. Add AutoMapper profile mappings in `Service/Mapping/MappingProfiles.cs`
+9. Create service interface in `Service/Interfaces/INewEntityService.cs`
+10. Create service implementation in `Service/Services/NewEntityService.cs`
+11. Add repository property to `IUnitOfWork` interface and `UnitOfWork` class
+12. Register service in `Api/Extensions/ServiceExtension.cs`
+13. Create controller in `Api/Controllers/` inheriting from `BaseController`
 
 ### When Adding New Controllers
 
@@ -305,15 +320,17 @@ catch (Exception ex)
 
 ### Pagination
 
-Use `GetPagedAsync` method from repository for paginated results:
+Use `GetPagedAsync` method from repository for paginated results. Returns a tuple with items and total count:
 
 ```csharp
 var (items, totalCount) = await _unitOfWork.Products.GetPagedAsync(
-    page: 1,
-    pageSize: 20,
-    filter: p => p.Status == ProductStatus.Active,
-    orderBy: q => q.OrderByDescending(p => p.CreatedAt)
+    page: 1,              // Page number (1-based)
+    pageSize: 20,         // Items per page
+    filter: p => p.Status == ProductStatus.Active,  // Optional filter
+    orderBy: q => q.OrderByDescending(p => p.CreatedAt)  // Optional sorting
 );
+// items: IEnumerable<Product> - the page of results
+// totalCount: int - total number of items matching the filter
 ```
 
 ### Eager Loading Relationships
@@ -353,8 +370,9 @@ All repositories inherit from `Repository<T>` and provide these methods:
 **Delete:**
 - `DeleteAsync(id)` - Hard delete by ID
 - `Delete(entity)` - Hard delete entity
+- `DeleteRange(entities)` - Hard delete multiple entities
 - `SoftDelete(entity)` - Soft delete (sets DeletedAt)
-- `DeleteRange(entities)` - Delete multiple entities
+- `SoftDeleteRange(entities)` - Soft delete multiple entities
 
 ## Testing
 

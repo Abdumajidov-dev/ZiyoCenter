@@ -73,11 +73,6 @@ public class SupportMessage : BaseEntity
     public DateTime? ReadAt { get; set; }
 
     /// <summary>
-    /// O'chirilganmi (soft delete)
-    /// </summary>
-    public bool IsDeleted { get; set; } = false;
-
-    /// <summary>
     /// Tahrirlanganmi
     /// </summary>
     public bool IsEdited { get; set; } = false;
@@ -216,7 +211,7 @@ public class SupportMessage : BaseEntity
     /// </summary>
     public void DeleteMessage()
     {
-        IsDeleted = true;
+        Delete(); // BaseEntity metodidan foydalanish
         Message = "[Bu xabar o'chirilgan]";
         MarkAsUpdated();
     }
@@ -228,7 +223,7 @@ public class SupportMessage : BaseEntity
     {
         if (IsDeleted)
         {
-            IsDeleted = false;
+            Restore(); // BaseEntity metodidan foydalanish
 
             // Agar asl matn saqlab qo'yilgan bo'lsa, uni qaytarish
             if (!string.IsNullOrEmpty(OriginalMessage))

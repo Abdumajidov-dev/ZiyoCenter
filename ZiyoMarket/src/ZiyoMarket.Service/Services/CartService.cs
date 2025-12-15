@@ -24,7 +24,7 @@ public class CartService : ICartService
         try
         {
             var cartItems = await _unitOfWork.CartItems
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Product", "Product.Category" })
+                .SelectAll(c => c.CustomerId == customerId, new[] { "Product", "Product.Category" })
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
 
@@ -46,7 +46,7 @@ public class CartService : ICartService
                 return Result<CartItemDto>.BadRequest("Product not available");
 
             var existing = await _unitOfWork.CartItems
-                .SelectAsync(c => c.CustomerId == customerId && c.ProductId == request.ProductId && !c.IsDeleted);
+                .SelectAsync(c => c.CustomerId == customerId && c.ProductId == request.ProductId);
 
             if (existing != null)
             {
@@ -71,7 +71,7 @@ public class CartService : ICartService
             await _unitOfWork.SaveChangesAsync();
 
             var updated = await _unitOfWork.CartItems
-                .SelectAsync(c => c.CustomerId == customerId && c.ProductId == request.ProductId && !c.IsDeleted,
+                .SelectAsync(c => c.CustomerId == customerId && c.ProductId == request.ProductId,
                             new[] { "Product" });
 
             var dto = _mapper.Map<CartItemDto>(updated);
@@ -134,7 +134,7 @@ public class CartService : ICartService
         try
         {
             var cartItems = await _unitOfWork.CartItems
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+                .SelectAll(c => c.CustomerId == customerId)
                 .ToListAsync();
 
             foreach (var item in cartItems)
@@ -157,7 +157,7 @@ public class CartService : ICartService
         try
         {
             var total = await _unitOfWork.CartItems
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+                .SelectAll(c => c.CustomerId == customerId)
                 .SumAsync(c => c.UnitPrice * c.Quantity);
 
             return Result<decimal>.Success(total);
@@ -173,7 +173,7 @@ public class CartService : ICartService
         try
         {
             var count = await _unitOfWork.CartItems
-                .CountAsync(c => c.CustomerId == customerId && !c.IsDeleted);
+                .CountAsync(c => c.CustomerId == customerId);
 
             return Result<int>.Success(count);
         }
@@ -188,7 +188,7 @@ public class CartService : ICartService
         try
         {
             var cartItems = await _unitOfWork.CartItems
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Product" })
+                .SelectAll(c => c.CustomerId == customerId, new[] { "Product" })
                 .ToListAsync();
 
             if (!cartItems.Any())
@@ -219,7 +219,7 @@ public class CartService : ICartService
     {
         try
         {
-            var query = _unitOfWork.CartItems.Table.Where(c => !c.IsDeleted);
+            var query = _unitOfWork.CartItems.Table;
 
             if (startDate.HasValue)
                 query = query.Where(c => c.AddedAt >= startDate.Value);
@@ -250,7 +250,7 @@ public class CartService : ICartService
         {
             var random = new Random();
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.IsActive)
+                .SelectAll(p => p.IsActive)
                 .Take(20)
                 .ToListAsync();
 

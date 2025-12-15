@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(nul)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(dir:*)",
+      "Bash(dotnet run)",
+      "Bash(curl:*)",
+      "Bash(dotnet ef database:*)"
     ],
     "deny": [],
     "ask": []
