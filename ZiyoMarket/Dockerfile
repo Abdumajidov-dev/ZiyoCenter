@@ -2,9 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Cache bust: Force rebuild - Version 5 (suppress warning + new migration)
-ARG CACHEBUST=20251215-v5
-RUN echo "Build timestamp: $(date) - Migration v5 with warning suppression" > /tmp/build-info.txt
+# Cache bust: Force rebuild - Version 6 (fresh migration)
+ARG CACHEBUST=20251215-v6
+RUN echo "Build timestamp: $(date) - Fresh migration deployment v6" > /tmp/build-info.txt
 
 # Copy solution file
 COPY ZiyoMarket.sln ./

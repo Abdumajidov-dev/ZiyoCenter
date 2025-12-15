@@ -12,8 +12,8 @@ using ZiyoMarket.Data.Context;
 namespace ZiyoMarket.Data.Migrations
 {
     [DbContext(typeof(ZiyoMarketDbContext))]
-    [Migration("20251107162326_AddIsDeletedToProductLikes")]
-    partial class AddIsDeletedToProductLikes
+    [Migration("20251215182414_FreshInitialMigration")]
+    partial class FreshInitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -819,9 +819,6 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("Manufacturer")
                         .HasColumnType("text");
 
@@ -881,9 +878,6 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("DeletedAt")
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LikedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1023,9 +1017,6 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<string>("FileUrl")
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsEdited")
                         .HasColumnType("boolean");
@@ -1270,10 +1261,6 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1344,9 +1331,6 @@ namespace ZiyoMarket.Data.Migrations
 
                     b.Property<int?>("DeletedBy")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
 
                     b.Property<string>("FcmToken")
                         .HasColumnType("text");
