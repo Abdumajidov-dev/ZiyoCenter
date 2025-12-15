@@ -19,7 +19,8 @@
       "Bash(\"C:\\Users\\abdum\\OneDrive\\Desktop\\Kutubxona\\ZiyoMarket\\railway.toml\")",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git ls-tree:*)"
+      "Bash(git ls-tree:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
