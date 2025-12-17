@@ -24,7 +24,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Id == customerId && !c.IsDeleted);
+                .SelectAsync(c => c.Id == customerId && c.DeletedAt == null);
 
             if (customer == null)
                 return Result<CustomerDetailDto>.NotFound("Customer not found");
@@ -32,9 +32,9 @@ public class CustomerService : ICustomerService
             var dto = _mapper.Map<CustomerDetailDto>(customer);
 
             // Add statistics
-            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.CustomerId == customerId && !o.IsDeleted);
+            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.CustomerId == customerId && o.DeletedAt == null);
             dto.TotalSpent = await _unitOfWork.Orders
-                .SelectAll(o => o.CustomerId == customerId && !o.IsDeleted)
+                .SelectAll(o => o.CustomerId == customerId && o.DeletedAt == null)
                 .SumAsync(o => o.FinalPrice);
 
             return Result<CustomerDetailDto>.Success(dto);
@@ -49,7 +49,7 @@ public class CustomerService : ICustomerService
     {
         try
         {
-            var query = _unitOfWork.Customers.Table.Where(c => !c.IsDeleted);
+            var query = _unitOfWork.Customers.Table.Where(c => c.DeletedAt == null);
 
             // Search filter
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -79,7 +79,7 @@ public class CustomerService : ICustomerService
             foreach (var dto in dtos)
             {
                 dto.TotalOrders = await _unitOfWork.Orders
-                    .CountAsync(o => o.CustomerId == dto.Id && !o.IsDeleted);
+                    .CountAsync(o => o.CustomerId == dto.Id && o.DeletedAt == null);
             }
 
             return Result<PaginationResponse<CustomerListDto>>.Success(
@@ -97,7 +97,7 @@ public class CustomerService : ICustomerService
         {
             // Check if phone exists
             var existingPhone = await _unitOfWork.Customers
-                .AnyAsync(c => c.Phone == request.Phone && !c.IsDeleted);
+                .AnyAsync(c => c.Phone == request.Phone && c.DeletedAt == null);
 
             if (existingPhone)
                 return Result<CustomerDetailDto>.Conflict("Phone number already exists");
@@ -131,7 +131,7 @@ public class CustomerService : ICustomerService
 
             // Check phone uniqueness
             var phoneExists = await _unitOfWork.Customers
-                .AnyAsync(c => c.Phone == request.Phone && c.Id != id && !c.IsDeleted);
+                .AnyAsync(c => c.Phone == request.Phone && c.Id != id && c.DeletedAt == null);
 
             if (phoneExists)
                 return Result<CustomerDetailDto>.Conflict("Phone number already exists");
@@ -188,9 +188,9 @@ public class CustomerService : ICustomerService
             var dto = _mapper.Map<CustomerProfileDto>(customer);
 
             // Add statistics
-            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.CustomerId == customerId && !o.IsDeleted);
+            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.CustomerId == customerId && o.DeletedAt == null);
             dto.TotalSpent = await _unitOfWork.Orders
-                .SelectAll(o => o.CustomerId == customerId && !o.IsDeleted)
+                .SelectAll(o => o.CustomerId == customerId && o.DeletedAt == null)
                 .SumAsync(o => o.FinalPrice);
 
             return Result<CustomerProfileDto>.Success(dto);
@@ -233,7 +233,7 @@ public class CustomerService : ICustomerService
         {
             var term = searchTerm.ToLower();
             var customers = await _unitOfWork.Customers.Table
-                .Where(c => !c.IsDeleted &&
+                .Where(c => c.DeletedAt == null &&
                     (c.FirstName.ToLower().Contains(term) ||
                      c.LastName.ToLower().Contains(term) ||
                      c.Phone.Contains(term)))
@@ -254,7 +254,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Phone == phone && !c.IsDeleted);
+                .SelectAsync(c => c.Phone == phone && c.DeletedAt == null);
 
             if (customer == null)
                 return Result<CustomerDetailDto>.NotFound("Customer not found");
@@ -277,7 +277,7 @@ public class CustomerService : ICustomerService
                 return Result<CustomerPersonalStatsDto>.NotFound("Customer not found");
 
             var orders = await _unitOfWork.Orders
-                .SelectAll(o => o.CustomerId == customerId && !o.IsDeleted)
+                .SelectAll(o => o.CustomerId == customerId && o.DeletedAt == null)
                 .ToListAsync();
 
             var stats = new CustomerPersonalStatsDto
@@ -303,7 +303,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customerOrders = await _unitOfWork.Orders
-                .SelectAll(o => !o.IsDeleted, new[] { "Customer" })
+                .SelectAll(o => o.DeletedAt == null, new[] { "Customer" })
                 .GroupBy(o => o.CustomerId)
                 .Select(g => new TopCustomerDto
                 {
@@ -351,7 +351,7 @@ public class CustomerService : ICustomerService
     {
         try
         {
-            var query = _unitOfWork.Customers.Table.Where(c => !c.IsDeleted);
+            var query = _unitOfWork.Customers.Table.Where(c => c.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);

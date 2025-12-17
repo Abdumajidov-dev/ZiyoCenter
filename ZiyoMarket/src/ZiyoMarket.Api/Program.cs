@@ -181,11 +181,9 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger"; // => /swagger
 });
 
-// ✅ HTTPS redirection faqat Development da (Railway proxy HTTPS handle qiladi)
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+// ✅ HTTPS redirection (disabled for Railway, enabled for local)
+// Railway proxy handles HTTPS, but local dev needs it
+// app.UseHttpsRedirection(); // Disabled - not required
 
 app.UseAuthentication();
 app.UseAuthorization();

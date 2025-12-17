@@ -37,7 +37,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chat = await _unitOfWork.SupportChats
-				.SelectAsync(c => c.Id == chatId && !c.IsDeleted,
+				.SelectAsync(c => c.Id == chatId && c.DeletedAt == null,
 					new[] { "Customer", "Admin" });
 
 			if (chat == null)
@@ -45,7 +45,7 @@ public class SupportService : ISupportService
 
 			// Get messages
 			var messages = await _unitOfWork.SupportMessages
-				.SelectAll(m => m.ChatId == chatId && !m.IsDeleted)
+				.SelectAll(m => m.ChatId == chatId && m.DeletedAt == null)
 				.OrderBy(m => m.CreatedAt)
 				.ToListAsync();
 
@@ -71,7 +71,7 @@ public class SupportService : ISupportService
 				.Table
 				.Include(c => c.Customer)
 				.Include(c => c.Admin)
-				.Where(c => !c.IsDeleted);
+				.Where(c => c.DeletedAt == null);
 
 			// Filters
 			if (request.Status.HasValue)
@@ -123,10 +123,10 @@ public class SupportService : ISupportService
 			foreach (var dto in dtos)
 			{
 				dto.MessageCount = await _unitOfWork.SupportMessages
-					.CountAsync(m => m.ChatId == dto.Id && !m.IsDeleted);
+					.CountAsync(m => m.ChatId == dto.Id && m.DeletedAt == null);
 
 				dto.UnreadCount = await _unitOfWork.SupportMessages
-					.CountAsync(m => m.ChatId == dto.Id && !m.IsRead && !m.IsDeleted);
+					.CountAsync(m => m.ChatId == dto.Id && !m.IsRead && m.DeletedAt == null);
 			}
 
 			return Result<PaginationResponse<SupportChatListDto>>.Success(
@@ -328,7 +328,7 @@ public class SupportService : ISupportService
 			var skip = (pageNumber - 1) * pageSize;
 
 			var messages = await _unitOfWork.SupportMessages
-				.SelectAll(m => m.ChatId == chatId && !m.IsDeleted)
+				.SelectAll(m => m.ChatId == chatId && m.DeletedAt == null)
 				.OrderBy(m => m.CreatedAt)
 				.Skip(skip)
 				.Take(pageSize)
@@ -350,7 +350,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chat = await _unitOfWork.SupportChats
-				.SelectAsync(c => c.Id == request.ChatId && !c.IsDeleted);
+				.SelectAsync(c => c.Id == request.ChatId && c.DeletedAt == null);
 
 			if (chat == null)
 				return Result<SupportMessageDto>.NotFound("Chat not found");
@@ -488,7 +488,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Admin" })
+				.SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null, new[] { "Admin" })
 				.OrderByDescending(c => c.StartedAt)
 				.ToListAsync();
 
@@ -498,11 +498,11 @@ public class SupportService : ISupportService
 			foreach (var dto in dtos)
 			{
 				dto.MessageCount = await _unitOfWork.SupportMessages
-					.CountAsync(m => m.ChatId == dto.Id && !m.IsDeleted);
+					.CountAsync(m => m.ChatId == dto.Id && m.DeletedAt == null);
 
 				dto.UnreadCount = await _unitOfWork.SupportMessages
 					.CountAsync(m => m.ChatId == dto.Id && !m.IsRead &&
-							   m.SenderType != UserType.Customer && !m.IsDeleted);
+							   m.SenderType != UserType.Customer && m.DeletedAt == null);
 			}
 
 			return Result<List<SupportChatListDto>>.Success(dtos);
@@ -519,7 +519,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+				.SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null)
 				.ToListAsync();
 
 			var stats = new CustomerSupportStatsDto
@@ -546,7 +546,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chat = await _unitOfWork.SupportChats
-				.SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Admin" })
+				.SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null, new[] { "Admin" })
 				.OrderByDescending(c => c.StartedAt)
 				.FirstOrDefaultAsync();
 
@@ -569,7 +569,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => c.AdminId == adminId && !c.IsDeleted, new[] { "Customer" })
+				.SelectAll(c => c.AdminId == adminId && c.DeletedAt == null, new[] { "Customer" })
 				.OrderByDescending(c => c.StartedAt)
 				.ToListAsync();
 
@@ -578,11 +578,11 @@ public class SupportService : ISupportService
 			foreach (var dto in dtos)
 			{
 				dto.MessageCount = await _unitOfWork.SupportMessages
-					.CountAsync(m => m.ChatId == dto.Id && !m.IsDeleted);
+					.CountAsync(m => m.ChatId == dto.Id && m.DeletedAt == null);
 
 				dto.UnreadCount = await _unitOfWork.SupportMessages
 					.CountAsync(m => m.ChatId == dto.Id && !m.IsRead &&
-							   m.SenderType == UserType.Customer && !m.IsDeleted);
+							   m.SenderType == UserType.Customer && m.DeletedAt == null);
 			}
 
 			return Result<List<SupportChatListDto>>.Success(dtos);
@@ -599,7 +599,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => c.AdminId == adminId && !c.IsDeleted)
+				.SelectAll(c => c.AdminId == adminId && c.DeletedAt == null)
 				.ToListAsync();
 
 			var stats = new AdminSupportStatsDto
@@ -626,7 +626,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => c.AdminId == null && c.Status != SupportChatStatus.Closed && !c.IsDeleted,
+				.SelectAll(c => c.AdminId == null && c.Status != SupportChatStatus.Closed && c.DeletedAt == null,
 					new[] { "Customer" })
 				.OrderByDescending(c => c.Priority)
 				.ThenBy(c => c.StartedAt)
@@ -651,7 +651,7 @@ public class SupportService : ISupportService
 
 			var chats = await _unitOfWork.SupportChats
 				.SelectAll(c => c.Status != SupportChatStatus.Closed &&
-							   DateTime.Parse(c.StartedAt.ToString()) < threshold && !c.IsDeleted,
+							   DateTime.Parse(c.StartedAt.ToString()) < threshold && c.DeletedAt == null,
 					new[] { "Customer", "Admin" })
 				.OrderBy(c => c.StartedAt)
 				.ToListAsync();
@@ -701,7 +701,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted &&
+				.SelectAll(c => c.DeletedAt == null &&
 							   c.CustomerRating.HasValue,
 							   //DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
 							   //DateTime.Parse(c.ClosedAt.ToString()!) <= endDate,
@@ -725,7 +725,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted &&
+				.SelectAll(c => c.DeletedAt == null &&
 							   c.CustomerRating.HasValue )
 							   //DateTime.Parse(c.ClosedAt.ToString()!) >= startDate &&
 							   //DateTime.Parse(c.ClosedAt.ToString()!) <= endDate)
@@ -759,7 +759,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted &&
+				.SelectAll(c => c.DeletedAt == null &&
 							   DateTime.Parse(c.StartedAt.ToString()) >= startDate &&
 							   DateTime.Parse(c.StartedAt.ToString()) <= endDate)
 				.ToListAsync();
@@ -793,7 +793,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted &&
+				.SelectAll(c => c.DeletedAt == null &&
 							   DateTime.Parse(c.StartedAt.ToString()) >= startDate &&
 							   DateTime.Parse(c.StartedAt.ToString()) <= endDate,
 					new[] { "Admin" })
@@ -806,7 +806,7 @@ public class SupportService : ISupportService
 				var firstAdminMessage = await _unitOfWork.SupportMessages
 					.SelectAsync(m => m.ChatId == chat.Id &&
 									 m.SenderType == UserType.Admin &&
-									 !m.IsDeleted);
+									 m.DeletedAt == null);
 
 				if (firstAdminMessage != null)
 				{
@@ -841,7 +841,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted &&
+				.SelectAll(c => c.DeletedAt == null &&
 							   c.Status == SupportChatStatus.Closed &&
 							   DateTime.Parse(c.StartedAt.ToString()) >= startDate &&
 							   DateTime.Parse(c.StartedAt.ToString()) <= endDate,
@@ -882,7 +882,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted && !string.IsNullOrEmpty(c.Tags))
+				.SelectAll(c => c.DeletedAt == null && !string.IsNullOrEmpty(c.Tags))
 				.ToListAsync();
 
 			var tags = chats
@@ -905,7 +905,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var categories = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted && !string.IsNullOrEmpty(c.Category))
+				.SelectAll(c => c.DeletedAt == null && !string.IsNullOrEmpty(c.Category))
 				.Select(c => c.Category!)
 				.Distinct()
 				.OrderBy(c => c)
@@ -924,7 +924,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted && c.Tags != null && c.Tags.Contains(tag),
+				.SelectAll(c => c.DeletedAt == null && c.Tags != null && c.Tags.Contains(tag),
 					new[] { "Customer", "Admin" })
 				.OrderByDescending(c => c.StartedAt)
 				.ToListAsync();
@@ -945,7 +945,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chats = await _unitOfWork.SupportChats
-				.SelectAll(c => !c.IsDeleted && c.Category == category,
+				.SelectAll(c => c.DeletedAt == null && c.Category == category,
 					new[] { "Customer", "Admin" })
 				.OrderByDescending(c => c.StartedAt)
 				.ToListAsync();
@@ -968,7 +968,7 @@ public class SupportService : ISupportService
 	{
 		try
 		{
-			var query = _unitOfWork.SupportChats.SelectAll(c => !c.IsDeleted);
+			var query = _unitOfWork.SupportChats.SelectAll(c => c.DeletedAt == null);
 
 			if (startDate.HasValue)
 				query = query.Where(c => DateTime.Parse(c.StartedAt.ToString()) >= startDate.Value);
@@ -1000,7 +1000,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var customers = await _unitOfWork.Customers
-				.SelectAll(c => c.IsActive && !c.IsDeleted)
+				.SelectAll(c => c.IsActive && c.DeletedAt == null)
 				.Take(count)
 				.ToListAsync();
 
@@ -1067,7 +1067,7 @@ public class SupportService : ISupportService
 		try
 		{
 			var chat = await _unitOfWork.SupportChats
-				.SelectAsync(c => c.Id == chatId && !c.IsDeleted, new[] { "Customer" });
+				.SelectAsync(c => c.Id == chatId && c.DeletedAt == null, new[] { "Customer" });
 
 			if (chat == null)
 				return Result<List<SupportMessageDto>>.NotFound("Chat not found");
@@ -1130,7 +1130,7 @@ public class SupportService : ISupportService
 	private async Task<double> CalculateAverageResponseTimeAsync(int customerId)
 	{
 		var chats = await _unitOfWork.SupportChats
-			.SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+			.SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null)
 			.ToListAsync();
 
 		if (!chats.Any()) return 0;
@@ -1142,7 +1142,7 @@ public class SupportService : ISupportService
 			var firstAdminMessage = await _unitOfWork.SupportMessages
 				.SelectAsync(m => m.ChatId == chat.Id &&
 								 m.SenderType == UserType.Admin &&
-								 !m.IsDeleted);
+								 m.DeletedAt == null);
 
 			if (firstAdminMessage != null)
 			{
@@ -1160,7 +1160,7 @@ public class SupportService : ISupportService
 		var closedChats = await _unitOfWork.SupportChats
 			.SelectAll(c => c.CustomerId == customerId &&
 						   c.Status == SupportChatStatus.Closed &&
-						   !c.IsDeleted)
+						   c.DeletedAt == null)
 			.ToListAsync();
 
 		if (!closedChats.Any()) return 0;
@@ -1179,7 +1179,7 @@ public class SupportService : ISupportService
 	private async Task<double> CalculateAdminResponseTimeAsync(int adminId)
 	{
 		var chats = await _unitOfWork.SupportChats
-			.SelectAll(c => c.AdminId == adminId && !c.IsDeleted)
+			.SelectAll(c => c.AdminId == adminId && c.DeletedAt == null)
 			.ToListAsync();
 
 		if (!chats.Any()) return 0;
@@ -1192,7 +1192,7 @@ public class SupportService : ISupportService
 				.SelectAsync(m => m.ChatId == chat.Id &&
 								 m.SenderId == adminId &&
 								 m.SenderType == UserType.Admin &&
-								 !m.IsDeleted);
+								 m.DeletedAt == null);
 
 			if (firstAdminMessage != null)
 			{
@@ -1210,7 +1210,7 @@ public class SupportService : ISupportService
 		var closedChats = await _unitOfWork.SupportChats
 			.SelectAll(c => c.AdminId == adminId &&
 						   c.Status == SupportChatStatus.Closed &&
-						   !c.IsDeleted)
+						   c.DeletedAt == null)
 			.ToListAsync();
 
 		if (!closedChats.Any()) return 0;
@@ -1229,7 +1229,7 @@ public class SupportService : ISupportService
 	private async Task<double> CalculateOverallResponseTimeAsync(DateTime startDate, DateTime endDate)
 	{
 		var chats = await _unitOfWork.SupportChats
-			.SelectAll(c => !c.IsDeleted &&
+			.SelectAll(c => c.DeletedAt == null &&
 						   DateTime.Parse(c.StartedAt.ToString()) >= startDate &&
 						   DateTime.Parse(c.StartedAt.ToString()) <= endDate)
 			.ToListAsync();
@@ -1243,7 +1243,7 @@ public class SupportService : ISupportService
 			var firstAdminMessage = await _unitOfWork.SupportMessages
 				.SelectAsync(m => m.ChatId == chat.Id &&
 								 m.SenderType == UserType.Admin &&
-								 !m.IsDeleted);
+								 m.DeletedAt == null);
 
 			if (firstAdminMessage != null)
 			{
@@ -1259,7 +1259,7 @@ public class SupportService : ISupportService
 	private async Task<double> CalculateOverallResolutionTimeAsync(DateTime startDate, DateTime endDate)
 	{
 		var closedChats = await _unitOfWork.SupportChats
-			.SelectAll(c => !c.IsDeleted &&
+			.SelectAll(c => c.DeletedAt == null &&
 						   c.Status == SupportChatStatus.Closed &&
 						   DateTime.Parse(c.StartedAt.ToString()) >= startDate &&
 						   DateTime.Parse(c.StartedAt.ToString()) <= endDate)

@@ -32,7 +32,7 @@ public class DeliveryService : IDeliveryService
         {
             var partners = await _unitOfWork.DeliveryPartners.Table
                 .Include(dp => dp.OrderDeliveries)
-                .Where(dp => !dp.IsDeleted)
+                .Where(dp => dp.DeletedAt == null)
                 .OrderBy(dp => dp.DisplayOrder)
                 .ThenBy(dp => dp.Name)
                 .ToListAsync();
@@ -63,7 +63,7 @@ public class DeliveryService : IDeliveryService
         {
             var partners = await _unitOfWork.DeliveryPartners.Table
                 .Include(dp => dp.OrderDeliveries)
-                .Where(dp => !dp.IsDeleted && dp.IsActive)
+                .Where(dp => dp.DeletedAt == null && dp.IsActive)
                 .OrderBy(dp => dp.DisplayOrder)
                 .ThenBy(dp => dp.Name)
                 .ToListAsync();
@@ -93,7 +93,7 @@ public class DeliveryService : IDeliveryService
         try
         {
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == id && !dp.IsDeleted, new[] { "OrderDeliveries" });
+                .SelectAsync(dp => dp.Id == id && dp.DeletedAt == null, new[] { "OrderDeliveries" });
 
             if (partner == null)
                 return Result<DeliveryPartnerDto>.NotFound("Yetkazib berish hamkori topilmadi");
@@ -124,7 +124,7 @@ public class DeliveryService : IDeliveryService
         {
             // Check if partner with same name exists
             var existingPartner = await _unitOfWork.DeliveryPartners.Table
-                .FirstOrDefaultAsync(dp => dp.Name == request.Name && !dp.IsDeleted);
+                .FirstOrDefaultAsync(dp => dp.Name == request.Name && dp.DeletedAt == null);
 
             if (existingPartner != null)
                 return Result<DeliveryPartnerDto>.BadRequest("Bu nom bilan yetkazib berish hamkori allaqachon mavjud");
@@ -182,14 +182,14 @@ public class DeliveryService : IDeliveryService
         try
         {
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == id && !dp.IsDeleted, new[] { "OrderDeliveries" });
+                .SelectAsync(dp => dp.Id == id && dp.DeletedAt == null, new[] { "OrderDeliveries" });
 
             if (partner == null)
                 return Result<DeliveryPartnerDto>.NotFound("Yetkazib berish hamkori topilmadi");
 
             // Check if name is unique (excluding current partner)
             var existingPartner = await _unitOfWork.DeliveryPartners.Table
-                .FirstOrDefaultAsync(dp => dp.Name == request.Name && dp.Id != id && !dp.IsDeleted);
+                .FirstOrDefaultAsync(dp => dp.Name == request.Name && dp.Id != id && dp.DeletedAt == null);
 
             if (existingPartner != null)
                 return Result<DeliveryPartnerDto>.BadRequest("Bu nom bilan yetkazib berish hamkori allaqachon mavjud");
@@ -243,14 +243,14 @@ public class DeliveryService : IDeliveryService
         try
         {
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == id && !dp.IsDeleted, new[] { "OrderDeliveries" });
+                .SelectAsync(dp => dp.Id == id && dp.DeletedAt == null, new[] { "OrderDeliveries" });
 
             if (partner == null)
                 return Result.NotFound("Yetkazib berish hamkori topilmadi");
 
             // Check if partner has active deliveries
             var hasActiveDeliveries = partner.OrderDeliveries
-                .Any(od => !od.IsDeleted && od.DeliveryStatus != DeliveryStatus.Delivered && od.DeliveryStatus != DeliveryStatus.Failed);
+                .Any(od => od.DeletedAt == null && od.DeliveryStatus != DeliveryStatus.Delivered && od.DeliveryStatus != DeliveryStatus.Failed);
 
             if (hasActiveDeliveries)
                 return Result.BadRequest("Bu hamkor orqali faol yetkazib berishlar mavjud. Avval ularni yakunlang");
@@ -273,7 +273,7 @@ public class DeliveryService : IDeliveryService
         try
         {
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == id && !dp.IsDeleted, new[] { "OrderDeliveries" });
+                .SelectAsync(dp => dp.Id == id && dp.DeletedAt == null, new[] { "OrderDeliveries" });
 
             if (partner == null)
                 return Result<DeliveryPartnerStatsDto>.NotFound("Yetkazib berish hamkori topilmadi");
@@ -303,7 +303,7 @@ public class DeliveryService : IDeliveryService
         try
         {
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == id && !dp.IsDeleted);
+                .SelectAsync(dp => dp.Id == id && dp.DeletedAt == null);
 
             if (partner == null)
                 return Result<bool>.NotFound("Yetkazib berish hamkori topilmadi");
@@ -335,7 +335,7 @@ public class DeliveryService : IDeliveryService
             var orderDelivery = await _unitOfWork.OrderDeliveries.Table
                 .Include(od => od.Order)
                 .Include(od => od.DeliveryPartner)
-                .FirstOrDefaultAsync(od => od.OrderId == orderId && !od.IsDeleted);
+                .FirstOrDefaultAsync(od => od.OrderId == orderId && od.DeletedAt == null);
 
             if (orderDelivery == null)
                 return Result<OrderDeliveryDto>.NotFound("Buyurtma yetkazib berish ma'lumotlari topilmadi");
@@ -368,21 +368,21 @@ public class DeliveryService : IDeliveryService
         {
             // Check if order exists
             var order = await _unitOfWork.Orders
-                .SelectAsync(o => o.Id == request.OrderId && !o.IsDeleted);
+                .SelectAsync(o => o.Id == request.OrderId && o.DeletedAt == null);
 
             if (order == null)
                 return Result<OrderDeliveryDto>.NotFound("Buyurtma topilmadi");
 
             // Check if order already has delivery
             var existingDelivery = await _unitOfWork.OrderDeliveries.Table
-                .FirstOrDefaultAsync(od => od.OrderId == request.OrderId && !od.IsDeleted);
+                .FirstOrDefaultAsync(od => od.OrderId == request.OrderId && od.DeletedAt == null);
 
             if (existingDelivery != null)
                 return Result<OrderDeliveryDto>.BadRequest("Bu buyurtma uchun yetkazib berish allaqachon yaratilgan");
 
             // Check if delivery partner exists and is active
             var partner = await _unitOfWork.DeliveryPartners
-                .SelectAsync(dp => dp.Id == request.DeliveryPartnerId && !dp.IsDeleted);
+                .SelectAsync(dp => dp.Id == request.DeliveryPartnerId && dp.DeletedAt == null);
 
             if (partner == null)
                 return Result<OrderDeliveryDto>.NotFound("Yetkazib berish hamkori topilmadi");
@@ -441,7 +441,7 @@ public class DeliveryService : IDeliveryService
         try
         {
             var orderDelivery = await _unitOfWork.OrderDeliveries
-                .SelectAsync(od => od.Id == id && !od.IsDeleted,
+                .SelectAsync(od => od.Id == id && od.DeletedAt == null,
                     new[] { "Order", "DeliveryPartner" });
 
             if (orderDelivery == null)
@@ -511,7 +511,7 @@ public class DeliveryService : IDeliveryService
             var orderDelivery = await _unitOfWork.OrderDeliveries.Table
                 .Include(od => od.Order)
                 .Include(od => od.DeliveryPartner)
-                .FirstOrDefaultAsync(od => od.TrackingCode == trackingCode && !od.IsDeleted);
+                .FirstOrDefaultAsync(od => od.TrackingCode == trackingCode && od.DeletedAt == null);
 
             if (orderDelivery == null)
                 return Result<OrderDeliveryDto>.NotFound("Yetkazib berish topilmadi");
@@ -545,7 +545,7 @@ public class DeliveryService : IDeliveryService
             var deliveries = await _unitOfWork.OrderDeliveries.Table
                 .Include(od => od.Order)
                 .Include(od => od.DeliveryPartner)
-                .Where(od => od.DeliveryPartnerId == partnerId && !od.IsDeleted)
+                .Where(od => od.DeliveryPartnerId == partnerId && od.DeletedAt == null)
                 .OrderByDescending(od => od.AssignedAt)
                 .ToListAsync();
 
@@ -578,7 +578,7 @@ public class DeliveryService : IDeliveryService
             var deliveries = await _unitOfWork.OrderDeliveries.Table
                 .Include(od => od.Order)
                 .Include(od => od.DeliveryPartner)
-                .Where(od => !od.IsDeleted &&
+                .Where(od => od.DeletedAt == null &&
                             od.EstimatedDeliveryDate.HasValue &&
                             od.EstimatedDeliveryDate.Value < DateTime.UtcNow &&
                             od.DeliveryStatus != DeliveryStatus.Delivered &&
@@ -618,7 +618,7 @@ public class DeliveryService : IDeliveryService
         {
             var query = _unitOfWork.DeliveryPartners.Table
                 .Include(dp => dp.OrderDeliveries)
-                .Where(dp => !dp.IsDeleted);
+                .Where(dp => dp.DeletedAt == null);
 
             if (startDate.IsNullOrEmpty())
                 query = query.Where(dp => dp.CreatedAt == startDate);
@@ -630,7 +630,7 @@ public class DeliveryService : IDeliveryService
 
             // Only delete partners without active deliveries
             var deletablePartners = partners
-                .Where(p => !p.OrderDeliveries.Any(od => !od.IsDeleted &&
+                .Where(p => !p.OrderDeliveries.Any(od => od.DeletedAt == null &&
                     od.DeliveryStatus != DeliveryStatus.Delivered &&
                     od.DeliveryStatus != DeliveryStatus.Failed))
                 .ToList();

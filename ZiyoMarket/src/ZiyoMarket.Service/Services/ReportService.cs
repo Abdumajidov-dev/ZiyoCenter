@@ -25,7 +25,7 @@ public class ReportService : IReportService
             var stats = new DashboardStatsDto();
 
             var orders = await _unitOfWork.Orders
- .SelectAll(o => !o.IsDeleted &&
+ .SelectAll(o => o.DeletedAt == null &&
         DateTime.Parse(o.OrderDate) >= startDate &&
            DateTime.Parse(o.OrderDate) <= endDate)
     .ToListAsync();
@@ -39,9 +39,9 @@ public class ReportService : IReportService
    stats.OfflineOrders = orders.Count(o => o.SellerId != null);
           stats.CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled);
 
-            stats.CustomerCount = await _unitOfWork.Customers.CountAsync(c => !c.IsDeleted);
- stats.ProductCount = await _unitOfWork.Products.CountAsync(p => !p.IsDeleted);
-            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => !p.IsDeleted && p.IsLowStock);
+            stats.CustomerCount = await _unitOfWork.Customers.CountAsync(c => c.DeletedAt == null);
+ stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
+            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.IsLowStock);
 
             return Result<DashboardStatsDto>.Success(stats);
         }
@@ -57,7 +57,7 @@ public class ReportService : IReportService
         try
         {
        var orders = await _unitOfWork.Orders
-      .SelectAll(o => !o.IsDeleted &&
+      .SelectAll(o => o.DeletedAt == null &&
        DateTime.Parse(o.OrderDate) >= startDate &&
       DateTime.Parse(o.OrderDate) <= endDate)
   .ToListAsync();
@@ -116,7 +116,7 @@ public class ReportService : IReportService
         try
       {
         var orders = await _unitOfWork.Orders
-           .SelectAll(o => !o.IsDeleted &&
+           .SelectAll(o => o.DeletedAt == null &&
                DateTime.Parse(o.OrderDate) >= startDate &&
             DateTime.Parse(o.OrderDate) <= endDate)
          .ToListAsync();
@@ -151,8 +151,8 @@ public class ReportService : IReportService
 //     try
 //        {
 //     var orderItems = await _unitOfWork.OrderItems
-//                .SelectAll(oi => !oi.IsDeleted && 
-//        !oi.Order.IsDeleted &&
+//                .SelectAll(oi => oi.DeletedAt == null && 
+//        oi.Order.DeletedAt == null &&
 //    DateTime.Parse(oi.Order.OrderDate) >= startDate &&
 //DateTime.Parse(oi.Order.OrderDate) <= endDate,
 //       new[] { "Order", "Product" })
@@ -193,8 +193,8 @@ public class ReportService : IReportService
             var orderItems = await _unitOfWork.OrderItems.Table
                 .Include(oi => oi.Product)
                 .Include(oi => oi.Order)
-                .Where(oi => !oi.IsDeleted &&
-                             !oi.Order.IsDeleted &&
+                .Where(oi => oi.DeletedAt == null &&
+                             oi.Order.DeletedAt == null &&
                              oi.Order.OrderDate == startDate.ToLongDateString() &&
                              oi.Order.OrderDate == endDate.ToLongDateString())
                 .ToListAsync();
@@ -247,8 +247,8 @@ public class ReportService : IReportService
         try
         {
    var orderItems = await _unitOfWork.OrderItems
-      .SelectAll(oi => !oi.IsDeleted &&
-   !oi.Order.IsDeleted &&
+      .SelectAll(oi => oi.DeletedAt == null &&
+   oi.Order.DeletedAt == null &&
           DateTime.Parse(oi.Order.OrderDate) >= startDate &&
       DateTime.Parse(oi.Order.OrderDate) <= endDate,
             new[] { "Order", "Product", "Product.Category" })
@@ -289,8 +289,8 @@ public class ReportService : IReportService
         try
         {
         var topProducts = await _unitOfWork.OrderItems
-      .SelectAll(oi => !oi.IsDeleted &&
-     !oi.Order.IsDeleted &&
+      .SelectAll(oi => oi.DeletedAt == null &&
+     oi.Order.DeletedAt == null &&
      DateTime.Parse(oi.Order.OrderDate) >= startDate &&
            DateTime.Parse(oi.Order.OrderDate) <= endDate,
      new[] { "Order", "Product" })
@@ -321,8 +321,8 @@ public class ReportService : IReportService
  try
         {
   var topCategories = await _unitOfWork.OrderItems
-         .SelectAll(oi => !oi.IsDeleted &&
-          !oi.Order.IsDeleted &&
+         .SelectAll(oi => oi.DeletedAt == null &&
+          oi.Order.DeletedAt == null &&
                 DateTime.Parse(oi.Order.OrderDate) >= startDate &&
   DateTime.Parse(oi.Order.OrderDate) <= endDate,
         new[] { "Order", "Product", "Product.Category" })
@@ -353,7 +353,7 @@ public class ReportService : IReportService
         try
         {
    var topCustomers = await _unitOfWork.Orders
-        .SelectAll(o => !o.IsDeleted &&
+        .SelectAll(o => o.DeletedAt == null &&
   DateTime.Parse(o.OrderDate) >= startDate &&
            DateTime.Parse(o.OrderDate) <= endDate,
           new[] { "Customer" })
@@ -383,7 +383,7 @@ public class ReportService : IReportService
         try
         {
             var topSellers = await _unitOfWork.Orders
-  .SelectAll(o => !o.IsDeleted &&
+  .SelectAll(o => o.DeletedAt == null &&
          o.SellerId != null &&
         DateTime.Parse(o.OrderDate) >= startDate &&
      DateTime.Parse(o.OrderDate) <= endDate,
@@ -412,7 +412,7 @@ public class ReportService : IReportService
         try
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted, new[] { "Category" })
+                .SelectAll(p => p.DeletedAt == null, new[] { "Category" })
                 .ToListAsync();
 
             var report = new InventoryReportDto
@@ -483,7 +483,7 @@ public class ReportService : IReportService
     //     try
     //        {
     //     var products = await _unitOfWork.Products
-    //       .SelectAll(p => !p.IsDeleted, new[] { "Category" })
+    //       .SelectAll(p => p.DeletedAt == null, new[] { "Category" })
     //   .ToListAsync();
 
     //var report = new InventoryReportDto
@@ -519,7 +519,7 @@ public class ReportService : IReportService
     //    try
     //       {
     //      var products = await _unitOfWork.Products
-    //.SelectAll(p => !p.IsDeleted && p.StockQuantity <= threshold,
+    //.SelectAll(p => p.DeletedAt == null && p.StockQuantity <= threshold,
     //        new[] { "Category" })
     //           .Select(p => new LowStockProductDto
     //       {
@@ -546,7 +546,7 @@ public class ReportService : IReportService
         try
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.StockQuantity <= threshold,
+                .SelectAll(p => p.DeletedAt == null && p.StockQuantity <= threshold,
                            new[] { "Category" })
                 .ToListAsync();
 
@@ -582,8 +582,8 @@ public class ReportService : IReportService
         try
         {
             var orderItems = await _unitOfWork.OrderItems
-                .SelectAll(oi => !oi.IsDeleted &&
-                                 !oi.Order.IsDeleted &&
+                .SelectAll(oi => oi.DeletedAt == null &&
+                                 oi.Order.DeletedAt == null &&
                                  oi.ProductId == productId &&
                                  DateTime.Parse(oi.Order.OrderDate) >= startDate &&
                                  DateTime.Parse(oi.Order.OrderDate) <= endDate,
@@ -617,8 +617,8 @@ public class ReportService : IReportService
     //     try
     //     {
     //       var orderItems = await _unitOfWork.OrderItems
-    // .SelectAll(oi => !oi.IsDeleted &&
-    // !oi.Order.IsDeleted &&
+    // .SelectAll(oi => oi.DeletedAt == null &&
+    // oi.Order.DeletedAt == null &&
     // oi.ProductId == productId &&
     //     DateTime.Parse(oi.Order.OrderDate) >= startDate &&
     //  DateTime.Parse(oi.Order.OrderDate) <= endDate,
@@ -649,13 +649,13 @@ public class ReportService : IReportService
    try
         {
             var orders = await _unitOfWork.Orders
-        .SelectAll(o => !o.IsDeleted &&
+        .SelectAll(o => o.DeletedAt == null &&
  DateTime.Parse(o.OrderDate) >= startDate &&
   DateTime.Parse(o.OrderDate) <= endDate)
      .ToListAsync();
 
          var customers = await _unitOfWork.Customers
-  .SelectAll(c => !c.IsDeleted)
+  .SelectAll(c => c.DeletedAt == null)
         .ToListAsync();
 
             var analytics = new CustomerAnalyticsDto
@@ -680,7 +680,7 @@ public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime s
         try
         {
         var orders = await _unitOfWork.Orders
-    .SelectAll(o => !o.IsDeleted &&
+    .SelectAll(o => o.DeletedAt == null &&
      o.SellerId != null &&
    DateTime.Parse(o.OrderDate) >= startDate &&
      DateTime.Parse(o.OrderDate) <= endDate)
@@ -688,7 +688,7 @@ public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime s
 
             var analytics = new SellerAnalyticsDto
           {
-         TotalSellers = await _unitOfWork.Sellers.CountAsync(s => !s.IsDeleted),
+         TotalSellers = await _unitOfWork.Sellers.CountAsync(s => s.DeletedAt == null),
               ActiveSellers = orders.Select(o => o.SellerId).Distinct().Count(),
      //TotalSales = orders.Sum(o => o.FinalPrice),
      //AverageOrdersPerSeller = orders.Any() ? (double)orders.Count / orders.Select(o => o.SellerId).Distinct().Count() : 0,
@@ -708,7 +708,7 @@ public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime s
    try
     {
             //        var transactions = await _unitOfWork.CashbackTransactions
-            //        .SelectAll(c => !c.IsDeleted &&
+            //        .SelectAll(c => c.DeletedAt == null &&
             //        DateTime.Parse(c.CreatedAt) >= startDate &&
             //        DateTime.Parse(c.CreatedAt) <= endDate)
             //   .ToListAsync();
@@ -740,7 +740,7 @@ public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime s
         try
        {
             //   var orders = await _unitOfWork.Orders
-            //      .SelectAll(o => !o.IsDeleted &&
+            //      .SelectAll(o => o.DeletedAt == null &&
             //  o.DiscountApplied > 0 &&
             //  DateTime.Parse(o.OrderDate) >= startDate &&
             //       DateTime.Parse(o.OrderDate) <= endDate)
@@ -771,7 +771,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //      var endDate = startDate.AddMonths(1).AddDays(-1);
 
             //         var orders = await _unitOfWork.Orders
-            //   .SelectAll(o => !o.IsDeleted &&
+            //   .SelectAll(o => o.DeletedAt == null &&
             //       DateTime.Parse(o.OrderDate) >= startDate &&
             //    DateTime.Parse(o.OrderDate) <= endDate)
             //     .ToListAsync();
@@ -812,7 +812,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //       var endDate = startDate.AddYears(1).AddDays(-1);
 
             //            var orders = await _unitOfWork.Orders
-            //       .SelectAll(o => !o.IsDeleted &&
+            //       .SelectAll(o => o.DeletedAt == null &&
             //   DateTime.Parse(o.OrderDate) >= startDate &&
             //       DateTime.Parse(o.OrderDate) <= endDate)
             //    .ToListAsync();
@@ -852,7 +852,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //            .Include(o => o.Customer)
             //                .Include(o => o.Seller)
             //  .Include(o => o.OrderItems)
-            //     .Where(o => !o.IsDeleted);
+            //     .Where(o => o.DeletedAt == null);
 
             //            // Apply filters
             //            if (filter.StartDate.HasValue)

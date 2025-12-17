@@ -24,7 +24,7 @@ public class AdminService : IAdminService
         try
         {
             var admin = await _unitOfWork.Admins
-                .SelectAsync(a => a.Id == adminId && !a.IsDeleted);
+                .SelectAsync(a => a.Id == adminId && a.DeletedAt == null);
 
             if (admin == null)
                 return Result<AdminDetailDto>.NotFound("Admin topilmadi");
@@ -42,7 +42,7 @@ public class AdminService : IAdminService
     {
         try
         {
-            var query = _unitOfWork.Admins.Table.Where(a => !a.IsDeleted);
+            var query = _unitOfWork.Admins.Table.Where(a => a.DeletedAt == null);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -83,7 +83,7 @@ public class AdminService : IAdminService
         try
         {
             var existingUsername = await _unitOfWork.Admins
-                .AnyAsync(a => a.Username == request.Username && !a.IsDeleted);
+                .AnyAsync(a => a.Username == request.Username && a.DeletedAt == null);
 
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
@@ -122,7 +122,7 @@ public class AdminService : IAdminService
                 return Result<AdminDetailDto>.NotFound("Admin topilmadi");
 
             var existingUsername = await _unitOfWork.Admins
-                .AnyAsync(a => a.Username == request.Username && a.Id != id && !a.IsDeleted);
+                .AnyAsync(a => a.Username == request.Username && a.Id != id && a.DeletedAt == null);
 
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
@@ -231,7 +231,7 @@ public class AdminService : IAdminService
         {
             var term = searchTerm.ToLower();
             var admins = await _unitOfWork.Admins.Table
-                .Where(a => !a.IsDeleted &&
+                .Where(a => a.DeletedAt == null &&
                     (a.FirstName.ToLower().Contains(term) ||
                      a.LastName.ToLower().Contains(term) ||
                      a.Username.ToLower().Contains(term)))

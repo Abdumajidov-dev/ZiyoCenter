@@ -24,7 +24,7 @@ public class SellerService : ISellerService
         try
         {
             var seller = await _unitOfWork.Sellers
-                .SelectAsync(s => s.Id == sellerId && !s.IsDeleted);
+                .SelectAsync(s => s.Id == sellerId && s.DeletedAt == null);
 
             if (seller == null)
                 return Result<SellerDetailDto>.NotFound("Seller not found");
@@ -32,9 +32,9 @@ public class SellerService : ISellerService
             var dto = _mapper.Map<SellerDetailDto>(seller);
 
             // Add statistics
-            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.SellerId == sellerId && !o.IsDeleted);
+            dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.SellerId == sellerId && o.DeletedAt == null);
             dto.TotalSales = await _unitOfWork.Orders
-                .SelectAll(o => o.SellerId == sellerId && !o.IsDeleted)
+                .SelectAll(o => o.SellerId == sellerId && o.DeletedAt == null)
                 .SumAsync(o => o.FinalPrice);
 
             return Result<SellerDetailDto>.Success(dto);
@@ -49,7 +49,7 @@ public class SellerService : ISellerService
     {
         try
         {
-            var query = _unitOfWork.Sellers.Table.Where(s => !s.IsDeleted);
+            var query = _unitOfWork.Sellers.Table.Where(s => s.DeletedAt == null);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -78,7 +78,7 @@ public class SellerService : ISellerService
 
             foreach (var dto in dtos)
             {
-                dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.SellerId == dto.Id && !o.IsDeleted);
+                dto.TotalOrders = await _unitOfWork.Orders.CountAsync(o => o.SellerId == dto.Id && o.DeletedAt == null);
             }
 
             return Result<PaginationResponse<SellerListDto>>.Success(
@@ -95,7 +95,7 @@ public class SellerService : ISellerService
         try
         {
             var existingPhone = await _unitOfWork.Sellers
-                .AnyAsync(s => s.Phone == request.Phone && !s.IsDeleted);
+                .AnyAsync(s => s.Phone == request.Phone && s.DeletedAt == null);
 
             if (existingPhone)
                 return Result<SellerDetailDto>.Conflict("Phone number already exists");
@@ -103,7 +103,7 @@ public class SellerService : ISellerService
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
                 var existingEmail = await _unitOfWork.Sellers
-                    .AnyAsync(s => s.Phone == request.Phone && !s.IsDeleted);
+                    .AnyAsync(s => s.Phone == request.Phone && s.DeletedAt == null);
 
                 if (existingEmail)
                     return Result<SellerDetailDto>.Conflict("Email already exists");
@@ -137,7 +137,7 @@ public class SellerService : ISellerService
                 return Result<SellerDetailDto>.NotFound("Seller not found");
 
             var phoneExists = await _unitOfWork.Sellers
-                .AnyAsync(s => s.Phone == request.Phone && s.Id != id && !s.IsDeleted);
+                .AnyAsync(s => s.Phone == request.Phone && s.Id != id && s.DeletedAt == null);
 
             if (phoneExists)
                 return Result<SellerDetailDto>.Conflict("Phone number already exists");
@@ -193,7 +193,7 @@ public class SellerService : ISellerService
                 return Result<SellerPerformanceDto>.NotFound("Seller not found");
 
             var query = _unitOfWork.Orders.Table
-                .Where(o => o.SellerId == sellerId && !o.IsDeleted);
+                .Where(o => o.SellerId == sellerId && o.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(o => DateTime.Parse(o.OrderDate) >= startDate.Value);
@@ -226,7 +226,7 @@ public class SellerService : ISellerService
         try
         {
             var sellerOrders = await _unitOfWork.Orders
-                .SelectAll(o => o.SellerId != null && !o.IsDeleted, new[] { "Seller" })
+                .SelectAll(o => o.SellerId != null && o.DeletedAt == null, new[] { "Seller" })
                 .GroupBy(o => o.SellerId)
                 .Select(g => new TopSellerDto
                 {
@@ -308,7 +308,7 @@ public class SellerService : ISellerService
         {
             var term = searchTerm.ToLower();
             var sellers = await _unitOfWork.Sellers.Table
-                .Where(s => !s.IsDeleted &&
+                .Where(s => s.DeletedAt == null &&
                     (s.FirstName.ToLower().Contains(term) ||
                      s.LastName.ToLower().Contains(term) ||
                      s.Phone.Contains(term)))
@@ -328,7 +328,7 @@ public class SellerService : ISellerService
     {
         try
         {
-            var query = _unitOfWork.Sellers.Table.Where(s => !s.IsDeleted);
+            var query = _unitOfWork.Sellers.Table.Where(s => s.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(s => DateTime.Parse(s.CreatedAt) >= startDate.Value);

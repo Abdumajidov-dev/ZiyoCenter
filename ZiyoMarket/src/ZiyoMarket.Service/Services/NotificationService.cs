@@ -89,7 +89,7 @@ public class NotificationService : INotificationService
             var query = _unitOfWork.Notifications.Table
                 .Where(n => n.UserId == userId &&
                     n.UserType.ToString() == userType &&
-                    !n.IsDeleted)
+                    n.DeletedAt == null)
                 .OrderByDescending(n => n.CreatedAt)
                 .Skip(skip)
                 .Take(pageSize);
@@ -113,7 +113,7 @@ public class NotificationService : INotificationService
                 .CountAsync(n => n.UserId == userId &&
                 n.UserType.ToString() == userType &&
                 !n.IsRead &&
-                !n.IsDeleted);
+                n.DeletedAt == null);
 
             return Result<int>.Success(count);
         }
@@ -157,7 +157,7 @@ public class NotificationService : INotificationService
                 .Where(n => n.UserId == userId &&
                     n.UserType.ToString() == userType &&
                     !n.IsRead &&
-                    !n.IsDeleted)
+                    n.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var notification in notifications)
@@ -302,7 +302,7 @@ public class NotificationService : INotificationService
 
             // Get all active admins
             var admins = await _unitOfWork.Admins
-                .SelectAll(a => a.IsActive && !a.IsDeleted)
+                .SelectAll(a => a.IsActive && a.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var admin in admins)
@@ -336,7 +336,7 @@ public class NotificationService : INotificationService
     {
         try
         {
-            var query = _unitOfWork.Notifications.Table.Where(n => !n.IsDeleted);
+            var query = _unitOfWork.Notifications.Table.Where(n => n.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(n => DateTime.Parse(n.CreatedAt) >= startDate.Value);
@@ -415,7 +415,7 @@ public class NotificationService : INotificationService
         try
         {
             var admins = await _unitOfWork.Admins
-                .SelectAll(a => a.IsActive && !a.IsDeleted)
+                .SelectAll(a => a.IsActive && a.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var admin in admins)

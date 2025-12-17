@@ -30,14 +30,14 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted,
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
                     new[] { "Parent", "Children", "Products" });
 
             if (category == null)
                 return Result<CategoryDto>.NotFound("Kategoriya topilmadi");
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products.Count(p => p.IsActive && !p.IsDeleted);
+            dto.ProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null);
 
             return Result<CategoryDto>.Success(dto);
         }
@@ -54,7 +54,7 @@ public class CategoryService : ICategoryService
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted)
+                .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -64,7 +64,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -81,7 +81,7 @@ public class CategoryService : ICategoryService
         {
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted && c.ParentId == null)
+                .Where(c => c.DeletedAt == null && c.ParentId == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -91,7 +91,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -108,14 +108,14 @@ public class CategoryService : ICategoryService
         {
             // Check if parent exists
             var parent = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == parentId && !c.IsDeleted);
+                .SelectAsync(c => c.Id == parentId && c.DeletedAt == null);
 
             if (parent == null)
                 return Result<List<CategoryDto>>.NotFound("Ota kategoriya topilmadi");
 
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted && c.ParentId == parentId)
+                .Where(c => c.DeletedAt == null && c.ParentId == parentId)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -125,7 +125,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -144,7 +144,7 @@ public class CategoryService : ICategoryService
             if (request.ParentId.HasValue)
             {
                 var parent = await _unitOfWork.Categories
-                    .SelectAsync(c => c.Id == request.ParentId.Value && !c.IsDeleted);
+                    .SelectAsync(c => c.Id == request.ParentId.Value && c.DeletedAt == null);
 
                 if (parent == null)
                     return Result<CategoryDto>.NotFound("Ota kategoriya topilmadi");
@@ -152,7 +152,7 @@ public class CategoryService : ICategoryService
 
             // Check if category with same name exists
             var existingCategory = await _unitOfWork.Categories.Table
-                .FirstOrDefaultAsync(c => c.Name == request.Name && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.Name == request.Name && c.DeletedAt == null);
 
             if (existingCategory != null)
                 return Result<CategoryDto>.BadRequest("Bu nom bilan kategoriya allaqachon mavjud");
@@ -187,7 +187,7 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == id && !c.IsDeleted, new[] { "Products" });
+                .SelectAsync(c => c.Id == id && c.DeletedAt == null, new[] { "Products" });
 
             if (category == null)
                 return Result<CategoryDto>.NotFound("Kategoriya topilmadi");
@@ -199,7 +199,7 @@ public class CategoryService : ICategoryService
                     return Result<CategoryDto>.BadRequest("Kategoriya o'zini ota qilib qo'ya olmaydi");
 
                 var parent = await _unitOfWork.Categories
-                    .SelectAsync(c => c.Id == request.ParentId.Value && !c.IsDeleted);
+                    .SelectAsync(c => c.Id == request.ParentId.Value && c.DeletedAt == null);
 
                 if (parent == null)
                     return Result<CategoryDto>.NotFound("Ota kategoriya topilmadi");
@@ -211,7 +211,7 @@ public class CategoryService : ICategoryService
 
             // Check if name is unique (excluding current category)
             var existingCategory = await _unitOfWork.Categories.Table
-                .FirstOrDefaultAsync(c => c.Name == request.Name && c.Id != id && !c.IsDeleted);
+                .FirstOrDefaultAsync(c => c.Name == request.Name && c.Id != id && c.DeletedAt == null);
 
             if (existingCategory != null)
                 return Result<CategoryDto>.BadRequest("Bu nom bilan kategoriya allaqachon mavjud");
@@ -228,7 +228,7 @@ public class CategoryService : ICategoryService
             await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products.Count(p => p.IsActive && !p.IsDeleted);
+            dto.ProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null);
 
             return Result<CategoryDto>.Success(dto, "Kategoriya muvaffaqiyatli yangilandi");
         }
@@ -243,18 +243,18 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted,
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
                     new[] { "Products", "Children" });
 
             if (category == null)
                 return Result.NotFound("Kategoriya topilmadi");
 
             // Check if category has products
-            if (category.Products.Any(p => !p.IsDeleted))
+            if (category.Products.Any(p => p.DeletedAt == null))
                 return Result.BadRequest("Bu kategoriyada mahsulotlar mavjud. Avval mahsulotlarni o'chiring yoki boshqa kategoriyaga o'tkazing");
 
             // Check if category has children
-            if (category.Children.Any(c => !c.IsDeleted))
+            if (category.Children.Any(c => c.DeletedAt == null))
                 return Result.BadRequest("Bu kategoriyada ichki kategoriyalar mavjud. Avval ichki kategoriyalarni o'chiring");
 
             category.DeletedBy = deletedBy;
@@ -282,7 +282,7 @@ public class CategoryService : ICategoryService
                 .Include(c => c.Parent)
                 .Include(c => c.Children)
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted)
+                .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -292,7 +292,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -308,7 +308,7 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted, new[] { "Parent" });
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null, new[] { "Parent" });
 
             if (category == null)
                 return Result<string>.NotFound("Kategoriya topilmadi");
@@ -327,19 +327,19 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted,
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
                     new[] { "Children", "Children.Products" });
 
             if (category == null)
                 return Result<List<CategoryDto>>.NotFound("Kategoriya topilmadi");
 
-            var children = category.Children.Where(c => !c.IsDeleted).ToList();
+            var children = category.Children.Where(c => c.DeletedAt == null).ToList();
             var dtos = _mapper.Map<List<CategoryDto>>(children);
 
             // Add product counts
             for (int i = 0; i < children.Count; i++)
             {
-                dtos[i].ProductCount = children[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = children[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -364,7 +364,7 @@ public class CategoryService : ICategoryService
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted &&
+                .Where(c => c.DeletedAt == null &&
                            (c.Name.Contains(searchTerm) ||
                             (c.Description != null && c.Description.Contains(searchTerm))))
                 .OrderBy(c => c.DisplayOrder)
@@ -376,7 +376,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -394,7 +394,7 @@ public class CategoryService : ICategoryService
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted && c.IsActive)
+                .Where(c => c.DeletedAt == null && c.IsActive)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -404,7 +404,7 @@ public class CategoryService : ICategoryService
             // Add product counts
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && !p.IsDeleted);
+                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -424,7 +424,7 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted,
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
                     new[] { "Parent", "Products" });
 
             if (category == null)
@@ -436,8 +436,8 @@ public class CategoryService : ICategoryService
                 CategoryName = category.Name,
                 ParentId = category.ParentId,
                 ParentName = category.Parent?.Name,
-                ActiveProductCount = category.Products.Count(p => p.IsActive && !p.IsDeleted),
-                TotalProductCount = category.Products.Count(p => !p.IsDeleted),
+                ActiveProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null),
+                TotalProductCount = category.Products.Count(p => p.DeletedAt == null),
                 IsActive = category.IsActive,
                 UpdatedAt = category.UpdatedAt
             };
@@ -457,7 +457,7 @@ public class CategoryService : ICategoryService
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.Products)
-                .Where(c => !c.IsDeleted)
+                .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -468,8 +468,8 @@ public class CategoryService : ICategoryService
                 CategoryName = c.Name,
                 ParentId = c.ParentId,
                 ParentName = c.Parent?.Name,
-                ActiveProductCount = c.Products.Count(p => p.IsActive && !p.IsDeleted),
-                TotalProductCount = c.Products.Count(p => !p.IsDeleted),
+                ActiveProductCount = c.Products.Count(p => p.IsActive && p.DeletedAt == null),
+                TotalProductCount = c.Products.Count(p => p.DeletedAt == null),
                 IsActive = c.IsActive,
                 UpdatedAt = c.UpdatedAt
             }).ToList();
@@ -493,7 +493,7 @@ public class CategoryService : ICategoryService
             foreach (var item in categories)
             {
                 var category = await _unitOfWork.Categories
-                    .SelectAsync(c => c.Id == item.Id && !c.IsDeleted);
+                    .SelectAsync(c => c.Id == item.Id && c.DeletedAt == null);
 
                 if (category != null)
                 {
@@ -518,7 +518,7 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == categoryId && !c.IsDeleted);
+                .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null);
 
             if (category == null)
                 return Result.NotFound("Kategoriya topilmadi");
@@ -552,7 +552,7 @@ public class CategoryService : ICategoryService
             var query = _unitOfWork.Categories.Table
                 .Include(c => c.Products)
                 .Include(c => c.Children)
-                .Where(c => !c.IsDeleted);
+                .Where(c => c.DeletedAt == null);
 
             if (startDate.IsNullOrEmpty())
                 query = query.Where(c => c.CreatedAt == startDate);
@@ -564,8 +564,8 @@ public class CategoryService : ICategoryService
 
             // Only delete categories without products or children
             var deletableCategories = categories
-                .Where(c => !c.Products.Any(p => !p.IsDeleted) &&
-                           !c.Children.Any(child => !child.IsDeleted))
+                .Where(c => !c.Products.Any(p => p.DeletedAt == null) &&
+                           !c.Children.Any(child => child.DeletedAt == null))
                 .ToList();
 
             if (!deletableCategories.Any())
@@ -652,7 +652,7 @@ public class CategoryService : ICategoryService
     private async Task<bool> IsCircularReference(int categoryId, int parentId)
     {
         var current = await _unitOfWork.Categories
-            .SelectAsync(c => c.Id == parentId && !c.IsDeleted, new[] { "Parent" });
+            .SelectAsync(c => c.Id == parentId && c.DeletedAt == null, new[] { "Parent" });
 
         while (current != null)
         {
@@ -663,7 +663,7 @@ public class CategoryService : ICategoryService
                 break;
 
             current = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == current.ParentId.Value && !c.IsDeleted, new[] { "Parent" });
+                .SelectAsync(c => c.Id == current.ParentId.Value && c.DeletedAt == null, new[] { "Parent" });
         }
 
         return false;

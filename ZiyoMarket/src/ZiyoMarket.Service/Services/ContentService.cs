@@ -24,7 +24,7 @@ public class ContentService : IContentService
         try
    {
      var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-        if (content == null || content.IsDeleted)
+        if (content == null || content.DeletedAt != null)
      return Result<ContentDetailDto>.NotFound("Content not found");
 
         var dto = _mapper.Map<ContentDetailDto>(content);
@@ -40,7 +40,7 @@ public class ContentService : IContentService
     {
         try
         {
-  var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
+  var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
 
      if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -103,7 +103,7 @@ catch (Exception ex)
         try
         {
             var content = await _unitOfWork.Contents.GetByIdAsync(id);
-      if (content == null || content.IsDeleted)
+      if (content == null || content.DeletedAt != null)
             return Result<ContentDetailDto>.NotFound("Content not found");
 
          _mapper.Map(request, content);
@@ -127,7 +127,7 @@ catch (Exception ex)
  try
     {
             var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-   if (content == null || content.IsDeleted)
+   if (content == null || content.DeletedAt != null)
      return Result.NotFound("Content not found");
 
    content.DeletedBy = deletedBy;
@@ -149,7 +149,7 @@ catch (Exception ex)
         try
         {
         var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-      if (content == null || content.IsDeleted)
+      if (content == null || content.DeletedAt != null)
     return Result.NotFound("Content not found");
 
             content.IsActive = true;
@@ -172,7 +172,7 @@ return Result.Success("Content published successfully");
         try
       {
             var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
- if (content == null || content.IsDeleted)
+ if (content == null || content.DeletedAt != null)
       return Result.NotFound("Content not found");
 
  content.IsActive = false;
@@ -194,7 +194,7 @@ await _unitOfWork.Contents.Update(content, contentId);
     {
         try
         {
-            var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted && c.IsActive);
+            var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null && c.IsActive);
 
             if (!string.IsNullOrEmpty(type))
             query = query.Where(c => c.ContentType.ToString() == type);
@@ -218,7 +218,7 @@ await _unitOfWork.Contents.Update(content, contentId);
      {
             var now = DateTime.UtcNow;
       var contents = await _unitOfWork.Contents.Table
-          .Where(c => !c.IsDeleted &&
+          .Where(c => c.DeletedAt == null &&
                   c.ValidFrom > now)
   .OrderBy(c => c.ValidFrom)
           .ToListAsync();
@@ -239,7 +239,7 @@ await _unitOfWork.Contents.Update(content, contentId);
     foreach (var update in updates)
       {
      var content = await _unitOfWork.Contents.GetByIdAsync(update.ContentId);
-      if (content == null || content.IsDeleted)
+      if (content == null || content.DeletedAt != null)
          continue;
 
          content.DisplayOrder = update.DisplayOrder;
@@ -263,7 +263,7 @@ await _unitOfWork.Contents.Update(content, contentId);
      try
         {
         var contents = await _unitOfWork.Contents.Table
-    .Where(c => !c.IsDeleted &&
+    .Where(c => c.DeletedAt == null &&
      c.ContentType.ToString() == type)
          .OrderByDescending(c => c.CreatedAt)
     .ToListAsync();
@@ -283,7 +283,7 @@ await _unitOfWork.Contents.Update(content, contentId);
       {
     var now = DateTime.UtcNow;
   var banners = await _unitOfWork.Contents.Table
-   .Where(c => !c.IsDeleted &&
+   .Where(c => c.DeletedAt == null &&
              c.IsActive &&
       c.ContentType == Domain.Enums.ContentType.Banner &&
              c.ValidFrom <= now &&
@@ -305,7 +305,7 @@ await _unitOfWork.Contents.Update(content, contentId);
       try
         {
   var videos = await _unitOfWork.Contents.Table
-            .Where(c => !c.IsDeleted &&
+            .Where(c => c.DeletedAt == null &&
        c.IsActive &&
      c.ContentType == Domain.Enums.ContentType.Video)
          .OrderByDescending(c => c.CreatedAt)
@@ -326,7 +326,7 @@ await _unitOfWork.Contents.Update(content, contentId);
     try
         {
             var articles = await _unitOfWork.Contents.Table
-                .Where(c => !c.IsDeleted &&
+                .Where(c => c.DeletedAt == null &&
        c.IsActive &&
     c.ContentType == Domain.Enums.ContentType.Article)
       .OrderByDescending(c => c.CreatedAt)
@@ -348,7 +348,7 @@ return Result<List<ArticleDto>>.InternalError($"Error: {ex.Message}");
         {
             var now = DateTime.UtcNow;
           var announcements = await _unitOfWork.Contents.Table
-     .Where(c => !c.IsDeleted &&
+     .Where(c => c.DeletedAt == null &&
      c.IsActive &&
              c.ContentType == Domain.Enums.ContentType.Announcement &&
     c.ValidFrom <= now &&
@@ -371,12 +371,12 @@ return Result<List<ArticleDto>>.InternalError($"Error: {ex.Message}");
 {
             var stats = new ContentStatsDto
  {
-          TotalContent = await _unitOfWork.Contents.CountAsync(c => !c.IsDeleted),
-                ActiveContent = await _unitOfWork.Contents.CountAsync(c => !c.IsDeleted && c.IsActive),
-    TotalViews = await _unitOfWork.Contents.Table.Where(c => !c.IsDeleted).SumAsync(c => c.ViewCount),
-    TotalClicks = await _unitOfWork.Contents.Table.Where(c => !c.IsDeleted).SumAsync(c => c.ClickCount),
+          TotalContent = await _unitOfWork.Contents.CountAsync(c => c.DeletedAt == null),
+                ActiveContent = await _unitOfWork.Contents.CountAsync(c => c.DeletedAt == null && c.IsActive),
+    TotalViews = await _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null).SumAsync(c => c.ViewCount),
+    TotalClicks = await _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null).SumAsync(c => c.ClickCount),
         ContentByType = await _unitOfWork.Contents.Table
- .Where(c => !c.IsDeleted)
+ .Where(c => c.DeletedAt == null)
              .GroupBy(c => c.ContentType)
         .Select(g => new ContentTypeStatsDto
              {
@@ -401,7 +401,7 @@ Count = g.Count(),
     {
         try
         {
-var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
+var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
 
           if (startDate.HasValue)
       query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
@@ -436,7 +436,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
         {
     var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-      if (content == null || content.IsDeleted)
+      if (content == null || content.DeletedAt != null)
          return Result<ContentPerformanceDto>.NotFound("Content not found");
 
   var performance = new ContentPerformanceDto
@@ -464,7 +464,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
         {
          var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-    if (content == null || content.IsDeleted)
+    if (content == null || content.DeletedAt != null)
   return Result.NotFound("Content not found");
 
     content.ViewCount++;
@@ -486,7 +486,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
   try
         {
       var content = await _unitOfWork.Contents.GetByIdAsync(contentId);
-   if (content == null || content.IsDeleted)
+   if (content == null || content.DeletedAt != null)
    return Result.NotFound("Content not found");
 
     content.ClickCount++;
@@ -509,7 +509,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
         {
    var contents = await _unitOfWork.Contents.Table
-       .Where(c => !c.IsDeleted &&
+       .Where(c => c.DeletedAt == null &&
        DateTime.Parse(c.CreatedAt) >= startDate &&
             DateTime.Parse(c.CreatedAt) <= endDate)
                 .Select(c => new ContentViewStatsDto
@@ -538,7 +538,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
    {
     var now = DateTime.UtcNow;
    var contents = await _unitOfWork.Contents.Table
-            .Where(c => !c.IsDeleted &&
+            .Where(c => c.DeletedAt == null &&
   c.ValidUntil.HasValue &&
       c.ValidUntil <= now)
       .OrderByDescending(c => c.ValidUntil)
@@ -558,7 +558,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
         {
    var contents = await _unitOfWork.Contents.Table
-       .Where(c => !c.IsDeleted && !c.IsActive)
+       .Where(c => c.DeletedAt == null && !c.IsActive)
                 .OrderByDescending(c => c.CreatedAt)
     .ToListAsync();
 
@@ -576,7 +576,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
     {
    var contents = await _unitOfWork.Contents.Table
-     .Where(c => !c.IsDeleted &&
+     .Where(c => c.DeletedAt == null &&
        DateTime.Parse(c.CreatedAt) < olderThan)
      .ToListAsync();
 
@@ -603,7 +603,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         {
             var term = searchTerm.ToLower();
      var contents = await _unitOfWork.Contents.Table
-     .Where(c => !c.IsDeleted &&
+     .Where(c => c.DeletedAt == null &&
        (c.Title.ToLower().Contains(term) ||
       c.Description.ToLower().Contains(term) ||
        (c.Tags != null && c.Tags.ToLower().Contains(term))))
@@ -625,7 +625,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
       {
   var contents = await _unitOfWork.Contents.Table
-        .Where(c => !c.IsDeleted &&
+        .Where(c => c.DeletedAt == null &&
       c.Tags != null &&
   c.Tags.ToLower().Contains(tag.ToLower()))
    .OrderByDescending(c => c.CreatedAt)
@@ -645,7 +645,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
         try
         {
    var tags = await _unitOfWork.Contents.Table
-          .Where(c => !c.IsDeleted && !string.IsNullOrEmpty(c.Tags))
+          .Where(c => c.DeletedAt == null && !string.IsNullOrEmpty(c.Tags))
      .Select(c => c.Tags)
        .ToListAsync();
 
@@ -669,7 +669,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
       try
         {
      var contents = await _unitOfWork.Contents.Table
-  .Where(c => !c.IsDeleted &&
+  .Where(c => c.DeletedAt == null &&
          c.Author == author)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync();
@@ -687,7 +687,7 @@ var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
     {
         try
         {
-       var query = _unitOfWork.Contents.Table.Where(c => !c.IsDeleted);
+       var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
 
          if (startDate.HasValue)
         query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
