@@ -30,6 +30,10 @@ builder.Services.AddControllers()
     {
         // Use snake_case naming policy for JSON serialization
         options.JsonSerializerOptions.PropertyNamingPolicy = new SnakeCaseNamingPolicy();
+
+        // Enum'larni string sifatida serialize qilish (1, 2, 3 emas, "Banner", "Video", "Article")
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
         // Optional: Configure other JSON options
         options.JsonSerializerOptions.WriteIndented = false; // Compact JSON
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
