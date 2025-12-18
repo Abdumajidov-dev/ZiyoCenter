@@ -90,6 +90,20 @@ namespace ZiyoMarket.Service.Services
             if (request.LowStock == true)
                 query = query.Where(p => p.StockQuantity <= p.MinStockLevel && p.StockQuantity > 0);
 
+            // Status filter - agar Status berilmasa, default Active productlarni qaytarish
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (Enum.TryParse<ProductStatus>(request.Status, true, out var status))
+                {
+                    query = query.Where(p => p.Status == status);
+                }
+            }
+            else
+            {
+                // Default: faqat Active productlar
+                query = query.Where(p => p.Status == ProductStatus.Active && p.IsActive);
+            }
+
             query = query.OrderByDescending(p => p.CreatedAt);
 
             var total = await query.CountAsync();
