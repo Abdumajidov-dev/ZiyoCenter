@@ -1,3 +1,4 @@
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.Results;
 
@@ -20,7 +21,7 @@ public interface IContentService
     Task<Result> UpdateContentOrderAsync(List<UpdateContentOrderDto> updates, int updatedBy);
 
 // Content type specific operations
-    Task<Result<List<ContentListDto>>> GetContentByTypeAsync(string type);
+    Task<Result<List<ContentListDto>>> GetContentByTypeAsync(ContentType type);
     Task<Result<List<BannerDto>>> GetActiveBannersAsync();
     Task<Result<List<VideoDto>>> GetLatestVideosAsync(int count = 10);
     Task<Result<List<ArticleDto>>> GetLatestArticlesAsync(int count = 10);

@@ -83,7 +83,7 @@ public class ContentListDto
 /// </summary>
 public class SaveContentDto
 {
-    public string Type { get; set; } = string.Empty; // Banner, Video, Article, Announcement
+    public ContentType Type { get; set; } = ContentType.Banner;
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Content { get; set; } // HTML for articles
@@ -113,7 +113,7 @@ public class SaveContentDto
 /// </summary>
 public class ContentFilterRequest : PaginationRequest
 {
-    public string? Type { get; set; } // Banner, Video, Article, Announcement
+    public ContentType? Type { get; set; }
     public bool? IsPublished { get; set; }
     public string? TargetAudience { get; set; }
     public string? SearchTerm { get; set; }

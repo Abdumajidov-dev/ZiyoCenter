@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.Interfaces;
 
@@ -49,7 +50,7 @@ public class ContentController : BaseController
 
     [HttpGet("type/{contentType}")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetContentByType(string contentType)
+    public async Task<IActionResult> GetContentByType(ContentType contentType)
     {
         var result = await _contentService.GetContentByTypeAsync(contentType);
         return Ok(new { success = true, data = result.Data });

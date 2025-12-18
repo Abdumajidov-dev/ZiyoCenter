@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Content;
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
@@ -51,8 +52,8 @@ public class ContentService : IContentService
          (c.Tags != null && c.Tags.ToLower().Contains(term)));
 }
 
-   if (!string.IsNullOrEmpty(request.Type))
-          query = query.Where(c => c.ContentType.ToString() == request.Type);
+   if (request.Type.HasValue)
+          query = query.Where(c => c.ContentType == request.Type.Value);
 
    if (!string.IsNullOrEmpty(request.Author))
      query = query.Where(c => c.Author == request.Author);
@@ -258,13 +259,13 @@ await _unitOfWork.Contents.Update(content, contentId);
         }
     }
 
-    public async Task<Result<List<ContentListDto>>> GetContentByTypeAsync(string type)
+    public async Task<Result<List<ContentListDto>>> GetContentByTypeAsync(ContentType type)
     {
      try
         {
         var contents = await _unitOfWork.Contents.Table
     .Where(c => c.DeletedAt == null &&
-     c.ContentType.ToString() == type)
+     c.ContentType == type)
          .OrderByDescending(c => c.CreatedAt)
     .ToListAsync();
 
