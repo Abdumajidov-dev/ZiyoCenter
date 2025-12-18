@@ -547,6 +547,7 @@ public class AuthService : IAuthService
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim("UserType", userType),
+                new Claim(ClaimTypes.Role, userType), // Required for [Authorize(Roles = "...")] to work
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
