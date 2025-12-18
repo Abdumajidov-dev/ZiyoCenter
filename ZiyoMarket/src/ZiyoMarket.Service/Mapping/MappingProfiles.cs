@@ -4,6 +4,7 @@ using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Delivery;
+using ZiyoMarket.Domain.Entities.Content;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.DTOs.Orders;
@@ -13,6 +14,7 @@ using ZiyoMarket.Service.DTOs.Notifications;
 using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.DTOs.Admins;
 using ZiyoMarket.Service.DTOs.Sellers;
+using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
@@ -233,5 +235,44 @@ public class DeliveryProfile : Profile
             .ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
             .ForMember(dest => dest.DeliveryPartnerName, opt => opt.Ignore())
             .ForMember(dest => dest.IsDelayed, opt => opt.MapFrom(src => src.IsDelayed));
+    }
+}
+
+/// <summary>
+/// Content mapping profile
+/// </summary>
+public class ContentProfile : Profile
+{
+    public ContentProfile()
+    {
+        // Content entity to DTOs
+        CreateMap<Content, ContentDetailDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ContentType.ToString()))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
+            .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.PublishedAt, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src =>
+                !string.IsNullOrEmpty(src.UpdatedAt) ? (DateTime?)DateTime.Parse(src.UpdatedAt) : null));
+
+        CreateMap<Content, ContentListDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ContentType.ToString()))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
+            .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.PublishedAt, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)));
+
+        // SaveContentDto to Content entity
+        CreateMap<SaveContentDto, Content>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.ContentType, opt => opt.MapFrom(src => src.Type))
+            .ForMember(dest => dest.ValidFrom, opt => opt.MapFrom(src => src.StartDate ?? DateTime.UtcNow))
+            .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate))
+            .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsPublished));
     }
 }
