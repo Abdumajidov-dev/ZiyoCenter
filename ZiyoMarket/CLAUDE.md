@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ZiyoMarket is a professional multi-user e-commerce platform built with ASP.NET Core 8.0 and PostgreSQL. It supports three user types (Customers, Sellers, Admins) with features including offline/online sales, cashback rewards, delivery tracking, and a comprehensive admin panel.
+ZiyoMarket is a professional multi-user e-commerce platform built with .NET 10.0 and PostgreSQL. It supports three user types (Customers, Sellers, Admins) with features including offline/online sales, cashback rewards, delivery tracking, and a comprehensive admin panel.
 
 **Tech Stack:**
-- ASP.NET Core 8.0 Web API
+- .NET 10.0 (ASP.NET Core Web API)
 - Entity Framework Core 9.0 with PostgreSQL (Npgsql)
 - JWT Authentication
 - AutoMapper for object mapping
@@ -80,8 +80,19 @@ All business logic resides in service classes implementing interfaces:
 
 All entities inherit from `BaseEntity` which implements soft delete:
 
+**CRITICAL:** Never use `IsDeleted` property in LINQ queries - it's a computed property that cannot be translated to SQL by EF Core. Always use `DeletedAt == null` for queries.
+
+```csharp
+// ❌ WRONG - Will throw runtime error
+var products = await _unitOfWork.Products.FindAsync(p => !p.IsDeleted);
+
+// ✅ CORRECT - Translates to SQL properly
+var products = await _unitOfWork.Products.FindAsync(p => p.DeletedAt == null);
+```
+
 - Entities have `DeletedAt`, `CreatedAt`, `UpdatedAt` fields (stored as strings in "yyyy-MM-dd HH:mm:ss" format)
-- Global query filter in `ZiyoMarketDbContext` automatically excludes soft-deleted records
+- Global query filter in `ZiyoMarketDbContext` automatically excludes soft-deleted records (where `DeletedAt == null`)
+- Use `IsDeleted` property only for in-memory checks after loading entities
 - Use repository `SoftDelete(entity)` or `SoftDeleteRange(entities)` for soft delete
 - Use repository `Delete(entity)` or `DeleteAsync(id)` for hard delete (use cautiously)
 - `SaveChangesAsync` override in DbContext automatically sets audit timestamps
@@ -103,14 +114,21 @@ string userType = GetCurrentUserType();    // Gets user type (Customer/Seller/Ad
 bool isAuth = IsAuthenticated();           // Check if user is authenticated
 ```
 
-### 5. Snake Case JSON Serialization
+### 5. Snake Case Convention (API URLs and JSON)
 
-The API uses snake_case for all JSON responses (not PascalCase or camelCase):
+The API uses snake_case for both URL routes and JSON payloads:
 
-- C# property `FirstName` → JSON `first_name`
-- C# property `TotalAmount` → JSON `total_amount`
+**URL Routes:**
+- Controller routes are automatically converted to snake_case via `SlugifyParameterTransformer`
+- `/api/auth` (not `/api/Auth`), `/api/product` (not `/api/Product`)
+- Both PascalCase and snake_case work due to ASP.NET Core's case-insensitive routing, but snake_case is standard
+
+**JSON Serialization:**
+- C# property `FirstName` → JSON `"first_name"`
+- C# property `TotalAmount` → JSON `"total_amount"`
 - Custom `SnakeCaseNamingPolicy` configured in `Program.cs`
-- This is transparent to developers - just use C# naming conventions in code
+- Request bodies should also use snake_case: `{"first_name": "John", "last_name": "Doe"}`
+- This is transparent to developers - just use C# naming conventions in code, serialization handles conversion
 
 ## Common Development Commands
 
@@ -270,35 +288,41 @@ The `SeedDataController` provides endpoints to populate test data for developmen
 
 **Usage in Swagger:**
 1. Start the API (`dotnet run` in `src/ZiyoMarket.Api`)
-2. Navigate to `https://localhost:5001/swagger`
+2. Navigate to `http://localhost:8080/swagger`
 3. No authentication needed for seed endpoints
 4. Execute POST requests to seed specific data types
 
 **Available Seed Endpoints:**
-- POST `/api/seeddata/seed-all` - Seeds all data types at once (recommended for initial setup)
+- POST `/api/seed_data/seed-all` - Seeds all data types at once (recommended for initial setup)
 - Individual seed endpoints for specific entity types (check SeedDataController for complete list)
 
 ## API Structure
 
-**Base URL:** `https://localhost:5001/api/`
-**Swagger:** `https://localhost:5001/swagger`
+**Base URL (Development):** `http://localhost:8080/api/`
+**Base URL (Production):** Configured via Railway/Docker
+**Swagger UI:** `http://localhost:8080/swagger`
 
-### Main Controllers
+**Note:** The API runs on port 8080 by default (configurable via `PORT` environment variable for cloud deployment).
 
-- **AuthController** - Registration, login, token refresh
-- **ProductController** - Product CRUD, search, QR code lookup, stock management
-- **CategoryController** - Hierarchical category management
-- **CartController** - Shopping cart operations
-- **OrderController** - Order CRUD, status updates, order processing
-- **CashbackController** - Cashback history, balance, expiring cashback
-- **DeliveryController** - Delivery partners, tracking
-- **SupportController** - Customer support chats
-- **NotificationController** - Push notifications
-- **ContentController** - CMS (blogs, news, FAQs)
-- **ReportController** - Sales reports, analytics
-- **CustomerController** - Customer management (Admin)
-- **SellerController** - Seller management (Admin)
-- **AdminController** - Admin user management
+### Main Controllers (snake_case URLs)
+
+All controller routes use snake_case format:
+
+- **`/api/auth`** - Registration, login, token refresh, password reset
+- **`/api/product`** - Product CRUD, search, QR code lookup, stock management
+- **`/api/category`** - Hierarchical category management
+- **`/api/cart`** - Shopping cart operations
+- **`/api/order`** - Order CRUD, status updates, order processing
+- **`/api/cashback`** - Cashback history, balance, expiring cashback
+- **`/api/delivery`** - Delivery partners, tracking
+- **`/api/support`** - Customer support chats
+- **`/api/notification`** - Push notifications
+- **`/api/content`** - CMS (blogs, news, FAQs)
+- **`/api/report`** - Sales reports, analytics
+- **`/api/customer`** - Customer management (Admin)
+- **`/api/seller`** - Seller management (Admin)
+- **`/api/admin`** - Admin user management
+- **`/api/seed_data`** - Development seed data endpoints
 
 ## Common Patterns in This Codebase
 
@@ -407,11 +431,14 @@ dotnet run
 
 ## Important Development Notes
 
-### API Response Format
+### API URL and Response Format
 
-All API responses use snake_case JSON formatting. When testing with tools like Postman or Swagger:
-- Request body properties should use snake_case: `{"first_name": "John"}`
-- Response properties will be in snake_case: `{"user_id": 1, "created_at": "..."}`
+**All API endpoints and JSON use snake_case:**
+- **URLs:** `/api/auth/login`, `/api/product/search`, `/api/order/create` (lowercase)
+- **Request Bodies:** `{"first_name": "John", "last_name": "Doe", "phone_number": "+998..."}`
+- **Response Bodies:** `{"user_id": 1, "created_at": "2025-01-24 10:30:00", "is_active": true}`
+
+When testing with Postman/Swagger/curl, always use snake_case for property names in request bodies.
 
 ### Available Repository Properties in UnitOfWork
 

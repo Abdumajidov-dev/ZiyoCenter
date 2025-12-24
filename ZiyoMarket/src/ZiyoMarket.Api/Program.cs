@@ -25,7 +25,11 @@ builder.Host.UseSerilog();
 Log.Information("Starting ZiyoMarket API on port {Port}", port);
 
 // Add services to the container
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+{
+    // ✅ Convert controller routes to snake_case (api/Auth -> api/auth, api/Product -> api/product)
+    options.Conventions.Add(new Microsoft.AspNetCore.Mvc.ApplicationModels.RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
+})
     .AddJsonOptions(options =>
     {
         // Use snake_case naming policy for JSON serialization
