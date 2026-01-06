@@ -35,6 +35,7 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<DeliveryPartner> DeliveryPartners { get; set; }
     public DbSet<OrderDelivery> OrderDeliveries { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
     public DbSet<SupportChat> SupportChats { get; set; }
     public DbSet<SupportMessage> SupportMessages { get; set; }
     public DbSet<Content> Contents { get; set; }

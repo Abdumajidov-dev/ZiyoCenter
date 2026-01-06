@@ -14,6 +14,7 @@ ZiyoMarket is a professional multi-user e-commerce platform built with .NET 10.0
 - Serilog for logging
 - Swagger/OpenAPI for API documentation
 - BCrypt.Net for password hashing
+- **Firebase Admin SDK** for push notifications (FCM)
 
 ## Solution Structure
 
@@ -214,6 +215,58 @@ JWT configuration in `appsettings.json`:
 - **Access Token:** 1440 minutes (24 hours)
 - **Refresh Token:** 7 days
 - Secret key should be changed for production
+
+### Firebase Push Notifications
+
+**Architecture:** Professional device token management with separate `DeviceTokens` table
+
+**Setup:**
+1. Firebase service account file: `src/ZiyoMarket.Api/firebase-service-account.json`
+2. **CRITICAL:** This file is in `.gitignore` - never commit it to git!
+3. Firebase Admin SDK is registered as Singleton in `ServiceExtension.cs`
+
+**Database Schema:**
+- `DeviceTokens` table: Stores FCM tokens for all user devices
+- Supports multiple devices per user (professional approach)
+- Auto-cleanup of expired tokens (> 60 days)
+- Tracks device metadata (OS, version, last used)
+
+**API Endpoints:**
+```
+POST /api/push-notification/register-token      [Authorize]
+POST /api/push-notification/send                [Admin]
+POST /api/push-notification/send-batch          [Admin]
+POST /api/push-notification/send-topic          [Admin]
+GET  /api/push-notification/my-devices          [Authorize]
+POST /api/push-notification/logout-all-devices  [Authorize]
+POST /api/push-notification/cleanup-expired     [Admin]
+```
+
+**Usage Example (Admin sending notification):**
+```csharp
+POST /api/push-notification/send
+{
+  "user_id": 5,
+  "title": "Yangi buyurtma",
+  "message": "Sizning buyurtmangiz qabul qilindi",
+  "data": {
+    "order_id": "12345",
+    "type": "order_created"
+  }
+}
+```
+
+**Flutter Integration:**
+- Mobile app registers device token on login/app launch
+- Token stored in `DeviceTokens` table with device metadata
+- Backend sends to all user's active devices automatically
+- See `FIREBASE_PUSH_NOTIFICATION_GUIDE.md` for complete Flutter integration
+
+**Important Notes:**
+- One user can have multiple device tokens (multi-device support)
+- Tokens auto-expire after 60 days of inactivity
+- Admin can send to specific users, batch users, or topics
+- Topics: `all_customers`, `new_products`, `promotions`
 
 ## Key Domain Concepts
 
@@ -447,6 +500,16 @@ When working with services, these repositories are available through `_unitOfWor
 - `Products`, `Categories`, `ProductLikes`, `CartItems` - Product catalog
 - `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` - Order processing
 - `DeliveryPartners`, `OrderDeliveries` - Delivery management
-- `Notifications` - Push notifications
+- `Notifications`, `DeviceTokens` - Push notifications (FCM)
 - `SupportChats`, `SupportMessages` - Customer support
 - `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration
+
+## Project Status and Context Files
+
+For comprehensive project understanding, refer to these additional documentation files:
+
+- **`PROJECT_STATUS.md`** - Current development status, pending tasks, known issues, and sprint progress
+- **`FIREBASE_PUSH_NOTIFICATION_GUIDE.md`** - Complete guide for Firebase/FCM integration (Flutter + Backend)
+- **`SECURITY_WARNING.md`** - Security alerts and action items (check regularly)
+
+**IMPORTANT:** When resuming work after a break, always check `PROJECT_STATUS.md` for current blockers and pending migrations.

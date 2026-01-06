@@ -36,6 +36,7 @@ public interface IUnitOfWork : IDisposable
 
     // Notification Repositories
     IRepository<Notification> Notifications { get; }
+    IRepository<DeviceToken> DeviceTokens { get; }
 
     // Support Repositories
     IRepository<SupportChat> SupportChats { get; }

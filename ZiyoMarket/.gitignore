@@ -274,6 +274,10 @@ appsettings.Local.json
 *.env
 .env.*
 
+# Firebase Service Account (NEVER commit this!)
+**/firebase-service-account.json
+firebase-adminsdk-*.json
+
 # OS files
 .DS_Store
 Thumbs.db

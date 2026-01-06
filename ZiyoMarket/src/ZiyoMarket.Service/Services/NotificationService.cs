@@ -14,11 +14,13 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IFirebaseService _firebaseService;
 
-    public NotificationService(IUnitOfWork unitOfWork, IMapper mapper)
+    public NotificationService(IUnitOfWork unitOfWork, IMapper mapper, IFirebaseService firebaseService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _firebaseService = firebaseService;
     }
 
     public async Task<Result> SendNotificationAsync(CreateNotificationDto request)
@@ -42,7 +44,23 @@ public class NotificationService : INotificationService
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
 
-            // TODO: Send push notification if needed
+            // ✅ Firebase push notification yuborish
+            if (request.SendPushNotification && !string.IsNullOrEmpty(request.FcmToken))
+            {
+                var data = new Dictionary<string, string>
+                {
+                    { "notification_id", notification.Id.ToString() },
+                    { "type", request.Type },
+                    { "action_url", request.ActionUrl ?? "" }
+                };
+
+                await _firebaseService.SendNotificationToUserAsync(
+                    request.FcmToken,
+                    request.Title,
+                    request.Message,
+                    data
+                );
+            }
 
             return Result.Success("Notification sent successfully");
         }
@@ -208,6 +226,10 @@ public class NotificationService : INotificationService
             if (order == null)
                 return Result.NotFound("Order not found");
 
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer == null)
+                return Result.NotFound("Customer not found");
+
             var notification = new Notification
             {
                 Title = "Yangi buyurtma",
@@ -223,6 +245,25 @@ public class NotificationService : INotificationService
 
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            // ✅ Firebase push notification yuborish
+            if (!string.IsNullOrEmpty(customer.FcmToken))
+            {
+                var data = new Dictionary<string, string>
+                {
+                    { "notification_id", notification.Id.ToString() },
+                    { "order_id", orderId.ToString() },
+                    { "order_number", order.OrderNumber },
+                    { "type", "order_created" }
+                };
+
+                await _firebaseService.SendNotificationToUserAsync(
+                    customer.FcmToken,
+                    notification.Title,
+                    notification.Message,
+                    data
+                );
+            }
 
             return Result.Success("Order creation notification sent");
         }

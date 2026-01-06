@@ -59,7 +59,10 @@ public class CreateNotificationDto
     public string? ActionText { get; set; }
     public string? ImageUrl { get; set; }
 
-    public bool SendPush { get; set; } = true;
+    // ✅ Firebase push notification options
+    public bool SendPushNotification { get; set; } = true;
+    public string? FcmToken { get; set; } // FCM token for push notification
+
     public bool SendEmail { get; set; } = false;
     public bool SendSMS { get; set; } = false;
 }

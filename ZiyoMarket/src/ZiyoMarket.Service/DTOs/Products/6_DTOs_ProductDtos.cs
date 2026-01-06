@@ -199,6 +199,8 @@ public class CategoryDto
     public int SortOrder { get; set; }
     public bool IsActive { get; set; }
     public int ProductCount { get; set; }
+    public string? ImageUrl { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>
@@ -222,7 +224,7 @@ public class SaveCategoryDto
     public bool IsActive { get; set; } = true;
 }
 /// <summary>
-/// Kategoriya va unga tegishli mahsulotlar soni haqida ma’lumot DTO
+/// Kategoriya va unga tegishli mahsulotlar soni haqida maï¿½lumot DTO
 /// </summary>
 public class CategoryWithProductCountDto
 {
@@ -257,7 +259,7 @@ public class CategoryWithProductCountDto
     public int TotalProductCount { get; set; }
 
     /// <summary>
-    /// Kategoriya faolmi yoki yo‘qmi
+    /// Kategoriya faolmi yoki yoï¿½qmi
     /// </summary>
     public bool IsActive { get; set; }
 
@@ -267,7 +269,7 @@ public class CategoryWithProductCountDto
     public string? UpdatedAt { get; set; }
 }
 /// <summary>
-/// Kategoriyalar tartibini (sort order) o‘zgartirish uchun DTO
+/// Kategoriyalar tartibini (sort order) oï¿½zgartirish uchun DTO
 /// </summary>
 public class ReorderCategoryDto
 {
@@ -286,7 +288,7 @@ public class ReorderCategoryDto
     public int SortOrder { get; set; }
 
     /// <summary>
-    /// Ota kategoriya ID (agar mavjud bo‘lsa)
+    /// Ota kategoriya ID (agar mavjud boï¿½lsa)
     /// </summary>
     public int? ParentId { get; set; }
 }

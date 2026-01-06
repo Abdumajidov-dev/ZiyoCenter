@@ -50,7 +50,9 @@ public static class ServiceExtension
         services.AddScoped<IDeliveryService, DeliveryService>();
 
         // ========== Notification Services ==========
+        services.AddSingleton<IFirebaseService, FirebaseService>(); // Singleton - Firebase app should be initialized once
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IDeviceTokenService, DeviceTokenService>();
 
         // ========== Support & Chat ==========
         services.AddScoped<ISupportService, SupportService>();

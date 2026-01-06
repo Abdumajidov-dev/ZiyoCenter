@@ -57,13 +57,33 @@ public class MappingProfiles : Profile
         // Category mappings
         CreateMap<Category, CategoryDto>()
             .ForMember(dest => dest.ParentName, opt => opt.MapFrom(src =>
-                src.Parent != null ? src.Parent.Name : null))
+                src.Parent != null && src.Parent.Name != null ? src.Parent.Name : null))
             .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
-            .ForMember(dest => dest.ProductCount, opt => opt.Ignore());
+            .ForMember(dest => dest.ProductCount, opt => opt.Ignore()) // Will be set manually in service
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl ?? null))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
+                ParseCreatedAt(src.CreatedAt)));
 
         CreateMap<SaveCategoryDto, Category>()
             .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder));
-        
+    }
+
+    private static DateTime ParseCreatedAt(string? createdAt)
+    {
+        if (string.IsNullOrEmpty(createdAt))
+            return DateTime.UtcNow;
+
+        return DateTime.TryParse(createdAt, out var date) ? date : DateTime.UtcNow;
+    }
+}
+
+/// <summary>
+/// Cart mapping profile
+/// </summary>
+public class CartProfile : Profile
+{
+    public CartProfile()
+    {
         // Cart mappings
         CreateMap<CartItem, CartItemDto>()
             .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))

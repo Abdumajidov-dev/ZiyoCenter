@@ -19,8 +19,8 @@ public class CategoryService : ICategoryService
 
     public CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        _unitOfWork = unitOfWork;
-        _mapper = _mapper;
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
     }
 
     #region CRUD Operations
@@ -37,7 +37,7 @@ public class CategoryService : ICategoryService
                 return Result<CategoryDto>.NotFound("Kategoriya topilmadi");
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null);
+            dto.ProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
 
             return Result<CategoryDto>.Success(dto);
         }
@@ -61,10 +61,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -88,10 +88,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -122,10 +122,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -228,7 +228,7 @@ public class CategoryService : ICategoryService
             await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null);
+            dto.ProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
 
             return Result<CategoryDto>.Success(dto, "Kategoriya muvaffaqiyatli yangilandi");
         }
@@ -289,10 +289,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -336,10 +336,10 @@ public class CategoryService : ICategoryService
             var children = category.Children.Where(c => c.DeletedAt == null).ToList();
             var dtos = _mapper.Map<List<CategoryDto>>(children);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < children.Count; i++)
             {
-                dtos[i].ProductCount = children[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = children[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -373,10 +373,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -401,10 +401,10 @@ public class CategoryService : ICategoryService
 
             var dtos = _mapper.Map<List<CategoryDto>>(categories);
 
-            // Add product counts
+            // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products.Count(p => p.IsActive && p.DeletedAt == null);
+                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -436,8 +436,8 @@ public class CategoryService : ICategoryService
                 CategoryName = category.Name,
                 ParentId = category.ParentId,
                 ParentName = category.Parent?.Name,
-                ActiveProductCount = category.Products.Count(p => p.IsActive && p.DeletedAt == null),
-                TotalProductCount = category.Products.Count(p => p.DeletedAt == null),
+                ActiveProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0,
+                TotalProductCount = category.Products?.Count(p => p.DeletedAt == null) ?? 0,
                 IsActive = category.IsActive,
                 UpdatedAt = category.UpdatedAt
             };
@@ -468,8 +468,8 @@ public class CategoryService : ICategoryService
                 CategoryName = c.Name,
                 ParentId = c.ParentId,
                 ParentName = c.Parent?.Name,
-                ActiveProductCount = c.Products.Count(p => p.IsActive && p.DeletedAt == null),
-                TotalProductCount = c.Products.Count(p => p.DeletedAt == null),
+                ActiveProductCount = c.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0,
+                TotalProductCount = c.Products?.Count(p => p.DeletedAt == null) ?? 0,
                 IsActive = c.IsActive,
                 UpdatedAt = c.UpdatedAt
             }).ToList();
