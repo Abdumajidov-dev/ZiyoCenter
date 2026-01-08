@@ -23,7 +23,9 @@
       "Bash(dotnet add:*)",
       "Bash(dotnet clean:*)",
       "Bash(dir:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(timeout /t 5)",
+      "Bash(dotnet run:*)"
     ],
     "deny": [],
     "ask": []

@@ -68,6 +68,51 @@ public class CreateNotificationDto
 }
 
 /// <summary>
+/// Sodda notification - bitta foydalanuvchiga
+/// </summary>
+public class SimpleNotificationDto
+{
+    [Required(ErrorMessage = "User ID kiritilishi shart")]
+    [Range(1, int.MaxValue, ErrorMessage = "User ID 1 dan katta bo'lishi kerak")]
+    public int UserId { get; set; }
+
+    [Required(ErrorMessage = "Title kiritilishi shart")]
+    [MaxLength(200, ErrorMessage = "Title 200 belgidan oshmasligi kerak")]
+    public string Title { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Message kiritilishi shart")]
+    [MaxLength(1000, ErrorMessage = "Message 1000 belgidan oshmasligi kerak")]
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Qo'shimcha ma'lumot (ixtiyoriy) - JSON format
+    /// </summary>
+    public string? Data { get; set; }
+}
+
+/// <summary>
+/// Ommaviy notification - barcha foydalanuvchilarga (UserType bo'yicha)
+/// </summary>
+public class BroadcastNotificationDto
+{
+    [Required(ErrorMessage = "UserType kiritilishi shart")]
+    public string UserType { get; set; } = string.Empty; // Customer, Seller, Admin
+
+    [Required(ErrorMessage = "Title kiritilishi shart")]
+    [MaxLength(200, ErrorMessage = "Title 200 belgidan oshmasligi kerak")]
+    public string Title { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Message kiritilishi shart")]
+    [MaxLength(1000, ErrorMessage = "Message 1000 belgidan oshmasligi kerak")]
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Qo'shimcha ma'lumot (ixtiyoriy) - JSON format
+    /// </summary>
+    public string? Data { get; set; }
+}
+
+/// <summary>
 /// Support chat DTO
 /// </summary>
 public class SupportChatDto

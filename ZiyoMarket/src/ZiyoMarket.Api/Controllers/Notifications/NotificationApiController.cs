@@ -134,4 +134,36 @@ if (!result.IsSuccess)
 
         return Ok(new { success = true, message = result.Message, data = result.Data });
     }
+
+    // ===== SODDA METODLAR =====
+
+    /// <summary>
+    /// Bitta foydalanuvchiga sodda notification yuborish (Admin)
+    /// </summary>
+    [HttpPost("send-simple")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SendSimpleNotification([FromBody] SimpleNotificationDto dto)
+    {
+        var result = await _notificationService.SendSimpleNotificationAsync(dto);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
+    /// Barcha foydalanuvchilarga ommaviy notification yuborish - UserType bo'yicha (Admin)
+    /// </summary>
+    [HttpPost("send-broadcast")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SendBroadcastNotification([FromBody] BroadcastNotificationDto dto)
+    {
+        var result = await _notificationService.SendBroadcastNotificationAsync(dto);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
 }

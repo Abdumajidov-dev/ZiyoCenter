@@ -6,6 +6,7 @@ using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Mapping;
 using ZiyoMarket.Service.Services;
+using ZiyoMarket.Service.Helpers;
 
 namespace ZiyoMarket.Api.Extensions;
 
@@ -53,6 +54,11 @@ public static class ServiceExtension
         services.AddSingleton<IFirebaseService, FirebaseService>(); // Singleton - Firebase app should be initialized once
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IDeviceTokenService, DeviceTokenService>();
+
+        // ========== SMS Services (Eskiz.uz) ==========
+        services.AddHttpClient<EskizSmsClient>(); // Register HttpClient for Eskiz.uz API
+        services.AddScoped<ISmsService, SmsService>();
+        services.AddMemoryCache(); // Required for verification code caching
 
         // ========== Support & Chat ==========
         services.AddScoped<ISupportService, SupportService>();

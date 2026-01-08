@@ -5,6 +5,18 @@ namespace ZiyoMarket.Service.Interfaces;
 
 public interface INotificationService
 {
+    // ===== SODDA METODLAR =====
+    /// <summary>
+    /// Bitta foydalanuvchiga sodda notification yuborish
+    /// </summary>
+    Task<Result> SendSimpleNotificationAsync(SimpleNotificationDto request);
+
+    /// <summary>
+    /// Barcha foydalanuvchilarga ommaviy notification yuborish (UserType bo'yicha)
+    /// </summary>
+    Task<Result> SendBroadcastNotificationAsync(BroadcastNotificationDto request);
+
+    // ===== ESKI METODLAR (backward compatibility) =====
     Task<Result> SendNotificationAsync(CreateNotificationDto request);
     Task<Result> SendBulkNotificationAsync(List<CreateNotificationDto> requests);
     Task<Result<List<NotificationDto>>> GetNotificationsAsync(int userId, string userType, int pageNumber = 1, int pageSize = 20);

@@ -268,6 +268,74 @@ POST /api/push-notification/send
 - Admin can send to specific users, batch users, or topics
 - Topics: `all_customers`, `new_products`, `promotions`
 
+### SMS Integration (Eskiz.uz)
+
+**Architecture:** Professional SMS service with `SmsLog` table and Eskiz.uz API integration
+
+**Setup:**
+1. Configure Eskiz.uz credentials in `appsettings.json`:
+   ```json
+   "EskizSms": {
+     "BaseUrl": "https://notify.eskiz.uz/api",
+     "Email": "your-email@example.com",
+     "Password": "your-password",
+     "CallbackUrl": "",
+     "IsDevelopment": true
+   }
+   ```
+2. **CRITICAL:** Store credentials in environment variables or user secrets in production
+3. SMS service is registered as Scoped in `ServiceExtension.cs`
+
+**Database Schema:**
+- `SmsLogs` table: Stores all SMS sending history
+- Tracks purpose (Registration, PasswordReset, OrderConfirmation, etc.)
+- Records status (Pending, Sent, Delivered, Failed)
+- Stores provider message ID and error messages
+
+**API Endpoints:**
+```
+POST /api/sms/send                         [Admin]
+POST /api/sms/send-verification-code       [Public]
+POST /api/sms/verify-code                  [Public]
+POST /api/sms/send-bulk                    [Admin]
+GET  /api/sms/logs                         [Admin]
+GET  /api/sms/my-logs                      [Authorize]
+GET  /api/sms/statistics                   [Admin]
+```
+
+**Usage Example (Verification Code):**
+```csharp
+// Send verification code
+POST /api/sms/send-verification-code
+{
+  "phone_number": "+998901234567",
+  "purpose": 1  // Registration
+}
+
+// Verify code
+POST /api/sms/verify-code
+{
+  "phone_number": "+998901234567",
+  "code": "123456",
+  "purpose": 1
+}
+```
+
+**Features:**
+- 6-digit verification codes (5 minutes expiry)
+- Memory cache for code storage
+- Development mode returns code in response
+- Automatic authentication with Eskiz.uz (token cached for 30 days)
+- Rate limiting for bulk SMS (100ms delay between sends)
+- SMS statistics and logging
+
+**Important Notes:**
+- Verification codes expire after 5 minutes
+- Phone number format: +998XXXXXXXXX
+- Development mode: `IsDevelopment: true` returns code in response
+- Production mode: Code only sent via SMS
+- See `SMS_INTEGRATION_GUIDE.md` for detailed documentation
+
 ## Key Domain Concepts
 
 ### User Types and Authorization
@@ -500,7 +568,7 @@ When working with services, these repositories are available through `_unitOfWor
 - `Products`, `Categories`, `ProductLikes`, `CartItems` - Product catalog
 - `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` - Order processing
 - `DeliveryPartners`, `OrderDeliveries` - Delivery management
-- `Notifications`, `DeviceTokens` - Push notifications (FCM)
+- `Notifications`, `DeviceTokens`, `SmsLogs` - Notifications (Push & SMS)
 - `SupportChats`, `SupportMessages` - Customer support
 - `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration
 
@@ -510,6 +578,7 @@ For comprehensive project understanding, refer to these additional documentation
 
 - **`PROJECT_STATUS.md`** - Current development status, pending tasks, known issues, and sprint progress
 - **`FIREBASE_PUSH_NOTIFICATION_GUIDE.md`** - Complete guide for Firebase/FCM integration (Flutter + Backend)
+- **`SMS_INTEGRATION_GUIDE.md`** - Complete guide for SMS integration with Eskiz.uz (Verification codes, notifications)
 - **`SECURITY_WARNING.md`** - Security alerts and action items (check regularly)
 
 **IMPORTANT:** When resuming work after a break, always check `PROJECT_STATUS.md` for current blockers and pending migrations.

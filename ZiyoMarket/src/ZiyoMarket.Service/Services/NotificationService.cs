@@ -588,4 +588,195 @@ public class NotificationService : INotificationService
             // Log error
         }
     }
+
+    // ===== SODDA METODLAR =====
+
+    /// <summary>
+    /// Bitta foydalanuvchiga sodda notification yuborish
+    /// </summary>
+    public async Task<Result> SendSimpleNotificationAsync(SimpleNotificationDto request)
+    {
+        try
+        {
+            // Foydalanuvchini topish (Customer, Seller yoki Admin)
+            var customer = await _unitOfWork.Customers.FirstOrDefaultAsync(c => c.Id == request.UserId && c.DeletedAt == null);
+            UserType userType;
+
+            if (customer != null)
+            {
+                userType = UserType.Customer;
+            }
+            else
+            {
+                var seller = await _unitOfWork.Sellers.FirstOrDefaultAsync(s => s.Id == request.UserId && s.DeletedAt == null);
+                if (seller != null)
+                {
+                    userType = UserType.Seller;
+                }
+                else
+                {
+                    var admin = await _unitOfWork.Admins.FirstOrDefaultAsync(a => a.Id == request.UserId && a.DeletedAt == null);
+                    if (admin != null)
+                    {
+                        userType = UserType.Admin;
+                    }
+                    else
+                    {
+                        return Result.NotFound("Foydalanuvchi topilmadi");
+                    }
+                }
+            }
+
+            // Notification yaratish
+            var notification = new Notification
+            {
+                Title = request.Title,
+                Message = request.Message,
+                NotificationType = NotificationType.SystemMessage,
+                Priority = "Normal",
+                UserId = request.UserId,
+                UserType = userType,
+                Data = request.Data
+            };
+
+            await _unitOfWork.Notifications.InsertAsync(notification);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Firebase push notification yuborish (barcha qurilmalarga)
+            var deviceTokens = await _unitOfWork.DeviceTokens.FindAsync(dt =>
+                dt.UserId == request.UserId &&
+                dt.UserType == userType &&
+                dt.IsActive &&
+                dt.DeletedAt == null);
+
+            foreach (var deviceToken in deviceTokens)
+            {
+                try
+                {
+                    var data = new Dictionary<string, string>
+                    {
+                        { "notification_id", notification.Id.ToString() }
+                    };
+
+                    if (!string.IsNullOrEmpty(request.Data))
+                    {
+                        data.Add("custom_data", request.Data);
+                    }
+
+                    await _firebaseService.SendNotificationToUserAsync(
+                        deviceToken.Token,
+                        request.Title,
+                        request.Message,
+                        data
+                    );
+                }
+                catch
+                {
+                    // Firebase yuborishda xatolik bo'lsa, davom etamiz
+                }
+            }
+
+            return Result.Success("Notification muvaffaqiyatli yuborildi");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Barcha foydalanuvchilarga ommaviy notification yuborish (UserType bo'yicha)
+    /// </summary>
+    public async Task<Result> SendBroadcastNotificationAsync(BroadcastNotificationDto request)
+    {
+        try
+        {
+            // UserType'ni parse qilish
+            if (!Enum.TryParse<UserType>(request.UserType, out var userType))
+            {
+                return Result.BadRequest("Noto'g'ri UserType. Customer, Seller yoki Admin bo'lishi kerak");
+            }
+
+            // Barcha foydalanuvchilarni olish
+            List<int> userIds = new List<int>();
+
+            switch (userType)
+            {
+                case UserType.Customer:
+                    var customers = await _unitOfWork.Customers.FindAsync(c => c.DeletedAt == null);
+                    userIds = customers.Select(c => c.Id).ToList();
+                    break;
+                case UserType.Seller:
+                    var sellers = await _unitOfWork.Sellers.FindAsync(s => s.DeletedAt == null);
+                    userIds = sellers.Select(s => s.Id).ToList();
+                    break;
+                case UserType.Admin:
+                    var admins = await _unitOfWork.Admins.FindAsync(a => a.DeletedAt == null);
+                    userIds = admins.Select(a => a.Id).ToList();
+                    break;
+            }
+
+            if (!userIds.Any())
+            {
+                return Result.NotFound($"{request.UserType} foydalanuvchilar topilmadi");
+            }
+
+            // Barcha foydalanuvchilarga notification yaratish
+            var notifications = userIds.Select(userId => new Notification
+            {
+                Title = request.Title,
+                Message = request.Message,
+                NotificationType = NotificationType.Promotion,
+                Priority = "High",
+                UserId = userId,
+                UserType = userType,
+                Data = request.Data
+            }).ToList();
+
+            await _unitOfWork.Notifications.AddRangeAsync(notifications);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Firebase push notification yuborish (barcha qurilmalarga)
+            var deviceTokens = await _unitOfWork.DeviceTokens.FindAsync(dt =>
+                dt.UserType == userType &&
+                dt.IsActive &&
+                dt.DeletedAt == null);
+
+            int successCount = 0;
+            foreach (var deviceToken in deviceTokens)
+            {
+                try
+                {
+                    var data = new Dictionary<string, string>
+                    {
+                        { "type", "broadcast" },
+                        { "user_type", request.UserType }
+                    };
+
+                    if (!string.IsNullOrEmpty(request.Data))
+                    {
+                        data.Add("custom_data", request.Data);
+                    }
+
+                    await _firebaseService.SendNotificationToUserAsync(
+                        deviceToken.Token,
+                        request.Title,
+                        request.Message,
+                        data
+                    );
+                    successCount++;
+                }
+                catch
+                {
+                    // Firebase yuborishda xatolik bo'lsa, davom etamiz
+                }
+            }
+
+            return Result.Success($"{notifications.Count} ta foydalanuvchiga notification yuborildi. {successCount} ta push notification yuborildi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
 }

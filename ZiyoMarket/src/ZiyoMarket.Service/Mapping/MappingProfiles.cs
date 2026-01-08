@@ -15,6 +15,7 @@ using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.DTOs.Admins;
 using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.DTOs.Content;
+using ZiyoMarket.Service.DTOs.Sms;
 using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
@@ -294,5 +295,19 @@ public class ContentProfile : Profile
             .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate))
             .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsPublished));
+    }
+}
+
+/// <summary>
+/// SMS mapping profile
+/// </summary>
+public class SmsProfile : Profile
+{
+    public SmsProfile()
+    {
+        // SmsLog to SmsLogDto
+        CreateMap<SmsLog, SmsLogDto>()
+            .ForMember(dest => dest.Purpose, opt => opt.MapFrom(src => src.Purpose.ToString()))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
     }
 }

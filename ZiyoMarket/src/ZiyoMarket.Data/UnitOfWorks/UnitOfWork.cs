@@ -43,6 +43,7 @@ public class UnitOfWork : IUnitOfWork
     // Notification Repositories
     public IRepository<Notification> Notifications { get; private set; }
     public IRepository<DeviceToken> DeviceTokens { get; private set; }
+    public IRepository<SmsLog> SmsLogs { get; private set; }
 
     // Support Repositories
     public IRepository<SupportChat> SupportChats { get; private set; }
@@ -74,6 +75,7 @@ public class UnitOfWork : IUnitOfWork
         OrderDeliveries = new Repository<OrderDelivery>(_context);
         Notifications = new Repository<Notification>(_context);
         DeviceTokens = new Repository<DeviceToken>(_context);
+        SmsLogs = new Repository<SmsLog>(_context);
         SupportChats = new Repository<SupportChat>(_context);
         SupportMessages = new Repository<SupportMessage>(_context);
         Contents = new Repository<Content>(_context);
