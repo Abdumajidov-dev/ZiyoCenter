@@ -18,7 +18,15 @@ public class UnitOfWork : IUnitOfWork
     private readonly ZiyoMarketDbContext _context;
     private IDbContextTransaction? _transaction;
 
-    // User Repositories
+    
+    // User Repositories - New unified system
+    public IRepository<User> Users { get; private set; }
+    public IRepository<Role> Roles { get; private set; }
+    public IRepository<Permission> Permissions { get; private set; }
+    public IRepository<UserRole> UserRoles { get; private set; }
+    public IRepository<RolePermission> RolePermissions { get; private set; }
+    
+    // Legacy User Repositories (deprecated)
     public IRepository<Customer> Customers { get; private set; }
     public IRepository<Seller> Sellers { get; private set; }
     public IRepository<Admin> Admins { get; private set; }
@@ -62,6 +70,14 @@ public class UnitOfWork : IUnitOfWork
         Customers = new Repository<Customer>(_context);
         Sellers = new Repository<Seller>(_context);
         Admins = new Repository<Admin>(_context);
+        
+        // Initialize new unified repositories
+        Users = new Repository<User>(_context);
+        Roles = new Repository<Role>(_context);
+        Permissions = new Repository<Permission>(_context);
+        UserRoles = new Repository<UserRole>(_context);
+        RolePermissions = new Repository<RolePermission>(_context);
+        
         Categories = new Repository<Category>(_context);
         Products = new Repository<Product>(_context);
         ProductLikes = new Repository<ProductLike>(_context);

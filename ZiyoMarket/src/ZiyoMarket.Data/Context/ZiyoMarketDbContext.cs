@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using ZiyoMarket.Domain.Common;
 using ZiyoMarket.Domain.Entities.Content;
 using ZiyoMarket.Domain.Entities.Delivery;
@@ -19,7 +19,14 @@ public class ZiyoMarketDbContext : DbContext
     {
     }
 
-    // DbSets
+    // DbSets - New unified user system
+    public DbSet<User> Users { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<RolePermission> RolePermissions { get; set; }
+
+    // Legacy user tables (will be deprecated)
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Seller> Sellers { get; set; }
     public DbSet<Admin> Admins { get; set; }

@@ -69,6 +69,12 @@ public static class ServiceExtension
         // ========== Reporting & Analytics ==========
         services.AddScoped<IReportService, ReportService>();
 
+        // ========== Role & Permission Management ==========
+        services.AddScoped<RolePermissionSeedService>();
+        services.AddScoped<NewAuthService>();
+        services.AddScoped<RoleManagementService>();
+        services.AddScoped<IPermissionManagementService, PermissionManagementService>();
+
         services.AddScoped<ISupportService, SupportService>();
 
         return services;

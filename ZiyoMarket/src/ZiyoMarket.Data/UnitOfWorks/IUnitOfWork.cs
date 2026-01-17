@@ -12,7 +12,14 @@ namespace ZiyoMarket.Data.UnitOfWorks;
 
 public interface IUnitOfWork : IDisposable
 {
-    // User Repositories
+    // User Repositories - New unified system
+    IRepository<User> Users { get; }
+    IRepository<Role> Roles { get; }
+    IRepository<Permission> Permissions { get; }
+    IRepository<UserRole> UserRoles { get; }
+    IRepository<RolePermission> RolePermissions { get; }
+
+    // Legacy User Repositories (deprecated)
     IRepository<Customer> Customers { get; }
     IRepository<Seller> Sellers { get; }
     IRepository<Admin> Admins { get; }

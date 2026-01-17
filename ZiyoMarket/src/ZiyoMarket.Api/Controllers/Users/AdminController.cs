@@ -12,10 +12,12 @@ namespace ZiyoMarket.Api.Controllers.Users;
 public class AdminController : BaseController
 {
     private readonly IAdminService _adminService;
+    private readonly IPermissionManagementService _permissionService;
 
-    public AdminController(IAdminService adminService)
+    public AdminController(IAdminService adminService, IPermissionManagementService permissionService)
     {
         _adminService = adminService;
+        _permissionService = permissionService;
     }
 
     [HttpGet("{id}")]
@@ -102,4 +104,41 @@ public class AdminController : BaseController
         var result = await _adminService.SearchAdminsAsync(searchTerm);
         return Ok(new { success = true, data = result.Data });
     }
+
+    /// <summary>
+    /// Admin'ning permissionlarini olish
+    /// GET /api/admin/{id}/permissions
+    /// </summary>
+    [HttpGet("{id}/permissions")]
+    public async Task<IActionResult> GetAdminPermissions(int id)
+    {
+        var result = await _permissionService.GetAdminPermissionsAsync(id);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { success = false, message = result.Message });
+
+        return Ok(new { success = true, data = result.Data });
+    }
+
+    /// <summary>
+    /// Admin'ga permissionlarni biriktirish
+    /// POST /api/admin/{id}/permissions
+    /// </summary>
+    [HttpPost("{id}/permissions")]
+    public async Task<IActionResult> AssignPermissions(int id, [FromBody] AssignPermissionsRequest request)
+    {
+        var assignedBy = GetCurrentUserId();
+        var result = await _permissionService.AssignPermissionsToAdminAsync(id, request.PermissionIds, assignedBy);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { success = false, message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+}
+
+// Request DTOs
+public class AssignPermissionsRequest
+{
+    public List<int> PermissionIds { get; set; } = new();
 }

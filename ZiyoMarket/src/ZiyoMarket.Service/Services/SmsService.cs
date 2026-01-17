@@ -109,8 +109,22 @@ public class SmsService : ISmsService
     {
         try
         {
-            // 6 raqamli tasdiqlash kodi yaratish
-            var code = new Random().Next(100000, 999999).ToString();
+            // Check if phone is privileged (no SMS sent, always code "1111")
+            var privilegedPhones = _configuration.GetSection("EskizSms:PrivilegedPhones").GetChildren().Select(x => x.Value).ToList() ?? new List<string>();
+            var isPrivileged = privilegedPhones.Any(p => request.PhoneNumber.EndsWith(p) || request.PhoneNumber.Contains(p));
+
+            string code;
+            if (isPrivileged)
+            {
+                // Privileged raqamlar uchun har doim 1111
+                code = "1111";
+                _logger.LogInformation("Privileged phone {PhoneNumber} detected, using code 1111", request.PhoneNumber);
+            }
+            else
+            {
+                // 6 raqamli tasdiqlash kodi yaratish
+                code = new Random().Next(100000, 999999).ToString();
+            }
 
             // Kodni cache'ga saqlash (5 daqiqa)
             var cacheKey = $"sms_verification_{request.PhoneNumber}_{request.Purpose}";
@@ -127,19 +141,23 @@ public class SmsService : ISmsService
                 _ => $"ZiyoMarket tasdiqlash kodi: {code}. Kod 5 daqiqa amal qiladi."
             };
 
-            // SMS yuborish
-            var smsRequest = new SendSmsDto
+            // Privileged raqamlar uchun SMS yuborilmaydi
+            if (!isPrivileged)
             {
-                PhoneNumber = request.PhoneNumber,
-                Message = message,
-                Purpose = request.Purpose
-            };
+                // SMS yuborish
+                var smsRequest = new SendSmsDto
+                {
+                    PhoneNumber = request.PhoneNumber,
+                    Message = message,
+                    Purpose = request.Purpose
+                };
 
             var smsResult = await SendSmsAsync(smsRequest);
 
-            if (!smsResult.IsSuccess)
+                if (!smsResult.IsSuccess)
             {
                 return Result<VerificationResultDto>.Failure(smsResult.Message);
+            }
             }
 
             var isDevelopment = _configuration["EskizSms:IsDevelopment"] == "true";
@@ -147,8 +165,8 @@ public class SmsService : ISmsService
             var result = new VerificationResultDto
             {
                 Success = true,
-                Message = "Tasdiqlash kodi yuborildi",
-                Code = isDevelopment ? code : null, // Development muhitida kodni qaytarish
+                Message = isPrivileged ? "Imtiyozli raqam, kod: 1111" : "Tasdiqlash kodi yuborildi",
+                Code = (isDevelopment || isPrivileged) ? code : null, // Development muhitida kodni qaytarish
                 ExpiresAt = expiryTime
             };
 
