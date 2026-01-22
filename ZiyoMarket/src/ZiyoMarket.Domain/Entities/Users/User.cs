@@ -27,11 +27,6 @@ public class User : BaseAuditableEntity
     public string Phone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email (optional, unique)
-    /// </summary>
-    public string? Email { get; set; }
-
-    /// <summary>
     /// Parol hash'i
     /// </summary>
     public string PasswordHash { get; set; } = string.Empty;
@@ -65,11 +60,6 @@ public class User : BaseAuditableEntity
     /// Telefon tasdiqlangan
     /// </summary>
     public bool IsPhoneVerified { get; set; } = false;
-
-    /// <summary>
-    /// Email tasdiqlangan
-    /// </summary>
-    public bool IsEmailVerified { get; set; } = false;
 
     /// <summary>
     /// Oxirgi login vaqti
@@ -199,15 +189,6 @@ public class User : BaseAuditableEntity
     public void VerifyPhone()
     {
         IsPhoneVerified = true;
-        MarkAsUpdated();
-    }
-
-    /// <summary>
-    /// Email tasdiqlash
-    /// </summary>
-    public void VerifyEmail()
-    {
-        IsEmailVerified = true;
         MarkAsUpdated();
     }
 

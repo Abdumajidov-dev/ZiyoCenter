@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -6,7 +7,9 @@ using System.Security.Claims;
 using System.Text;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Users;
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Auth;
+using ZiyoMarket.Service.DTOs.Sms;
 using ZiyoMarket.Service.Helpers;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
@@ -21,15 +24,21 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
+    private readonly ISmsService _smsService;
+    private readonly IMemoryCache _memoryCache;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        ISmsService smsService,
+        IMemoryCache memoryCache)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
+        _smsService = smsService;
+        _memoryCache = memoryCache;
     }
 
     // ============ Login ============
@@ -41,9 +50,9 @@ public class AuthService : IAuthService
             // Find user based on UserType
             object? user = request.UserType switch
             {
-                "Customer" => await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Seller" => await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Admin" => await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail),
+                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
+                "Seller" => await FindSellerByPhoneAsync(request.Phone),
+                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
                 _ => null
             };
 
@@ -401,9 +410,9 @@ public class AuthService : IAuthService
             // Find user
             object? user = request.UserType switch
             {
-                "Customer" => await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Seller" => await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Admin" => await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail),
+                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
+                "Seller" => await FindSellerByPhoneAsync(request.Phone),
+                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
                 _ => null
             };
 
@@ -418,7 +427,7 @@ public class AuthService : IAuthService
 
             // TODO: Send code via SMS/Email
             // For now, just log it (in production, integrate with SMS/Email service)
-            Console.WriteLine($"Verification code for {request.PhoneOrEmail}: {code}");
+            Console.WriteLine($"Verification code for {request.Phone}: {code}");
 
             // In production: Store code in cache/database with expiration
 
@@ -442,7 +451,7 @@ public class AuthService : IAuthService
             string userType = "";
 
             // Try to find in all user types
-            var customer = await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail);
+            var customer = await FindCustomerByPhoneAsync(request.Phone);
             if (customer != null)
             {
                 user = customer;
@@ -450,7 +459,7 @@ public class AuthService : IAuthService
             }
             else
             {
-                var seller = await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail);
+                var seller = await FindSellerByPhoneAsync(request.Phone);
                 if (seller != null)
                 {
                     user = seller;
@@ -458,7 +467,7 @@ public class AuthService : IAuthService
                 }
                 else
                 {
-                    var admin = await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail);
+                    var admin = await FindAdminByUsernameOrPhoneAsync(request.Phone);
                     if (admin != null)
                     {
                         user = admin;
@@ -500,14 +509,14 @@ public class AuthService : IAuthService
 
     // ============ Verification ============
 
-    public async Task<Result> SendVerificationCodeAsync(string phoneOrEmail)
+    public async Task<Result> SendVerificationCodeAsync(string phone)
     {
         try
         {
             var code = GenerateVerificationCode();
 
             // TODO: Send via SMS/Email
-            Console.WriteLine($"Verification code for {phoneOrEmail}: {code}");
+            Console.WriteLine($"Verification code for {phone}: {code}");
 
             await Task.CompletedTask;
             return Result.Success("Verification code sent");
@@ -518,7 +527,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<Result> VerifyCodeAsync(string phoneOrEmail, string code)
+    public async Task<Result> VerifyCodeAsync(string phone, string code)
     {
         try
         {
@@ -607,22 +616,22 @@ public class AuthService : IAuthService
 
     // ============ Helper Methods ============
 
-    private async Task<Customer?> FindCustomerByPhoneOrEmailAsync(string phoneOrEmail)
+    private async Task<Customer?> FindCustomerByPhoneAsync(string phone)
     {
         return await _unitOfWork.Customers
-            .SelectAsync(c => c.Phone == phoneOrEmail);
+            .SelectAsync(c => c.Phone == phone);
     }
 
-    private async Task<Seller?> FindSellerByPhoneOrEmailAsync(string phoneOrEmail)
+    private async Task<Seller?> FindSellerByPhoneAsync(string phone)
     {
         return await _unitOfWork.Sellers
-            .SelectAsync(s => s.Phone == phoneOrEmail);
+            .SelectAsync(s => s.Phone == phone);
     }
 
-    private async Task<Admin?> FindAdminByUsernameOrEmailAsync(string usernameOrEmail)
+    private async Task<Admin?> FindAdminByUsernameOrPhoneAsync(string usernameOrPhone)
     {
         return await _unitOfWork.Admins
-            .SelectAsync(a => (a.Username == usernameOrEmail || a.Phone == usernameOrEmail));
+            .SelectAsync(a => (a.Username == usernameOrPhone || a.Phone == usernameOrPhone));
     }
 
     private string GetPasswordHash(object user, string userType)
@@ -1007,5 +1016,71 @@ public class AuthService : IAuthService
             "Admin" => await _unitOfWork.Admins.SelectAsync(a => a.Phone == phone) != null,
             _ => false
         };
+    }
+
+    // ============ OTP Methods ============
+
+    /// <summary>
+    /// Send OTP code to phone number (for registration/login)
+    /// </summary>
+    public async Task<Result<VerificationResultDto>> SendOtpAsync(SendVerificationCodeDto request)
+    {
+        try
+        {
+            // Validate phone number format
+            if (!request.PhoneNumber.StartsWith("+998") || request.PhoneNumber.Length != 13)
+            {
+                return Result<VerificationResultDto>.BadRequest("Phone number must be in format +998XXXXXXXXX");
+            }
+
+            // Send verification code via SMS service
+            var smsResult = await _smsService.SendVerificationCodeAsync(request);
+
+            if (!smsResult.IsSuccess || smsResult.Data == null)
+            {
+                return Result<VerificationResultDto>.InternalError(smsResult.Message ?? "Failed to send OTP");
+            }
+
+            return Result<VerificationResultDto>.Success(smsResult.Data, "OTP code sent successfully");
+        }
+        catch (Exception ex)
+        {
+            return Result<VerificationResultDto>.InternalError($"Failed to send OTP: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Verify OTP code
+    /// </summary>
+    public async Task<Result<bool>> VerifyOtpAsync(VerifySmsCodeDto request)
+    {
+        try
+        {
+            // Validate phone number format
+            if (!request.PhoneNumber.StartsWith("+998") || request.PhoneNumber.Length != 13)
+            {
+                return Result<bool>.BadRequest("Phone number must be in format +998XXXXXXXXX");
+            }
+
+            // Validate code format (6 digits)
+            if (request.Code.Length != 6 || !request.Code.All(char.IsDigit))
+            {
+                return Result<bool>.BadRequest("Code must be 6 digits");
+            }
+
+            // Verify code via SMS service
+            var verifyResult = await _smsService.VerifyCodeAsync(request);
+
+            if (!verifyResult.IsSuccess)
+            {
+                return Result<bool>.BadRequest(verifyResult.Message ?? "Invalid or expired OTP code");
+            }
+
+            return Result<bool>.Success(true, "OTP code verified successfully");
+        }
+        catch (Exception ex)
+        {
+            return Result<bool>.InternalError($"Failed to verify OTP: {ex.Message}");
+        }
     }
 }

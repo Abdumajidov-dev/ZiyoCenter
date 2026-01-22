@@ -327,7 +327,6 @@ public class SeedDataController : ControllerBase
         var faker = new Faker<DeliveryPartner>()
             .RuleFor(dp => dp.Name, f => f.Company.CompanyName())
             .RuleFor(dp => dp.Phone, f => f.Phone.PhoneNumber("+998#########"))
-            .RuleFor(dp => dp.Email, f => f.Internet.Email())
             .RuleFor(dp => dp.DeliveryType, f => f.PickRandom("Postal", "Courier", "Express"))
             .RuleFor(dp => dp.PricePerDelivery, f => f.Random.Decimal(5000, 50000))
             .RuleFor(dp => dp.EstimatedDays, f => f.Random.Int(1, 7))

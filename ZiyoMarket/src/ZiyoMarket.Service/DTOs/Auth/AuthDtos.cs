@@ -8,13 +8,13 @@ namespace ZiyoMarket.Service.DTOs.Auth;
 /// </summary>
 public class LoginRequestDto
 {
-    [Required(ErrorMessage = "Phone/Email/Username is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
-    
+    [Required(ErrorMessage = "Phone/Username is required")]
+    public string Phone { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
-    
+
     [Required(ErrorMessage = "User type is required")]
     public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
 }
@@ -95,9 +95,9 @@ public class ChangePasswordDto
 /// </summary>
 public class ResetPasswordRequestDto
 {
-    [Required(ErrorMessage = "Phone or email is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
-    
+    [Required(ErrorMessage = "Phone is required")]
+    public string Phone { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "User type is required")]
     public string UserType { get; set; } = "Customer";
 }
@@ -107,16 +107,16 @@ public class ResetPasswordRequestDto
 /// </summary>
 public class ResetPasswordConfirmDto
 {
-    [Required(ErrorMessage = "Phone or email is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
-    
+    [Required(ErrorMessage = "Phone is required")]
+    public string Phone { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Verification code is required")]
     public string VerificationCode { get; set; } = string.Empty;
-    
+
     [Required(ErrorMessage = "New password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string NewPassword { get; set; } = string.Empty;
-    
+
     [Compare("NewPassword", ErrorMessage = "Passwords do not match")]
     public string ConfirmNewPassword { get; set; } = string.Empty;
 }
@@ -126,8 +126,8 @@ public class ResetPasswordConfirmDto
 /// </summary>
 public class VerificationCodeRequestDto
 {
-    [Required(ErrorMessage = "Phone or email is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Phone is required")]
+    public string Phone { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -135,9 +135,9 @@ public class VerificationCodeRequestDto
 /// </summary>
 public class VerifyCodeDto
 {
-    [Required(ErrorMessage = "Phone or email is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
-    
+    [Required(ErrorMessage = "Phone is required")]
+    public string Phone { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Verification code is required")]
     [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
     public string Code { get; set; } = string.Empty;

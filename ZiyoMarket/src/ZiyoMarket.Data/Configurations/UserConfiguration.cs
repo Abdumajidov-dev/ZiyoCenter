@@ -27,12 +27,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.Phone)
             .IsUnique();
 
-        builder.Property(u => u.Email)
-            .HasMaxLength(255);
-
-        builder.HasIndex(u => u.Email)
-            .IsUnique();
-
         builder.Property(u => u.Username)
             .HasMaxLength(100);
 
@@ -56,9 +50,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValue(true);
 
         builder.Property(u => u.IsPhoneVerified)
-            .HasDefaultValue(false);
-
-        builder.Property(u => u.IsEmailVerified)
             .HasDefaultValue(false);
 
         // Relationships will be configured via UserRole

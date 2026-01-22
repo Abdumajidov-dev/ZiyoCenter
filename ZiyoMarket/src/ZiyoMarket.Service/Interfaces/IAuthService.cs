@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using ZiyoMarket.Service.DTOs.Auth;
+using ZiyoMarket.Service.DTOs.Sms;
 using ZiyoMarket.Service.Results;
 
 namespace ZiyoMarket.Service.Interfaces;
@@ -68,14 +69,14 @@ public interface IAuthService
     Task<Result> ResetPasswordAsync(ResetPasswordConfirmDto request);
     
     /// <summary>
-    /// Send verification code to phone or email
+    /// Send verification code to phone
     /// </summary>
-    Task<Result> SendVerificationCodeAsync(string phoneOrEmail);
-    
+    Task<Result> SendVerificationCodeAsync(string phone);
+
     /// <summary>
     /// Verify code
     /// </summary>
-    Task<Result> VerifyCodeAsync(string phoneOrEmail, string code);
+    Task<Result> VerifyCodeAsync(string phone, string code);
     
     /// <summary>
     /// Generate JWT access token
@@ -91,4 +92,14 @@ public interface IAuthService
     /// Get current user profile
     /// </summary>
     Task<Result<UserProfileDto>> GetCurrentUserProfileAsync(int userId, string userType);
+
+    /// <summary>
+    /// Send OTP code to phone number (for registration/login verification)
+    /// </summary>
+    Task<Result<VerificationResultDto>> SendOtpAsync(SendVerificationCodeDto request);
+
+    /// <summary>
+    /// Verify OTP code
+    /// </summary>
+    Task<Result<bool>> VerifyOtpAsync(VerifySmsCodeDto request);
 }

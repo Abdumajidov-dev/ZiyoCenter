@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZiyoMarket.Domain.Enums;
 using ZiyoMarket.Service.DTOs.Auth;
+using ZiyoMarket.Service.DTOs.Sms;
 using ZiyoMarket.Service.Interfaces;
 
 namespace ZiyoMarket.Api.Controllers;
@@ -203,15 +205,15 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Send verification code to phone/email
+    /// Send verification code to phone
     /// </summary>
-    /// <param name="request">Phone or email</param>
+    /// <param name="request">Phone number</param>
     /// <returns>Success message</returns>
     [HttpPost("verification/send")]
     [AllowAnonymous]
     public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeRequestDto request)
     {
-        var result = await _authService.SendVerificationCodeAsync(request.PhoneOrEmail);
+        var result = await _authService.SendVerificationCodeAsync(request.Phone);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
@@ -226,16 +228,16 @@ public class AuthController : BaseController
     /// <summary>
     /// Verify code
     /// </summary>
-    /// <param name="request">Phone/Email and verification code</param>
+    /// <param name="request">Phone and verification code</param>
     /// <returns>Success message</returns>
     [HttpPost("verification/verify")]
     [AllowAnonymous]
     public async Task<IActionResult> VerifyCode([FromBody] VerifyCodeDto request)
     {
-        var result = await _authService.VerifyCodeAsync(request.PhoneOrEmail, request.Code);
+        var result = await _authService.VerifyCodeAsync(request.Phone, request.Code);
 
         if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
+            return StatusCode(result.StatusCode, new { message = result.Message});
 
         return Ok(new
         {
@@ -282,6 +284,50 @@ public class AuthController : BaseController
         {
             success = true,
             isValid = result.Data
+        });
+    }
+
+    /// <summary>
+    /// Send OTP code to phone number (for registration/login verification)
+    /// </summary>
+    /// <param name="request">Phone number and purpose</param>
+    /// <returns>Success message with OTP code (in development mode)</returns>
+    [HttpPost("send-otp")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SendOtp([FromBody] SendVerificationCodeDto request)
+    {
+        var result = await _authService.SendOtpAsync(request);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new
+        {
+            success = true,
+            message = result.Message,
+            data = result.Data
+        });
+    }
+
+    /// <summary>
+    /// Verify OTP code
+    /// </summary>
+    /// <param name="request">Phone number, code, and purpose</param>
+    /// <returns>Success message if code is valid</returns>
+    [HttpPost("verify-otp")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifySmsCodeDto request)
+    {
+        var result = await _authService.VerifyOtpAsync(request);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new
+        {
+            success = true,
+            message = result.Message,
+            data = result.Data
         });
     }
 }

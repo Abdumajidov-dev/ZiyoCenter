@@ -71,7 +71,6 @@ public static class ServiceExtension
 
         // ========== Role & Permission Management ==========
         services.AddScoped<RolePermissionSeedService>();
-        services.AddScoped<NewAuthService>();
         services.AddScoped<RoleManagementService>();
         services.AddScoped<IPermissionManagementService, PermissionManagementService>();
 
