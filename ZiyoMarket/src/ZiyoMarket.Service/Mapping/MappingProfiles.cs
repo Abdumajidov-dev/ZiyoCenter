@@ -29,15 +29,15 @@ public class MappingProfiles : Profile
     {
         // Product mappings
         CreateMap<Product, ProductListDto>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : null))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
             .ForMember(dest => dest.LikesCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore());
         
         CreateMap<Product, ProductDetailDto>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => src.Category.GetFullPath()))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : null))
+            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => src.Category != null ? src.Category.GetFullPath() : null))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
             .ForMember(dest => dest.IsOutOfStock, opt => opt.MapFrom(src => src.IsOutOfStock))
@@ -87,10 +87,10 @@ public class CartProfile : Profile
     {
         // Cart mappings
         CreateMap<CartItem, CartItemDto>()
-            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
-            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product.ImageUrl))
-            .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Product.IsAvailableForSale))
-            .ForMember(dest => dest.AvailableStock, opt => opt.MapFrom(src => src.Product.StockQuantity));
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : "Noma'lum mahsulot"))
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImageUrl : null))
+            .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Product != null && src.Product.IsAvailableForSale))
+            .ForMember(dest => dest.AvailableStock, opt => opt.MapFrom(src => src.Product != null ? src.Product.StockQuantity : 0));
     }
 }
 

@@ -23,5 +23,10 @@ public enum PaymentMethod
     /// <summary>
     /// Aralash - bir necha usul bilan
     /// </summary>
-    Mixed = 4
+    Mixed = 4,
+
+    /// <summary>
+    /// Click to'lov tizimi orqali
+    /// </summary>
+    Click = 5
 }

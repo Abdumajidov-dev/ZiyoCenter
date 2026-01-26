@@ -159,6 +159,10 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCustomServices();
 
+// ✅ Payment Services
+builder.Services.Configure<ZiyoMarket.Service.DTOs.Payments.Click.ClickSettings>(builder.Configuration.GetSection("ClickSettings"));
+builder.Services.AddScoped<ZiyoMarket.Service.Interfaces.IClickService, ZiyoMarket.Service.Services.ClickService>();
+
 var app = builder.Build();
 
 // ✅ Auto-run migrations on startup (Railway deployment)
