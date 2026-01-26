@@ -47,6 +47,9 @@ public class AuthService : IAuthService
     {
         try
         {
+            // DEBUG: Log incoming UserType
+            Console.WriteLine($"🔍 LOGIN REQUEST - Phone: {request.Phone}, UserType: '{request.UserType}' (Length: {request.UserType?.Length ?? 0})");
+
             // Find user based on UserType
             object? user = request.UserType switch
             {

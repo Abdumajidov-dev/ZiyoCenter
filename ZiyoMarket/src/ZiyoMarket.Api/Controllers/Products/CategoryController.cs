@@ -32,7 +32,8 @@ public class CategoryController : BaseController
     [AllowAnonymous]
     public async Task<IActionResult> GetAllCategories()
     {
-        var result = await _categoryService.GetAllCategoriesAsync();
+        // Faqat asosiy kategoriyalar (ParentId = null)
+        var result = await _categoryService.GetRootCategoriesAsync();
         return Ok(new { success = true, data = result.Data });
     }
 
@@ -56,6 +57,9 @@ public class CategoryController : BaseController
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateCategory([FromBody] SaveCategoryDto request)
     {
+        // Faqat asosiy kategoriya yaratish (ParentId ni null qilamiz)
+        request.ParentId = null;
+
         var createdBy = GetCurrentUserId();
         var result = await _categoryService.CreateCategoryAsync(request, createdBy);
 

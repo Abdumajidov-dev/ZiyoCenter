@@ -44,6 +44,36 @@ public class AuthController : BaseController
     }
 
     /// <summary>
+    /// Admin panel login - simplified endpoint specifically for admin panel
+    /// </summary>
+    /// <param name="request">Phone/Username and Password only</param>
+    /// <returns>Access token and admin profile</returns>
+    [HttpPost("admin-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> AdminLogin([FromBody] SimpleLoginDto request)
+    {
+        // Force UserType to Admin
+        var loginRequest = new LoginRequestDto
+        {
+            Phone = request.Phone,
+            Password = request.Password,
+            UserType = "Admin"
+        };
+
+        var result = await _authService.LoginAsync(loginRequest);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new
+        {
+            success = true,
+            message = result.Message,
+            data = result.Data
+        });
+    }
+
+    /// <summary>
     /// Universal register for all user types (Customer, Seller, Admin)
     /// </summary>
     /// <param name="request">User registration data with UserType</param>

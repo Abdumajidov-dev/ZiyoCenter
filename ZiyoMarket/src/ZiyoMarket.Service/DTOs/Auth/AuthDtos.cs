@@ -4,6 +4,19 @@ using System.ComponentModel.DataAnnotations;
 namespace ZiyoMarket.Service.DTOs.Auth;
 
 /// <summary>
+/// Simple login DTO for admin panel - no UserType required
+/// </summary>
+public class SimpleLoginDto
+{
+    [Required(ErrorMessage = "Phone/Username is required")]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+    public string Password { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Login request DTO
 /// </summary>
 public class LoginRequestDto
