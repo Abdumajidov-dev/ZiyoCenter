@@ -28,11 +28,7 @@ public class SmsController : BaseController
     public async Task<IActionResult> SendSms([FromBody] SendSmsDto dto)
     {
         var result = await _smsService.SendSmsAsync(dto);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -42,11 +38,7 @@ public class SmsController : BaseController
     public async Task<IActionResult> SendVerificationCode([FromBody] SendVerificationCodeDto dto)
     {
         var result = await _smsService.SendVerificationCodeAsync(dto);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -56,11 +48,7 @@ public class SmsController : BaseController
     public async Task<IActionResult> VerifyCode([FromBody] VerifySmsCodeDto dto)
     {
         var result = await _smsService.VerifyCodeAsync(dto);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -71,11 +59,7 @@ public class SmsController : BaseController
     public async Task<IActionResult> SendBulkSms([FromBody] List<SendSmsDto> requests)
     {
         var result = await _smsService.SendBulkSmsAsync(requests);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -90,11 +74,7 @@ public class SmsController : BaseController
         [FromQuery] SmsStatus? status = null)
     {
         var result = await _smsService.GetSmsLogsAsync(pageNumber, pageSize, purpose, status);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -110,11 +90,7 @@ public class SmsController : BaseController
         var userType = GetCurrentUserType();
 
         var result = await _smsService.GetUserSmsLogsAsync(userId, userType, pageNumber, pageSize);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -127,10 +103,6 @@ public class SmsController : BaseController
         [FromQuery] DateTime? endDate = null)
     {
         var result = await _smsService.GetSmsStatisticsAsync(startDate, endDate);
-
-        if (result.IsSuccess)
-            return Ok(result);
-
-        return BadRequest(result);
+        return HandleResult(result);
     }
 }

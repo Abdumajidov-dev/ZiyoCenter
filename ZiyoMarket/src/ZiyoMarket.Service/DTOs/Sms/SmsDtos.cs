@@ -47,16 +47,9 @@ public class SendVerificationCodeDto
     /// <summary>
     /// Telefon raqami (+998XXXXXXXXX)
     /// </summary>
-    [Required(ErrorMessage = "Telefon raqami kiritilishi shart")]
-    [Phone(ErrorMessage = "Telefon raqami formati noto'g'ri")]
-
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Phone number must be in format +998XXXXXXXXX")]
     public string PhoneNumber { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Tasdiqlash kodi maqsadi (Registration, PasswordReset, LoginVerification)
-    /// </summary>
-    [Required]
-    public SmsPurpose Purpose { get; set; }
 }
 
 /// <summary>
@@ -67,22 +60,16 @@ public class VerifySmsCodeDto
     /// <summary>
     /// Telefon raqami
     /// </summary>
-    [Required(ErrorMessage = "Telefon raqami kiritilishi shart")]
-    [Phone(ErrorMessage = "Telefon raqami formati noto'g'ri")]
+    [Required(ErrorMessage = "Phone number is required")]
+    [Phone(ErrorMessage = "Phone number must be in format +998XXXXXXXXX")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>
     /// Tasdiqlash kodi (6 raqam)
     /// </summary>
-    [Required(ErrorMessage = "Tasdiqlash kodi kiritilishi shart")]
-    [RegularExpression(@"^\d{6}$", ErrorMessage = "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak")]
+    [Required(ErrorMessage = "Verification code is required")]
+    [RegularExpression(@"^\d{6}$", ErrorMessage = "Verification code must be 6 digits")]
     public string Code { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Tasdiqlash kodi maqsadi
-    /// </summary>
-    [Required]
-    public SmsPurpose Purpose { get; set; }
 }
 
 /// <summary>
@@ -116,12 +103,10 @@ public class SmsResultDto
 }
 
 /// <summary>
-/// Verification code natijasi
+/// Verification code natijasi - faqat data (status va message ApiResponse da)
 /// </summary>
 public class VerificationResultDto
 {
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string? Code { get; set; } // Development muhitida kod qaytariladi
+    public string Code { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
 }

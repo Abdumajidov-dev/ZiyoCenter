@@ -5,7 +5,9 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 using ZiyoMarket.Api.Extensions;
+using ZiyoMarket.Api.Filters;
 using ZiyoMarket.Api.Helpers;
+using ZiyoMarket.Api.Middleware;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Service.DTOs.Auth;
 
@@ -30,6 +32,9 @@ builder.Services.AddControllers(options =>
 {
     // ✅ Convert controller routes to snake_case (api/Auth -> api/auth, api/Product -> api/product)
     options.Conventions.Add(new Microsoft.AspNetCore.Mvc.ApplicationModels.RouteTokenTransformerConvention(new SlugifyParameterTransformer()));
+
+    // ✅ Add custom validation filter for consistent error responses
+    options.Filters.Add<ValidationFilter>();
 })
     .AddJsonOptions(options =>
     {
@@ -43,6 +48,12 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.WriteIndented = false; // Compact JSON
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+
+// ✅ Disable automatic ModelState validation (we use ValidationFilter instead)
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -185,6 +196,9 @@ if (app.Environment.IsProduction())
         // Don't throw - let app start anyway for debugging
     }
 }
+
+// ✅ Global exception handler middleware (must be first)
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // ✅ Swagger'ni har doim yoqamiz (nafaqat Development'da)
 app.UseSwagger();

@@ -130,20 +130,17 @@ public class SmsService : ISmsService
                 code = new Random().Next(100000, 999999).ToString();
             }
 
+            // Purpose uchun default qiymat - Registration
+            var purpose = SmsPurpose.Registration;
+
             // Kodni cache'ga saqlash (5 daqiqa)
-            var cacheKey = $"sms_verification_{request.PhoneNumber}_{request.Purpose}";
+            var cacheKey = $"sms_verification_{request.PhoneNumber}_{purpose}";
             var expiryTime = DateTime.UtcNow.AddMinutes(5);
 
             _cache.Set(cacheKey, code, TimeSpan.FromMinutes(5));
 
-            // SMS matni
-            string message = request.Purpose switch
-            {
-                SmsPurpose.Registration => $"ZiyoMarket ro'yxatdan o'tish kodi: {code}. Kod 5 daqiqa amal qiladi.",
-                SmsPurpose.PasswordReset => $"ZiyoMarket parolni tiklash kodi: {code}. Kod 5 daqiqa amal qiladi.",
-                SmsPurpose.LoginVerification => $"ZiyoMarket kirish tasdiqlash kodi: {code}. Kod 5 daqiqa amal qiladi.",
-                _ => $"ZiyoMarket tasdiqlash kodi: {code}. Kod 5 daqiqa amal qiladi."
-            };
+            // SMS matni - default Registration uchun
+            string smsMessage = $"ZiyoMarket ro'yxatdan o'tish kodi: {code}. Kod 5 daqiqa amal qiladi.";
 
             // Privileged raqamlar uchun SMS yuborilmaydi
             if (!isPrivileged)
@@ -152,8 +149,8 @@ public class SmsService : ISmsService
                 var smsRequest = new SendSmsDto
                 {
                     PhoneNumber = request.PhoneNumber,
-                    Message = message,
-                    Purpose = request.Purpose
+                    Message = smsMessage,
+                    Purpose = purpose
                 };
 
             var smsResult = await SendSmsAsync(smsRequest);
@@ -164,25 +161,23 @@ public class SmsService : ISmsService
             }
             }
 
-            var isDevelopment = _configuration["EskizSms:IsDevelopment"] == "true";
-
             var result = new VerificationResultDto
             {
-                Success = true,
-                Message = isPrivileged ? "Imtiyozli raqam, kod: 1111" : "Tasdiqlash kodi yuborildi",
                 Code = code, // Always return code as requested
                 ExpiresAt = expiryTime
             };
 
-            _logger.LogInformation("Verification code sent to {PhoneNumber} for {Purpose}",
-                request.PhoneNumber, request.Purpose);
+            var responseMessage = isPrivileged ? "Imtiyozli raqam, kod: 1111" : "OTP code sent successfully";
 
-            return Result<VerificationResultDto>.Success(result);
+            _logger.LogInformation("Verification code sent to {PhoneNumber} for {Purpose}",
+                request.PhoneNumber, purpose);
+
+            return Result<VerificationResultDto>.Success(result, responseMessage);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending verification code to {PhoneNumber}", request.PhoneNumber);
-            return Result<VerificationResultDto>.Failure($"Tasdiqlash kodi yuborishda xatolik: {ex.Message}");
+            return Result<VerificationResultDto>.Failure($"Error sending OTP code: {ex.Message}");
         }
     }
 
@@ -195,30 +190,32 @@ public class SmsService : ISmsService
         {
             request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
 
-            var cacheKey = $"sms_verification_{request.PhoneNumber}_{request.Purpose}";
+            // Purpose uchun default qiymat - Registration (SendVerificationCode bilan bir xil)
+            var purpose = SmsPurpose.Registration;
+            var cacheKey = $"sms_verification_{request.PhoneNumber}_{purpose}";
 
             if (!_cache.TryGetValue<string>(cacheKey, out var cachedCode))
             {
                 _logger.LogWarning("Verification code expired or not found for {PhoneNumber}", request.PhoneNumber);
-                return Result<bool>.Failure("Tasdiqlash kodi yaroqsiz yoki muddati tugagan");
+                return Result<bool>.Failure("Verification code expired or not found");
             }
 
             if (cachedCode != request.Code)
             {
                 _logger.LogWarning("Invalid verification code for {PhoneNumber}", request.PhoneNumber);
-                return Result<bool>.Failure("Tasdiqlash kodi noto'g'ri");
+                return Result<bool>.Failure("Invalid verification code");
             }
 
             // Kod to'g'ri bo'lsa, cache'dan o'chirish
             _cache.Remove(cacheKey);
 
             _logger.LogInformation("Verification code verified successfully for {PhoneNumber}", request.PhoneNumber);
-            return Result<bool>.Success(true);
+            return Result<bool>.Success(true, "Verification code verified successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error verifying code for {PhoneNumber}", request.PhoneNumber);
-            return Result<bool>.Failure($"Kodni tekshirishda xatolik: {ex.Message}");
+            return Result<bool>.Failure($"Error verifying code: {ex.Message}");
         }
     }
 

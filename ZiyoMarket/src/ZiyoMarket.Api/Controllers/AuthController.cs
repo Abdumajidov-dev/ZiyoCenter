@@ -31,16 +31,7 @@ public class AuthController : BaseController
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
         var result = await _authService.LoginAsync(request);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message,
-            data = result.Data
-        });
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -60,16 +51,7 @@ public class AuthController : BaseController
         };
 
         var result = await _authService.LoginAsync(loginRequest);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message,
-            data = result.Data
-        });
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -82,16 +64,7 @@ public class AuthController : BaseController
     public async Task<IActionResult> Register([FromBody] RegisterUserDto request)
     {
         var result = await _authService.RegisterUserAsync(request);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return StatusCode(201, new
-        {
-            success = true,
-            message = result.Message,
-            data = result.Data
-        });
+        return HandleResult(result);
     }
 
     /// <summary>
