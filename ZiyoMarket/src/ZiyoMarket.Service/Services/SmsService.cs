@@ -47,6 +47,8 @@ public class SmsService : ISmsService
     {
         try
         {
+            request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+
             // SMS log yaratish
             var smsLog = new SmsLog
             {
@@ -109,6 +111,8 @@ public class SmsService : ISmsService
     {
         try
         {
+            request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+
             // Check if phone is privileged (no SMS sent, always code "1111")
             var privilegedPhones = _configuration.GetSection("EskizSms:PrivilegedPhones").GetChildren().Select(x => x.Value).ToList() ?? new List<string>();
             var isPrivileged = privilegedPhones.Any(p => request.PhoneNumber.EndsWith(p) || request.PhoneNumber.Contains(p));
@@ -166,7 +170,7 @@ public class SmsService : ISmsService
             {
                 Success = true,
                 Message = isPrivileged ? "Imtiyozli raqam, kod: 1111" : "Tasdiqlash kodi yuborildi",
-                Code = (isDevelopment || isPrivileged) ? code : null, // Development muhitida kodni qaytarish
+                Code = code, // Always return code as requested
                 ExpiresAt = expiryTime
             };
 
@@ -189,6 +193,8 @@ public class SmsService : ISmsService
     {
         try
         {
+            request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+
             var cacheKey = $"sms_verification_{request.PhoneNumber}_{request.Purpose}";
 
             if (!_cache.TryGetValue<string>(cacheKey, out var cachedCode))
@@ -373,5 +379,28 @@ public class SmsService : ISmsService
             _logger.LogError(ex, "Error getting SMS statistics");
             return Result<SmsStatisticsDto>.Failure($"SMS statistikasini olishda xatolik: {ex.Message}");
         }
+    }
+
+
+    private string NormalizePhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+            return phone;
+
+        // Remove all non-digit characters except +
+        string cleaned = new string(phone.Where(c => char.IsDigit(c) || c == '+').ToArray());
+
+        // If starts with 998... but no +, add it
+        if (cleaned.StartsWith("998") && cleaned.Length == 12)
+        {
+            cleaned = "+" + cleaned;
+        }
+        // If starts with 9... (9 digits) and no prefix, assume 998
+        else if (!cleaned.StartsWith("+") && cleaned.Length == 9)
+        {
+            cleaned = "+998" + cleaned;
+        }
+
+        return cleaned;
     }
 }

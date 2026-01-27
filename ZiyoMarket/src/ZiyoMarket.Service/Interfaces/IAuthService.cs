@@ -20,23 +20,7 @@ public interface IAuthService
     /// </summary>
     Task<Result<LoginResponseDto>> RegisterUserAsync(RegisterUserDto request);
 
-    /// <summary>
-    /// Register new customer (DEPRECATED - use RegisterUserAsync instead)
-    /// </summary>
-    [Obsolete("Use RegisterUserAsync instead")]
-    Task<Result<LoginResponseDto>> RegisterCustomerAsync(RegisterCustomerDto request);
 
-    /// <summary>
-    /// Register new seller (DEPRECATED - use RegisterUserAsync instead)
-    /// </summary>
-    [Obsolete("Use RegisterUserAsync instead")]
-    Task<Result<LoginResponseDto>> RegisterSellerAsync(RegisterSellerDto request);
-
-    /// <summary>
-    /// Register new admin (DEPRECATED - use RegisterUserAsync instead)
-    /// </summary>
-    [Obsolete("Use RegisterUserAsync instead")]
-    Task<Result<LoginResponseDto>> RegisterAdminAsync(RegisterAdminDto request);
 
     /// <summary>
     /// Change user role (Admin only)
@@ -53,10 +37,7 @@ public interface IAuthService
     /// </summary>
     Task<Result> LogoutAsync(int userId, string userType);
     
-    /// <summary>
-    /// Change user password
-    /// </summary>
-    Task<Result> ChangePasswordAsync(int userId, string userType, ChangePasswordDto request);
+
     
     /// <summary>
     /// Request password reset (send verification code)
@@ -68,15 +49,7 @@ public interface IAuthService
     /// </summary>
     Task<Result> ResetPasswordAsync(ResetPasswordConfirmDto request);
     
-    /// <summary>
-    /// Send verification code to phone
-    /// </summary>
-    Task<Result> SendVerificationCodeAsync(string phone);
 
-    /// <summary>
-    /// Verify code
-    /// </summary>
-    Task<Result> VerifyCodeAsync(string phone, string code);
     
     /// <summary>
     /// Generate JWT access token

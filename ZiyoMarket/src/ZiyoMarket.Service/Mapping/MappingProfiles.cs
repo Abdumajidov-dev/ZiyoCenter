@@ -116,11 +116,7 @@ public class UserProfile : Profile
             .ForMember(dest => dest.TotalCashbackUsed, opt => opt.Ignore())
             .ForMember(dest => dest.LastOrderDate, opt => opt.Ignore());
         
-        CreateMap<RegisterCustomerDto, Customer>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
-            .ForMember(dest => dest.CashbackBalance, opt => opt.MapFrom(src => 0))
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
+
         
         CreateMap<UpdateCustomerDto, Customer>()
             .ForMember(dest => dest.Phone, opt => opt.Ignore())
@@ -139,10 +135,7 @@ public class UserProfile : Profile
             .ForMember(dest => dest.TotalOrders, opt => opt.Ignore())
             .ForMember(dest => dest.TotalSales, opt => opt.Ignore());
 
-        CreateMap<RegisterSellerDto, Seller>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
+
 
         // Admin mappings
         CreateMap<Admin, UserProfileDto>()
@@ -154,10 +147,7 @@ public class UserProfile : Profile
 
         CreateMap<Admin, AdminDetailDto>();
 
-        CreateMap<RegisterAdminDto, Admin>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true));
+
     }
 }
 

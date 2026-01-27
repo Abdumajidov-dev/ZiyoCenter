@@ -56,8 +56,7 @@ public class AuthController : BaseController
         var loginRequest = new LoginRequestDto
         {
             Phone = request.Phone,
-            Password = request.Password,
-            UserType = "Admin"
+            Password = request.Password
         };
 
         var result = await _authService.LoginAsync(loginRequest);
@@ -168,29 +167,7 @@ public class AuthController : BaseController
         });
     }
 
-    /// <summary>
-    /// Change current user password
-    /// </summary>
-    /// <param name="request">Password change data</param>
-    /// <returns>Success message</returns>
-    [HttpPost("change-password")]
-    [Authorize]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto request)
-    {
-        var userId = GetCurrentUserId();
-        var userType = GetCurrentUserType();
 
-        var result = await _authService.ChangePasswordAsync(userId, userType, request);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message
-        });
-    }
 
     /// <summary>
     /// Request password reset (send verification code)
@@ -234,47 +211,7 @@ public class AuthController : BaseController
         });
     }
 
-    /// <summary>
-    /// Send verification code to phone
-    /// </summary>
-    /// <param name="request">Phone number</param>
-    /// <returns>Success message</returns>
-    [HttpPost("verification/send")]
-    [AllowAnonymous]
-    public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeRequestDto request)
-    {
-        var result = await _authService.SendVerificationCodeAsync(request.Phone);
 
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message
-        });
-    }
-
-    /// <summary>
-    /// Verify code
-    /// </summary>
-    /// <param name="request">Phone and verification code</param>
-    /// <returns>Success message</returns>
-    [HttpPost("verification/verify")]
-    [AllowAnonymous]
-    public async Task<IActionResult> VerifyCode([FromBody] VerifyCodeDto request)
-    {
-        var result = await _authService.VerifyCodeAsync(request.Phone, request.Code);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message});
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message
-        });
-    }
 
     /// <summary>
     /// Get current user profile

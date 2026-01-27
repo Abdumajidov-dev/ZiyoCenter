@@ -13,7 +13,7 @@ public class SendSmsDto
     /// </summary>
     [Required(ErrorMessage = "Telefon raqami kiritilishi shart")]
     [Phone(ErrorMessage = "Telefon raqami formati noto'g'ri")]
-    [RegularExpression(@"^\+998\d{9}$", ErrorMessage = "Telefon raqami +998XXXXXXXXX formatida bo'lishi kerak")]
+
     public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>
@@ -49,7 +49,7 @@ public class SendVerificationCodeDto
     /// </summary>
     [Required(ErrorMessage = "Telefon raqami kiritilishi shart")]
     [Phone(ErrorMessage = "Telefon raqami formati noto'g'ri")]
-    [RegularExpression(@"^\+998\d{9}$", ErrorMessage = "Telefon raqami +998XXXXXXXXX formatida bo'lishi kerak")]
+
     public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>

@@ -12,8 +12,9 @@ using ZiyoMarket.Service.DTOs.Auth;
 var builder = WebApplication.CreateBuilder(args);
 
 // ✅ Railway PORT configuration
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+// ✅ Railway PORT configuration
+// var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+// builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -22,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-Log.Information("Starting ZiyoMarket API on port {Port}", port);
+// Log.Information("Starting ZiyoMarket API on port {Port}", port);
 
 // Add services to the container
 builder.Services.AddControllers(options =>

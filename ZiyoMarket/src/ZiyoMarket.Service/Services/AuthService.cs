@@ -45,38 +45,55 @@ public class AuthService : IAuthService
 
     public async Task<Result<LoginResponseDto>> LoginAsync(LoginRequestDto request)
     {
+
+
+        // Normalize Phone Number
+        request.Phone = NormalizePhoneNumber(request.Phone);
+
         try
         {
             // DEBUG: Log incoming UserType
-            Console.WriteLine($"🔍 LOGIN REQUEST - Phone: {request.Phone}, UserType: '{request.UserType}' (Length: {request.UserType?.Length ?? 0})");
+            Console.WriteLine($"🔍 LOGIN REQUEST - Phone: {request.Phone}");
 
-            // Find user based on UserType
-            object? user = request.UserType switch
+            // Auto-detect UserType
+            object? user = null;
+            string userType = "";
+
+            // Try Customer
+            user = await FindCustomerByPhoneAsync(request.Phone);
+            if (user != null) userType = "Customer";
+            else
             {
-                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
-                "Seller" => await FindSellerByPhoneAsync(request.Phone),
-                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
-                _ => null
-            };
+                // Try Seller
+                user = await FindSellerByPhoneAsync(request.Phone);
+                if (user != null) userType = "Seller";
+                else
+                {
+                    // Try Admin
+                    user = await FindAdminByUsernameOrPhoneAsync(request.Phone);
+                    if (user != null) userType = "Admin";
+                }
+            }
 
             if (user == null)
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
             // Verify password
-            string passwordHash = GetPasswordHash(user, request.UserType);
+            // Verify password
+            string passwordHash = GetPasswordHash(user, userType);
             if (!BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
             // Check if user is active
-            if (!IsUserActive(user, request.UserType))
+            if (!IsUserActive(user, userType))
                 return Result<LoginResponseDto>.Forbidden("Account is inactive");
 
             // Generate token
-            var userId = GetUserId(user, request.UserType);
-            var accessToken = await GenerateAccessTokenAsync(userId, request.UserType);
+            var userId = GetUserId(user, userType);
+            var accessToken = await GenerateAccessTokenAsync(userId, userType);
 
             // Map to response
-            var userProfile = MapUserToProfileDto(user, request.UserType);
+            var userProfile = MapUserToProfileDto(user, userType);
 
             var response = new LoginResponseDto
             {
@@ -86,7 +103,8 @@ public class AuthService : IAuthService
             };
 
             // Update last login for admin
-            if (request.UserType == "Admin" && user is Admin admin)
+            // Update last login for admin
+            if (userType == "Admin" && user is Admin admin)
             {
                 admin.LastLoginAt = TimeHelper.GetCurrentServerTime();
                 await _unitOfWork.Admins.Update(admin, admin.Id);
@@ -105,16 +123,14 @@ public class AuthService : IAuthService
 
     public async Task<Result<LoginResponseDto>> RegisterUserAsync(RegisterUserDto request)
     {
+        // Always default to Customer
+        string userType = "Customer";
+
+        // Normalize Phone Number
+        request.Phone = NormalizePhoneNumber(request.Phone);
+
         try
         {
-            // Validate UserType
-            if (request.UserType != "Customer" && request.UserType != "Seller" && request.UserType != "Admin")
-                return Result<LoginResponseDto>.BadRequest("Invalid user type. Must be Customer, Seller, or Admin");
-
-            // Admin requires username
-            if (request.UserType == "Admin" && string.IsNullOrWhiteSpace(request.Username))
-                return Result<LoginResponseDto>.BadRequest("Username is required for Admin registration");
-
             // Check if phone already exists in any user type
             var existingCustomer = await _unitOfWork.Customers.SelectAsync(c => c.Phone == request.Phone);
             var existingSeller = await _unitOfWork.Sellers.SelectAsync(s => s.Phone == request.Phone);
@@ -123,122 +139,29 @@ public class AuthService : IAuthService
             if (existingCustomer != null || existingSeller != null || existingAdmin != null)
                 return Result<LoginResponseDto>.Conflict("Phone number already registered");
 
-            // For Admin, check if username already exists
-            if (request.UserType == "Admin")
+            // Create Customer
+            var customer = new Customer
             {
-                var existingUsername = await _unitOfWork.Admins.SelectAsync(a => a.Username == request.Username);
-                if (existingUsername != null)
-                    return Result<LoginResponseDto>.Conflict("Username already registered");
-            }
-
-            // Create user based on UserType
-            object createdUser;
-            int userId;
-
-            switch (request.UserType)
-            {
-                case "Customer":
-                    var customer = new Customer
-                    {
-                        FirstName = request.FirstName,
-                        LastName = request.LastName,
-                        Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                        Address = request.Address,
-                        CashbackBalance = 0,
-                        IsActive = true
-                    };
-                    await _unitOfWork.Customers.InsertAsync(customer);
-                    await _unitOfWork.SaveChangesAsync();
-                    createdUser = customer;
-                    userId = customer.Id;
-                    break;
-
-                case "Seller":
-                    var seller = new Seller
-                    {
-                        FirstName = request.FirstName,
-                        LastName = request.LastName,
-                        Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                        Role = "Seller",
-                        IsActive = true
-                    };
-                    await _unitOfWork.Sellers.InsertAsync(seller);
-                    await _unitOfWork.SaveChangesAsync();
-                    createdUser = seller;
-                    userId = seller.Id;
-                    break;
-
-                case "Admin":
-                    var admin = new Admin
-                    {
-                        FirstName = request.FirstName,
-                        LastName = request.LastName,
-                        Username = request.Username!,
-                        Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                        Role = "Admin",
-                        IsActive = true
-                    };
-                    await _unitOfWork.Admins.InsertAsync(admin);
-                    await _unitOfWork.SaveChangesAsync();
-                    createdUser = admin;
-                    userId = admin.Id;
-                    break;
-
-                default:
-                    return Result<LoginResponseDto>.BadRequest("Invalid user type");
-            }
-
-            // Generate token
-            var accessToken = await GenerateAccessTokenAsync(userId, request.UserType);
-
-            var response = new LoginResponseDto
-            {
-                AccessToken = accessToken.Data!,
-                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                User = MapUserToProfileDto(createdUser, request.UserType)
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Phone = request.Phone,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                Address = request.Address,
+                CashbackBalance = 0,
+                IsActive = true
             };
-
-            return Result<LoginResponseDto>.Success(response, $"{request.UserType} registration successful", 201);
-        }
-        catch (Exception ex)
-        {
-            return Result<LoginResponseDto>.InternalError($"Registration failed: {ex.Message}");
-        }
-    }
-
-    // ============ Register Customer (DEPRECATED) ============
-
-    public async Task<Result<LoginResponseDto>> RegisterCustomerAsync(RegisterCustomerDto request)
-    {
-        try
-        {
-            // Check if phone already exists
-            var existingCustomer = await _unitOfWork.Customers
-                .SelectAsync(c => c.Phone == request.Phone);
-
-            if (existingCustomer != null)
-                return Result<LoginResponseDto>.Conflict("Phone number already registered");
-
-            // Create customer
-            var customer = _mapper.Map<Customer>(request);
-            customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            customer.CashbackBalance = 0;
-            customer.IsActive = true;
-
+            
             await _unitOfWork.Customers.InsertAsync(customer);
             await _unitOfWork.SaveChangesAsync();
-
+            
             // Generate token
-            var accessToken = await GenerateAccessTokenAsync(customer.Id, "Customer");
+            var accessToken = await GenerateAccessTokenAsync(customer.Id, userType);
 
             var response = new LoginResponseDto
             {
                 AccessToken = accessToken.Data!,
                 ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                User = _mapper.Map<UserProfileDto>(customer)
+                User = MapUserToProfileDto(customer, userType)
             };
 
             return Result<LoginResponseDto>.Success(response, "Registration successful", 201);
@@ -249,92 +172,7 @@ public class AuthService : IAuthService
         }
     }
 
-    // ============ Register Seller ============
 
-    public async Task<Result<LoginResponseDto>> RegisterSellerAsync(RegisterSellerDto request)
-    {
-        try
-        {
-            // Check if phone already exists
-            var existingSeller = await _unitOfWork.Sellers
-                .SelectAsync(s => s.Phone == request.Phone);
-
-            if (existingSeller != null)
-                return Result<LoginResponseDto>.Conflict("Phone number already registered");
-
-            // Create seller
-            var seller = _mapper.Map<Seller>(request);
-            seller.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            seller.Role = "Seller"; // Default role for test mode
-            seller.IsActive = true;
-
-            await _unitOfWork.Sellers.InsertAsync(seller);
-            await _unitOfWork.SaveChangesAsync();
-
-            // Generate token
-            var accessToken = await GenerateAccessTokenAsync(seller.Id, "Seller");
-
-            var response = new LoginResponseDto
-            {
-                AccessToken = accessToken.Data!,
-                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                User = _mapper.Map<UserProfileDto>(seller)
-            };
-
-            return Result<LoginResponseDto>.Success(response, "Seller registration successful", 201);
-        }
-        catch (Exception ex)
-        {
-            return Result<LoginResponseDto>.InternalError($"Seller registration failed: {ex.Message}");
-        }
-    }
-
-    // ============ Register Admin ============
-
-    public async Task<Result<LoginResponseDto>> RegisterAdminAsync(RegisterAdminDto request)
-    {
-        try
-        {
-            // Check if username already exists
-            var existingUsername = await _unitOfWork.Admins
-                .SelectAsync(a => a.Username == request.Username);
-
-            if (existingUsername != null)
-                return Result<LoginResponseDto>.Conflict("Username already registered");
-
-            // Check if phone already exists
-            var existingPhone = await _unitOfWork.Admins
-                .SelectAsync(a => a.Phone == request.Phone);
-
-            if (existingPhone != null)
-                return Result<LoginResponseDto>.Conflict("Phone number already registered");
-
-            // Create admin
-            var admin = _mapper.Map<Admin>(request);
-            admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-            admin.Role = "Admin"; // Default role for test mode
-            admin.IsActive = true;
-
-            await _unitOfWork.Admins.InsertAsync(admin);
-            await _unitOfWork.SaveChangesAsync();
-
-            // Generate token
-            var accessToken = await GenerateAccessTokenAsync(admin.Id, "Admin");
-
-            var response = new LoginResponseDto
-            {
-                AccessToken = accessToken.Data!,
-                ExpiresAt = TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                User = _mapper.Map<UserProfileDto>(admin)
-            };
-
-            return Result<LoginResponseDto>.Success(response, "Admin registration successful", 201);
-        }
-        catch (Exception ex)
-        {
-            return Result<LoginResponseDto>.InternalError($"Admin registration failed: {ex.Message}");
-        }
-    }
 
     // ============ Logout ============
 
@@ -408,16 +246,32 @@ public class AuthService : IAuthService
 
     public async Task<Result> RequestPasswordResetAsync(ResetPasswordRequestDto request)
     {
+
+
+        // Normalize Phone Number
+        request.Phone = NormalizePhoneNumber(request.Phone);
+
         try
         {
-            // Find user
-            object? user = request.UserType switch
+            // Find user (Auto-detect from phone)
+            object? user = null;
+            string userType = "";
+
+            // Check Customer
+            user = await FindCustomerByPhoneAsync(request.Phone);
+            if (user != null) userType = "Customer";
+            else
             {
-                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
-                "Seller" => await FindSellerByPhoneAsync(request.Phone),
-                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
-                _ => null
-            };
+                // Check Seller
+                user = await FindSellerByPhoneAsync(request.Phone);
+                if (user != null) userType = "Seller";
+                else
+                {
+                    // Check Admin
+                    user = await FindAdminByUsernameOrPhoneAsync(request.Phone);
+                    if (user != null) userType = "Admin";
+                }
+            }
 
             if (user == null)
             {
@@ -765,10 +619,42 @@ public class AuthService : IAuthService
         return random.Next(100000, 999999).ToString();
     }
 
+    private string NormalizePhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+            return phone;
+
+        // Remove all non-digit characters except +
+        string cleaned = new string(phone.Where(c => char.IsDigit(c) || c == '+').ToArray());
+
+        // If starts with 998... but no +, add it
+        if (cleaned.StartsWith("998") && cleaned.Length == 12)
+        {
+            cleaned = "+" + cleaned;
+        }
+        // If starts with 9... (9 digits) and no prefix, assume 998
+        else if (!cleaned.StartsWith("+") && cleaned.Length == 9)
+        {
+            cleaned = "+998" + cleaned;
+        }
+
+        return cleaned;
+    }
+
     // ============ Change User Role (Admin Only) ============
 
     public async Task<Result<LoginResponseDto>> ChangeUserRoleAsync(ChangeUserRoleDto request, int adminUserId)
     {
+        // Normalize UserTypes to Title Case
+        if (!string.IsNullOrEmpty(request.CurrentUserType) && request.CurrentUserType.Length > 1)
+        {
+            request.CurrentUserType = char.ToUpper(request.CurrentUserType[0]) + request.CurrentUserType.Substring(1).ToLower();
+        }
+        if (!string.IsNullOrEmpty(request.NewUserType) && request.NewUserType.Length > 1)
+        {
+            request.NewUserType = char.ToUpper(request.NewUserType[0]) + request.NewUserType.Substring(1).ToLower();
+        }
+
         try
         {
             // Verify admin exists and is active
@@ -1020,6 +906,8 @@ public class AuthService : IAuthService
             _ => false
         };
     }
+
+
 
     // ============ OTP Methods ============
 

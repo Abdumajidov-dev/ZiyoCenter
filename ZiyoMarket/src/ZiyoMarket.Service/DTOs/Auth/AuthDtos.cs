@@ -28,8 +28,7 @@ public class LoginRequestDto
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "User type is required")]
-    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
+
 }
 
 /// <summary>
@@ -42,33 +41,7 @@ public class LoginResponseDto
     public UserProfileDto User { get; set; } = null!;
 }
 
-/// <summary>
-/// Register customer DTO
-/// </summary>
-public class RegisterCustomerDto
-{
-    [Required(ErrorMessage = "First name is required")]
-    [MaxLength(100)]
-    public string FirstName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Last name is required")]
-    [MaxLength(100)]
-    public string LastName { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "Phone number is required")]
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public string Phone { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
-    public string Password { get; set; } = string.Empty;
-    
-    [Compare("Password", ErrorMessage = "Passwords do not match")]
-    public string ConfirmPassword { get; set; } = string.Empty;
-    
-    [MaxLength(500)]
-    public string? Address { get; set; }
-}
 
 /// <summary>
 /// User profile DTO
@@ -156,59 +129,9 @@ public class VerifyCodeDto
     public string Code { get; set; } = string.Empty;
 }
 
-/// <summary>
-/// Register seller DTO
-/// </summary>
-public class RegisterSellerDto
-{
-    [Required(ErrorMessage = "First name is required")]
-    [MaxLength(100)]
-    public string FirstName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Last name is required")]
-    [MaxLength(100)]
-    public string LastName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public string Phone { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
-    public string Password { get; set; } = string.Empty;
-
-    [Compare("Password", ErrorMessage = "Passwords do not match")]
-    public string ConfirmPassword { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Register admin DTO
-/// </summary>
-public class RegisterAdminDto
-{
-    [Required(ErrorMessage = "First name is required")]
-    [MaxLength(100)]
-    public string FirstName { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Last name is required")]
-    [MaxLength(100)]
-    public string LastName { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Username is required")]
-    [MaxLength(100)]
-    public string Username { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Phone number is required")]
-    [Phone(ErrorMessage = "Invalid phone number")]
-    public string Phone { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
-    public string Password { get; set; } = string.Empty;
-
-    [Compare("Password", ErrorMessage = "Passwords do not match")]
-    public string ConfirmPassword { get; set; } = string.Empty;
-}
 
 /// <summary>
 /// Universal register DTO for all user types
@@ -234,15 +157,9 @@ public class RegisterUserDto
     [Compare("Password", ErrorMessage = "Passwords do not match")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "User type is required")]
-    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
-
     // Optional fields
     [MaxLength(500)]
     public string? Address { get; set; }
-
-    [MaxLength(100)]
-    public string? Username { get; set; } // Required only for Admin
 }
 
 /// <summary>

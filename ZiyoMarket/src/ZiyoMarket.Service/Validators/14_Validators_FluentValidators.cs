@@ -20,19 +20,16 @@ public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
             .NotEmpty().WithMessage("Password is required")
             .MinimumLength(6).WithMessage("Password must be at least 6 characters");
         
-        RuleFor(x => x.UserType)
-            .NotEmpty().WithMessage("User type is required")
-            .Must(x => new[] { "Customer", "Seller", "Admin" }.Contains(x))
-            .WithMessage("Invalid user type");
+
     }
 }
 
 /// <summary>
-/// Register customer validator
+/// Register user validator
 /// </summary>
-public class RegisterCustomerValidator : AbstractValidator<RegisterCustomerDto>
+public class RegisterUserValidator : AbstractValidator<RegisterUserDto>
 {
-    public RegisterCustomerValidator()
+    public RegisterUserValidator()
     {
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required")
