@@ -65,10 +65,10 @@ public class VerifySmsCodeDto
     public string PhoneNumber { get; set; } = string.Empty;
 
     /// <summary>
-    /// Tasdiqlash kodi (6 raqam)
+    /// Tasdiqlash kodi (4 raqam)
     /// </summary>
     [Required(ErrorMessage = "Verification code is required")]
-    [RegularExpression(@"^\d{6}$", ErrorMessage = "Verification code must be 6 digits")]
+    [RegularExpression(@"^\d{4}$", ErrorMessage = "Verification code must be 4 digits")]
     public string Code { get; set; } = string.Empty;
 }
 

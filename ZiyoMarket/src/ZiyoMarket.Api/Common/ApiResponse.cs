@@ -17,7 +17,7 @@ public class ApiResponse<T>
     public string Message { get; set; } = string.Empty;
 
     /// <summary>
-    /// Response data
+    /// Response data (will be serialized as 'date' in JSON via custom SnakeCaseNamingPolicy)
     /// </summary>
     public T? Data { get; set; }
 

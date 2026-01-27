@@ -239,7 +239,14 @@ public class AuthController : BaseController
         var result = await _authService.SendOtpAsync(request);
 
         if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
+        {
+            return Ok(new
+            {
+                success = false,
+                message = result.Message,
+                data = result.Data
+            });
+        }
 
         return Ok(new
         {

@@ -126,8 +126,8 @@ public class SmsService : ISmsService
             }
             else
             {
-                // 6 raqamli tasdiqlash kodi yaratish
-                code = new Random().Next(100000, 999999).ToString();
+                // 4 raqamli tasdiqlash kodi yaratish
+                code = new Random().Next(1000, 9999).ToString();
             }
 
             // Purpose uchun default qiymat - Registration

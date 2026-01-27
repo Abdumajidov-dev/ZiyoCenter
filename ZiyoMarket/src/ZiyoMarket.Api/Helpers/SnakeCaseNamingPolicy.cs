@@ -5,6 +5,7 @@ namespace ZiyoMarket.Api.Helpers;
 /// <summary>
 /// Snake case naming policy for JSON serialization
 /// Converts PascalCase/camelCase to snake_case (e.g., FirstName -> first_name)
+/// Special case: 'Data' -> 'date' (not 'data')
 /// </summary>
 public class SnakeCaseNamingPolicy : JsonNamingPolicy
 {
@@ -12,6 +13,10 @@ public class SnakeCaseNamingPolicy : JsonNamingPolicy
     {
         if (string.IsNullOrEmpty(name))
             return name;
+
+        // Special case: convert 'Data' to 'date' instead of 'data'
+        if (name == "Data")
+            return "date";
 
         var result = new System.Text.StringBuilder();
         result.Append(char.ToLowerInvariant(name[0]));
