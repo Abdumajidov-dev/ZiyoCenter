@@ -943,20 +943,23 @@ public class AuthService : IAuthService
     /// <summary>
     /// Verify OTP code
     /// </summary>
-    public async Task<Result<bool>> VerifyOtpAsync(VerifySmsCodeDto request)
+    public async Task<Result<string>> VerifyOtpAsync(VerifySmsCodeDto request)
     {
         try
         {
+            // Normalize phone number
+            request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
+
             // Validate phone number format
             if (!request.PhoneNumber.StartsWith("+998") || request.PhoneNumber.Length != 13)
             {
-                return Result<bool>.BadRequest("Phone number must be in format +998XXXXXXXXX");
+                return Result<string>.BadRequest("Phone number must be in format +998XXXXXXXXX");
             }
 
             // Validate code format (4 digits)
             if (request.Code.Length != 4 || !request.Code.All(char.IsDigit))
             {
-                return Result<bool>.BadRequest("Code must be 4 digits");
+                return Result<string>.BadRequest("Code must be 4 digits");
             }
 
             // Verify code via SMS service
@@ -964,14 +967,46 @@ public class AuthService : IAuthService
 
             if (!verifyResult.IsSuccess)
             {
-                return Result<bool>.BadRequest(verifyResult.Message ?? "Invalid or expired OTP code");
+                return Result<string>.BadRequest(verifyResult.Message ?? "Invalid or expired OTP code");
             }
 
-            return Result<bool>.Success(true, "OTP code verified successfully");
+            // Find user
+            object? user = null;
+            string userType = "";
+
+            // Try Customer
+            var customer = await FindCustomerByPhoneAsync(request.PhoneNumber);
+            if (customer != null) { user = customer; userType = "Customer"; }
+            else
+            {
+                var seller = await FindSellerByPhoneAsync(request.PhoneNumber);
+                if (seller != null) { user = seller; userType = "Seller"; }
+                else
+                {
+                    var admin = await FindAdminByUsernameOrPhoneAsync(request.PhoneNumber);
+                    if (admin != null) { user = admin; userType = "Admin"; }
+                }
+            }
+
+            if (user == null)
+            {
+                // Phone is verified, but user is not registered yet
+                return Result<string>.Success(null, "Phone verified, but user not found. Please register.");
+            }
+
+            // Check if user is active
+            if (!IsUserActive(user, userType))
+                return Result<string>.Forbidden("Account is inactive");
+
+            // Generate token
+            var userId = GetUserId(user, userType);
+            var accessToken = await GenerateAccessTokenAsync(userId, userType);
+
+            return Result<string>.Success(accessToken.Data, "OTP code verified successfully");
         }
         catch (Exception ex)
         {
-            return Result<bool>.InternalError($"Failed to verify OTP: {ex.Message}");
+            return Result<string>.InternalError($"Failed to verify OTP: {ex.Message}");
         }
     }
 }

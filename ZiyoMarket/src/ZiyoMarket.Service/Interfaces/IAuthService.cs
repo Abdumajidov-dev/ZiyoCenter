@@ -74,5 +74,5 @@ public interface IAuthService
     /// <summary>
     /// Verify OTP code
     /// </summary>
-    Task<Result<bool>> VerifyOtpAsync(VerifySmsCodeDto request);
+    Task<Result<string>> VerifyOtpAsync(VerifySmsCodeDto request);
 }

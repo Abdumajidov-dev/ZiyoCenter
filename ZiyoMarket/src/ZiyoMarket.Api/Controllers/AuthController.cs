@@ -266,15 +266,6 @@ public class AuthController : BaseController
     public async Task<IActionResult> VerifyOtp([FromBody] VerifySmsCodeDto request)
     {
         var result = await _authService.VerifyOtpAsync(request);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new
-        {
-            success = true,
-            message = result.Message,
-            data = result.Data
-        });
+        return HandleResult(result);
     }
 }
