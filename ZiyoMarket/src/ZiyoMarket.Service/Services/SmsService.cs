@@ -113,20 +113,32 @@ public class SmsService : ISmsService
         {
             request.PhoneNumber = NormalizePhoneNumber(request.PhoneNumber);
 
-            // Check if phone is privileged (no SMS sent, always code "1111")
-            var privilegedPhones = _configuration.GetSection("EskizSms:PrivilegedPhones").GetChildren().Select(x => x.Value).ToList() ?? new List<string>();
-            var isPrivileged = privilegedPhones.Any(p => request.PhoneNumber.EndsWith(p) || request.PhoneNumber.Contains(p));
+            // Check if phone is privileged (no SMS sent, custom code from config)
+            var privilegedUsers = _configuration.GetSection("EskizSms:PrivilegedUsers").GetChildren()
+                .ToDictionary(x => x.Key, x => x.Value ?? "1111");
 
             string code;
-            if (isPrivileged)
+            string? privilegedCode = null;
+
+            // Check if this phone number is privileged
+            foreach (var kvp in privilegedUsers)
             {
-                // Privileged raqamlar uchun har doim 1111
-                code = "1111";
-                _logger.LogInformation("Privileged phone {PhoneNumber} detected, using code 1111", request.PhoneNumber);
+                if (request.PhoneNumber.Contains(kvp.Key) || request.PhoneNumber.EndsWith(kvp.Key))
+                {
+                    privilegedCode = kvp.Value;
+                    break;
+                }
+            }
+
+            if (privilegedCode != null)
+            {
+                // Privileged user - use custom code from config
+                code = privilegedCode;
+                _logger.LogInformation("Privileged phone {PhoneNumber} detected, using code {Code}", request.PhoneNumber, code);
             }
             else
             {
-                // 4 raqamli tasdiqlash kodi yaratish
+                // Regular user - generate random 4-digit code
                 code = new Random().Next(1000, 9999).ToString();
             }
 
@@ -143,7 +155,7 @@ public class SmsService : ISmsService
             string smsMessage = $"ZiyoMarket ro'yxatdan o'tish kodi: {code}. Kod 5 daqiqa amal qiladi.";
 
             // Privileged raqamlar uchun SMS yuborilmaydi
-            if (!isPrivileged)
+            if (privilegedCode == null)
             {
                 // SMS yuborish
                 var smsRequest = new SendSmsDto
@@ -167,7 +179,7 @@ public class SmsService : ISmsService
                 ExpiresAt = expiryTime
             };
 
-            var responseMessage = isPrivileged ? "Imtiyozli raqam, kod: 1111" : "OTP code sent successfully";
+            var responseMessage = privilegedCode != null ? "Privileged user code" : "OTP code sent successfully";
 
             _logger.LogInformation("Verification code sent to {PhoneNumber} for {Purpose}",
                 request.PhoneNumber, purpose);

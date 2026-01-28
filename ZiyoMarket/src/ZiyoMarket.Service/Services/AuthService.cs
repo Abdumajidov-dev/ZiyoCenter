@@ -301,7 +301,7 @@ public class AuthService : IAuthService
         try
         {
             // TODO: Verify code from cache/database
-            // For now, accept any 6-digit code for demo
+            // For now, accept any 4-digit code for demo
 
             // Find user
             object? user = null;
@@ -616,7 +616,7 @@ public class AuthService : IAuthService
     private string GenerateVerificationCode()
     {
         var random = new Random();
-        return random.Next(100000, 999999).ToString();
+        return random.Next(1000, 9999).ToString();
     }
 
     private string NormalizePhoneNumber(string phone)
@@ -953,10 +953,10 @@ public class AuthService : IAuthService
                 return Result<bool>.BadRequest("Phone number must be in format +998XXXXXXXXX");
             }
 
-            // Validate code format (6 digits)
-            if (request.Code.Length != 6 || !request.Code.All(char.IsDigit))
+            // Validate code format (4 digits)
+            if (request.Code.Length != 4 || !request.Code.All(char.IsDigit))
             {
-                return Result<bool>.BadRequest("Code must be 6 digits");
+                return Result<bool>.BadRequest("Code must be 4 digits");
             }
 
             // Verify code via SMS service

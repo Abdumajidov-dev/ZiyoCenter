@@ -125,7 +125,7 @@ public class VerifyCodeDto
     public string Phone { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Verification code is required")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
+    [StringLength(4, MinimumLength = 4, ErrorMessage = "Code must be 4 digits")]
     public string Code { get; set; } = string.Empty;
 }
 

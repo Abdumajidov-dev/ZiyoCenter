@@ -25,11 +25,13 @@ POST /api/sms/send-verification-code
   "status": true,
   "message": "OTP code sent successfully",
   "data": {
-    "code": "123456",
+    "code": "1234",
     "expires_at": "2026-01-27T20:35:00Z"
   }
 }
 ```
+
+**Note:** Code is 4 digits (not 6)
 
 ---
 
@@ -106,7 +108,7 @@ POST /api/sms/verify-code
 ```json
 {
   "phone_number": "+998901234567",
-  "code": "123456"
+  "code": "1234"
 }
 ```
 
@@ -124,6 +126,8 @@ POST /api/sms/verify-code
 }
 ```
 
+**Note:** Code must be exactly 4 digits
+
 ---
 
 ## Error Responses
@@ -134,7 +138,7 @@ POST /api/sms/verify-code
 ```json
 {
   "phone_number": "+998901234567",
-  "code": "000000"
+  "code": "0000"
 }
 ```
 
@@ -155,7 +159,7 @@ POST /api/sms/verify-code
 ```json
 {
   "phone_number": "+998901234567",
-  "code": "123456"
+  "code": "1234"
 }
 ```
 
@@ -191,7 +195,7 @@ POST /api/sms/verify-code
 
 ---
 
-### 4. Wrong Code Format
+### 4. Wrong Code Format (Too Short)
 
 **Request:**
 ```json
@@ -205,14 +209,35 @@ POST /api/sms/verify-code
 ```json
 {
   "status": false,
-  "message": "Verification code must be 6 digits",
+  "message": "Verification code must be 4 digits",
   "data": null
 }
 ```
 
 ---
 
-### 5. Multiple Validation Errors
+### 5. Wrong Code Format (Too Long)
+
+**Request:**
+```json
+{
+  "phone_number": "+998901234567",
+  "code": "123456"
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "status": false,
+  "message": "Verification code must be 4 digits",
+  "data": null
+}
+```
+
+---
+
+### 6. Multiple Validation Errors
 
 **Request:**
 ```json
@@ -247,10 +272,10 @@ POST /api/sms/verify-code
 ```
 1. POST /api/sms/send-verification-code
    Request: {"phone_number": "+998901234567"}
-   Response: {"status": true, "data": {"code": "123456", ...}}
+   Response: {"status": true, "data": {"code": "1234", ...}}
 
 2. POST /api/sms/verify-code
-   Request: {"phone_number": "+998901234567", "code": "123456"}
+   Request: {"phone_number": "+998901234567", "code": "1234"}
    Response: {"status": true, "data": true}
 ```
 
@@ -258,10 +283,10 @@ POST /api/sms/verify-code
 ```
 1. POST /api/sms/send-verification-code
    Request: {"phone_number": "+998901234567"}
-   Response: {"status": true, "data": {"code": "123456", ...}}
+   Response: {"status": true, "data": {"code": "1234", ...}}
 
 2. POST /api/sms/verify-code
-   Request: {"phone_number": "+998901234567", "code": "000000"}
+   Request: {"phone_number": "+998901234567", "code": "0000"}
    Response: {"status": false, "message": "Invalid verification code"}
 ```
 
@@ -269,12 +294,12 @@ POST /api/sms/verify-code
 ```
 1. POST /api/sms/send-verification-code
    Request: {"phone_number": "+998901234567"}
-   Response: {"status": true, "data": {"code": "123456", ...}}
+   Response: {"status": true, "data": {"code": "1234", ...}}
 
 2. Wait 5+ minutes
 
 3. POST /api/sms/verify-code
-   Request: {"phone_number": "+998901234567", "code": "123456"}
+   Request: {"phone_number": "+998901234567", "code": "1234"}
    Response: {"status": false, "message": "Verification code expired or not found"}
 ```
 

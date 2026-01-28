@@ -58,11 +58,13 @@ Content-Type: application/json
   "status": true,
   "message": "OTP code sent successfully",
   "data": {
-    "code": "123456",
+    "code": "1234",
     "expires_at": "2026-01-27T20:45:00Z"
   }
 }
 ```
+
+**Note:** Code is 4 digits (range: 1000-9999)
 
 ---
 

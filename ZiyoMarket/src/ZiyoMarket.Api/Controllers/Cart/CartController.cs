@@ -22,7 +22,7 @@ public class CartController : BaseController
     {
         var userType = GetCurrentUserType();
         if (userType != "Customer")
-            return StatusCode(403, new { message = "Only customers can access cart" });
+            return StatusCode(403, new { status = false, message = "Only customers can access cart", data = (object?)null });
         return null;
     }
 
@@ -34,7 +34,7 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.GetCartItemsAsync(customerId);
-        return Ok(new { success = true, data = result.Data });
+        return HandleResult(result);
     }
 
     [HttpPost]
@@ -45,11 +45,7 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.AddToCartAsync(request, customerId);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new { success = true, message = result.Message, data = result.Data });
+        return HandleResult(result);
     }
 
     [HttpPut("{cartItemId}")]
@@ -60,11 +56,7 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.UpdateCartItemAsync(cartItemId, request, customerId);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new { success = true, message = result.Message, data = result.Data });
+        return HandleResult(result);
     }
 
     [HttpDelete("{cartItemId}")]
@@ -77,9 +69,9 @@ public class CartController : BaseController
         var result = await _cartService.RemoveFromCartAsync(cartItemId, customerId);
 
         if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
+            return ErrorResponse(result.Message);
 
-        return Ok(new { success = true, message = result.Message });
+        return SuccessResponse(result.Message);
     }
 
     [HttpDelete("clear")]
@@ -92,9 +84,9 @@ public class CartController : BaseController
         var result = await _cartService.ClearCartAsync(customerId);
 
         if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
+            return ErrorResponse(result.Message);
 
-        return Ok(new { success = true, message = result.Message });
+        return SuccessResponse(result.Message);
     }
 
     [HttpGet("total")]
@@ -105,7 +97,7 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.GetCartTotalAsync(customerId);
-        return Ok(new { success = true, total = result.Data });
+        return HandleResult(result);
     }
 
     [HttpGet("count")]
@@ -116,7 +108,7 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.GetCartItemsCountAsync(customerId);
-        return Ok(new { success = true, count = result.Data });
+        return HandleResult(result);
     }
 
     [HttpPost("validate")]
@@ -129,9 +121,9 @@ public class CartController : BaseController
         var result = await _cartService.ValidateCartForCheckoutAsync(customerId);
 
         if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
+            return ErrorResponse(result.Message);
 
-        return Ok(new { success = true, message = result.Message });
+        return SuccessResponse(result.Message);
     }
 
     [HttpPost("seed")]
@@ -142,10 +134,6 @@ public class CartController : BaseController
 
         var customerId = GetCurrentUserId();
         var result = await _cartService.SeedMockCartItemsAsync(customerId, count);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new { success = true, message = result.Message, data = result.Data });
+        return HandleResult(result);
     }
 }
