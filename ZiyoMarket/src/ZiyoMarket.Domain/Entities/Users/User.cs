@@ -3,6 +3,7 @@ using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ZiyoMarket.Domain.Entities.Users;
 
@@ -76,26 +77,31 @@ public class User : BaseAuditableEntity
     /// <summary>
     /// Foydalanuvchining buyurtmalari
     /// </summary>
+    [NotMapped]
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
 
     /// <summary>
     /// Foydalanuvchining savat item'lari
     /// </summary>
+    [NotMapped]
     public virtual ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
     /// <summary>
     /// Foydalanuvchining yoqtirgan mahsulotlari
     /// </summary>
+    [NotMapped]
     public virtual ICollection<ProductLike> ProductLikes { get; set; } = new List<ProductLike>();
 
     /// <summary>
     /// Foydalanuvchining cashback tranzaksiyalari
     /// </summary>
+    [NotMapped]
     public virtual ICollection<CashbackTransaction> CashbackTransactions { get; set; } = new List<CashbackTransaction>();
 
     /// <summary>
     /// Foydalanuvchining support chat'lari
     /// </summary>
+    [NotMapped]
     public virtual ICollection<SupportChat> SupportChats { get; set; } = new List<SupportChat>();
 
     /// <summary>
@@ -106,6 +112,7 @@ public class User : BaseAuditableEntity
     /// <summary>
     /// Foydalanuvchi tomonidan berilgan chegirmalar
     /// </summary>
+    [NotMapped]
     public virtual ICollection<OrderDiscount> OrderDiscounts { get; set; } = new List<OrderDiscount>();
 
     /// <summary>
