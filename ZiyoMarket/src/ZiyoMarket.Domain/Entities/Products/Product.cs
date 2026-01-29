@@ -36,10 +36,9 @@ public class Product : BaseAuditableEntity
     /// </summary>
     public int StockQuantity { get; set; } = 0;
 
-    /// <summary>
-    /// Kategoriya ID
-    /// </summary>
-    public int CategoryId { get; set; }
+    // CategoryId has been removed in favor of Many-to-Many relationship through ProductCategories
+    // public int CategoryId { get; set; }
+
 
     /// <summary>
     /// Mahsulot holati
@@ -84,9 +83,10 @@ public class Product : BaseAuditableEntity
     // Navigation Properties
 
     /// <summary>
-    /// Mahsulot kategoriyasi
+    /// Mahsulot kategoriyalari
     /// </summary>
-    public virtual Category Category { get; set; } = null!;
+    public virtual ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+
 
     /// <summary>
     /// Buyurtma item'lari
@@ -230,16 +230,15 @@ public class Product : BaseAuditableEntity
     }
 
     /// <summary>
-    /// Kategoriyani o'zgartirish
+    /// Kategoriyalarni o'zgartirish
     /// </summary>
-    public void ChangeCategory(int categoryId)
+    public void UpdateCategories(IEnumerable<int> categoryIds)
     {
-        if (categoryId <= 0)
-            throw new ArgumentException("Kategoriya ID noto'g'ri");
-
-        CategoryId = categoryId;
+        // Business logic for updating categories will be handled in the service layer
+        // through the ProductCategories collection, but we keep this method for domain intent.
         MarkAsUpdated();
     }
+
 
     /// <summary>
     /// Rasm URL'ini yangilash

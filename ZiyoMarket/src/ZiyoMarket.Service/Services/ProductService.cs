@@ -29,13 +29,20 @@ namespace ZiyoMarket.Service.Services
 
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
         {
-            var product = await _unitOfWork.Products
-                .SelectAsync(p => p.Id == productId && p.DeletedAt == null, new[] { "Category" });
+            var product = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .FirstOrDefaultAsync(p => p.Id == productId && p.DeletedAt == null);
 
             if (product == null)
                 return Result<ProductDetailDto>.NotFound($"Product with ID {productId} not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
+            
+            // Map categories manually since AutoMapper might need complex configuration for M2M
+            dto.CategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
+            dto.CategoryNames = product.ProductCategories.Select(pc => pc.Category.Name).ToList();
+            dto.CategoryPaths = product.ProductCategories.Select(pc => pc.Category.GetFullPath()).ToList();
 
             dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == productId && l.DeletedAt == null);
 
@@ -48,13 +55,19 @@ namespace ZiyoMarket.Service.Services
 
         public async Task<Result<ProductDetailDto>> GetProductByQRCodeAsync(string qrCode, int? customerId = null)
         {
-            var product = await _unitOfWork.Products
-                .SelectAsync(p => p.QrCode == qrCode && p.DeletedAt == null, new[] { "Category" });
+            var product = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .FirstOrDefaultAsync(p => p.QrCode == qrCode && p.DeletedAt == null);
 
             if (product == null)
                 return Result<ProductDetailDto>.NotFound($"Product with QR code '{qrCode}' not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
+            dto.CategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
+            dto.CategoryNames = product.ProductCategories.Select(pc => pc.Category.Name).ToList();
+            dto.CategoryPaths = product.ProductCategories.Select(pc => pc.Category.GetFullPath()).ToList();
+
             dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == product.Id && l.DeletedAt == null);
 
             if (customerId.HasValue)
@@ -66,7 +79,10 @@ namespace ZiyoMarket.Service.Services
 
         public async Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(ProductFilterRequest request, int? customerId = null)
         {
-            var query = _unitOfWork.Products.SelectAll(p => p.DeletedAt == null, new[] { "Category" });
+            var query = _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .Where(p => p.DeletedAt == null);
 
             // Filtering
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
@@ -75,8 +91,8 @@ namespace ZiyoMarket.Service.Services
                 query = query.Where(p => p.Name.ToLower().Contains(term) || p.Description.ToLower().Contains(term));
             }
 
-            if (request.CategoryId.HasValue)
-                query = query.Where(p => p.CategoryId == request.CategoryId.Value);
+            if (request.CategoryIds != null && request.CategoryIds.Any())
+                query = query.Where(p => p.ProductCategories.Any(pc => request.CategoryIds.Contains(pc.CategoryId)));
 
             if (request.MinPrice.HasValue)
                 query = query.Where(p => p.Price >= request.MinPrice.Value);
@@ -90,7 +106,7 @@ namespace ZiyoMarket.Service.Services
             if (request.LowStock == true)
                 query = query.Where(p => p.StockQuantity <= p.MinStockLevel && p.StockQuantity > 0);
 
-            // Status filter - agar Status berilmasa, default Active productlarni qaytarish
+            // Status filter
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (Enum.TryParse<ProductStatus>(request.Status, true, out var status))
@@ -100,7 +116,6 @@ namespace ZiyoMarket.Service.Services
             }
             else
             {
-                // Default: faqat Active productlar
                 query = query.Where(p => p.Status == ProductStatus.Active && p.IsActive);
             }
 
@@ -113,27 +128,25 @@ namespace ZiyoMarket.Service.Services
                 .Take(request.PageSize)
                 .ToListAsync();
 
-            var resultDtos = _mapper.Map<List<ProductListDto>>(products);
+            var resultDtos = products.Select(p => 
+            {
+                var dto = _mapper.Map<ProductListDto>(p);
+                dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                return dto;
+            }).ToList();
 
             if (customerId.HasValue)
             {
+                var productIds = products.Select(p => p.Id).ToList();
                 var likedIds = await _unitOfWork.ProductLikes
-                    .SelectAll(l => l.CustomerId == customerId.Value && l.DeletedAt == null)
+                    .SelectAll(l => l.CustomerId == customerId.Value && productIds.Contains(l.ProductId) && l.DeletedAt == null)
                     .Select(l => l.ProductId)
                     .ToListAsync();
 
                 foreach (var dto in resultDtos)
                     dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
             }
-
-            var likes = await _unitOfWork.ProductLikes
-                .SelectAll(l => l.DeletedAt == null)
-                .GroupBy(l => l.ProductId)
-                .Select(g => new { g.Key, Count = g.Count() })
-                .ToListAsync();
-
-            foreach (var dto in resultDtos)
-                dto.LikesCount = likes.FirstOrDefault(l => l.Key == dto.Id)?.Count ?? 0;
 
             return Result<PaginationResponse<ProductListDto>>.Success(
                 new PaginationResponse<ProductListDto>(resultDtos, total, request.PageNumber, request.PageSize)
@@ -146,44 +159,62 @@ namespace ZiyoMarket.Service.Services
             if (exists)
                 return Result<ProductDetailDto>.Conflict("Product with this QR code already exists");
 
-            var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId);
-            if (category == null || !category.IsActive)
-                return Result<ProductDetailDto>.BadRequest("Invalid or inactive category");
+            // Validate categories
+            var categories = await _unitOfWork.Categories.SelectAll(c => request.CategoryIds.Contains(c.Id) && c.IsActive && c.DeletedAt == null).ToListAsync();
+            if (categories.Count != request.CategoryIds.Count)
+                return Result<ProductDetailDto>.BadRequest("One or more category IDs are invalid or inactive");
 
             var product = _mapper.Map<Product>(request);
             product.CreatedBy = createdBy;
             product.Status = ProductStatus.Active;
-            product.SearchText = $"{product.Name} {product.Description}".ToLower();
+            product.SearchText = product.GetSearchText();
+
+            // Add categories
+            foreach (var categoryId in request.CategoryIds)
+            {
+                product.ProductCategories.Add(new ProductCategory { CategoryId = categoryId });
+            }
 
             await _unitOfWork.Products.InsertAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product created successfully", 201);
+            return await GetProductByIdAsync(product.Id);
         }
 
         public async Task<Result<ProductDetailDto>> UpdateProductAsync(UpdateProductDto request, int updatedBy)
         {
-            var product = await _unitOfWork.Products.GetByIdAsync(request.Id);
+            var product = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                .FirstOrDefaultAsync(p => p.Id == request.Id && p.DeletedAt == null);
+
             if (product == null)
                 return Result<ProductDetailDto>.NotFound("Product not found");
 
-            var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId);
-            if (category == null || !category.IsActive)
-                return Result<ProductDetailDto>.BadRequest("Invalid or inactive category");
+            // Validate categories
+            var categories = await _unitOfWork.Categories.SelectAll(c => request.CategoryIds.Contains(c.Id) && c.IsActive && c.DeletedAt == null).ToListAsync();
+            if (categories.Count != request.CategoryIds.Count)
+                return Result<ProductDetailDto>.BadRequest("One or more category IDs are invalid or inactive");
 
             product.Name = request.Name;
             product.Description = request.Description;
             product.Price = request.Price;
-            product.CategoryId = request.CategoryId;
             product.ImageUrl = request.ImageUrl;
             product.MinStockLevel = request.MinStockLevel;
             product.UpdatedBy = updatedBy;
+            product.SearchText = product.GetSearchText();
             product.MarkAsUpdated();
+
+            // Update categories (Many-to-Many)
+            product.ProductCategories.Clear();
+            foreach (var categoryId in request.CategoryIds)
+            {
+                product.ProductCategories.Add(new ProductCategory { ProductId = product.Id, CategoryId = categoryId });
+            }
 
             await _unitOfWork.Products.Update(product, product.Id);
             await _unitOfWork.SaveChangesAsync();
 
-            return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product updated successfully");
+            return await GetProductByIdAsync(product.Id);
         }
 
         public async Task<Result> DeleteProductAsync(int productId, int deletedBy)
@@ -291,14 +322,21 @@ namespace ZiyoMarket.Service.Services
             if (!likedIds.Any())
                 return Result<List<ProductListDto>>.Success(new List<ProductListDto>());
 
-            var products = await _unitOfWork.Products
-                .SelectAll(p => likedIds.Contains(p.Id) && p.DeletedAt == null, new[] { "Category" })
+            var products = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .Where(p => likedIds.Contains(p.Id) && p.DeletedAt == null)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
-            var dtos = _mapper.Map<List<ProductListDto>>(products);
-            foreach (var dto in dtos)
+            var dtos = products.Select(p => 
+            {
+                var dto = _mapper.Map<ProductListDto>(p);
+                dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
                 dto.IsLikedByCurrentUser = true;
+                return dto;
+            }).ToList();
 
             return Result<List<ProductListDto>>.Success(dtos);
         }
@@ -317,36 +355,53 @@ namespace ZiyoMarket.Service.Services
 
             var ids = likeCounts.Select(x => x.ProductId).ToList();
 
-            var products = await _unitOfWork.Products
-                .SelectAll(p => ids.Contains(p.Id) && p.DeletedAt == null && p.IsActive, new[] { "Category" })
+            var products = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .Where(p => ids.Contains(p.Id) && p.DeletedAt == null && p.IsActive)
                 .ToListAsync();
 
-            var dtos = _mapper.Map<List<ProductListDto>>(products);
+            var resultDtos = products.Select(p => 
+            {
+                var dto = _mapper.Map<ProductListDto>(p);
+                dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                dto.LikesCount = likeCounts.FirstOrDefault(l => l.ProductId == p.Id)?.Count ?? 0;
+                return dto;
+            }).OrderByDescending(d => d.LikesCount).ToList();
 
-            foreach (var dto in dtos)
-                dto.LikesCount = likeCounts.FirstOrDefault(l => l.ProductId == dto.Id)?.Count ?? 0;
-
-            return Result<List<ProductListDto>>.Success(dtos.OrderByDescending(d => d.LikesCount).ToList());
+            return Result<List<ProductListDto>>.Success(resultDtos);
         }
 
         public async Task<Result<List<ProductListDto>>> GetNewArrivalsAsync(int count = 10)
         {
-            var products = await _unitOfWork.Products
-                .SelectAll(p => p.DeletedAt == null && p.IsActive, new[] { "Category" })
+            var products = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .Where(p => p.DeletedAt == null && p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
                 .ToListAsync();
 
-            return Result<List<ProductListDto>>.Success(_mapper.Map<List<ProductListDto>>(products));
+            var resultDtos = products.Select(p => 
+            {
+                var dto = _mapper.Map<ProductListDto>(p);
+                dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                return dto;
+            }).ToList();
+
+            return Result<List<ProductListDto>>.Success(resultDtos);
         }
 
         public async Task<Result<List<ProductListDto>>> SearchProductsAsync(
-    string searchTerm, int? categoryId = null, int? customerId = null)
+            string searchTerm, int? categoryId = null, int? customerId = null)
         {
             try
             {
                 var query = _unitOfWork.Products.Table
-                            .Include(p => p.Category)
+                            .Include(p => p.ProductCategories)
+                                .ThenInclude(pc => pc.Category)
                             .Where(p => p.DeletedAt == null && p.IsActive);
 
 
@@ -360,31 +415,31 @@ namespace ZiyoMarket.Service.Services
                 }
 
                 if (categoryId.HasValue)
-                    query = query.Where(p => p.CategoryId == categoryId.Value);
+                    query = query.Where(p => p.ProductCategories.Any(pc => pc.CategoryId == categoryId.Value));
 
                 var products = await query
                     .OrderByDescending(p => p.CreatedAt)
                     .Take(50)
                     .ToListAsync();
 
-                var dtos = _mapper.Map<List<ProductListDto>>(products);
+                var dtos = products.Select(p => 
+                {
+                    var dto = _mapper.Map<ProductListDto>(p);
+                    dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                    dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                    return dto;
+                }).ToList();
 
-                // Like ma'lumotlarini qo�shish
                 if (customerId.HasValue && dtos.Any())
                 {
                     var productIds = products.Select(p => p.Id).ToList();
-
                     var likedIds = await _unitOfWork.ProductLikes
-                        .SelectAll(l => l.CustomerId == customerId.Value &&
-                                    productIds.Contains(l.ProductId) &&
-                                    l.DeletedAt == null)
+                        .SelectAll(l => l.CustomerId == customerId.Value && productIds.Contains(l.ProductId) && l.DeletedAt == null)
                         .Select(l => l.ProductId)
                         .ToListAsync();
 
                     foreach (var dto in dtos)
-                    {
                         dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
-                    }
                 }
 
                 return Result<List<ProductListDto>>.Success(dtos);
@@ -395,35 +450,35 @@ namespace ZiyoMarket.Service.Services
             }
         }
 
-
         public async Task<Result<List<ProductListDto>>> GetProductsByCategoryAsync(
             int categoryId, int? customerId = null)
         {
             try
             {
                 var query = _unitOfWork.Products.Table
-                            .Include(p => p.Category)
-                            .Where(p => p.DeletedAt == null && p.IsActive);
+                            .Include(p => p.ProductCategories)
+                                .ThenInclude(pc => pc.Category)
+                            .Where(p => p.DeletedAt == null && p.IsActive && p.ProductCategories.Any(pc => pc.CategoryId == categoryId));
 
+                var products = await query.ToListAsync();
+                var dtos = products.Select(p => 
+                {
+                    var dto = _mapper.Map<ProductListDto>(p);
+                    dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                    dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                    return dto;
+                }).ToList();
 
-                var dtos = _mapper.Map<List<ProductListDto>>(query);
-
-                // Liked mahsulotlarni belgilash
                 if (customerId.HasValue && dtos.Any())
                 {
-                    var productIds = query.Select(p => p.Id).ToList();
-
+                    var productIds = products.Select(p => p.Id).ToList();
                     var likedIds = await _unitOfWork.ProductLikes
-                        .SelectAll(l => l.CustomerId == customerId.Value &&
-                                    productIds.Contains(l.ProductId) &&
-                                    l.DeletedAt == null)
+                        .SelectAll(l => l.CustomerId == customerId.Value && productIds.Contains(l.ProductId) && l.DeletedAt == null)
                         .Select(l => l.ProductId)
                         .ToListAsync();
 
                     foreach (var dto in dtos)
-                    {
                         dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
-                    }
                 }
 
                 return Result<List<ProductListDto>>.Success(dtos);
@@ -433,6 +488,61 @@ namespace ZiyoMarket.Service.Services
                 return Result<List<ProductListDto>>.InternalError($"Error retrieving products by category: {ex.Message}");
             }
         }
+
+        public async Task<Result<List<ProductListDto>>> GetSimilarProductsAsync(int productId, int count = 10, int? customerId = null)
+        {
+            var product = await _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                .FirstOrDefaultAsync(p => p.Id == productId && p.DeletedAt == null);
+
+            if (product == null)
+                return Result<List<ProductListDto>>.NotFound("Product not found");
+
+            var categoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
+
+            // Find products that share at least one category, ordered by number of shared categories
+            var similarProductsQuery = _unitOfWork.Products.Table
+                .Include(p => p.ProductCategories)
+                    .ThenInclude(pc => pc.Category)
+                .Where(p => p.Id != productId && p.DeletedAt == null && p.IsActive && p.Status == ProductStatus.Active)
+                .Where(p => p.ProductCategories.Any(pc => categoryIds.Contains(pc.CategoryId)));
+
+            var productsWithSharedCount = await similarProductsQuery
+                .Select(p => new
+                {
+                    Product = p,
+                    SharedCount = p.ProductCategories.Count(pc => categoryIds.Contains(pc.CategoryId))
+                })
+                .OrderByDescending(x => x.SharedCount)
+                .ThenByDescending(x => x.Product.CreatedAt)
+                .Take(count)
+                .ToListAsync();
+
+            var products = productsWithSharedCount.Select(x => x.Product).ToList();
+            var dtos = products.Select(p => 
+            {
+                var dto = _mapper.Map<ProductListDto>(p);
+                dto.CategoryIds = p.ProductCategories.Select(pc => pc.CategoryId).ToList();
+                dto.CategoryNames = p.ProductCategories.Select(pc => pc.Category.Name).ToList();
+                return dto;
+            }).ToList();
+
+            if (customerId.HasValue && dtos.Any())
+            {
+                var productIds = products.Select(p => p.Id).ToList();
+                var likedIds = await _unitOfWork.ProductLikes
+                    .SelectAll(l => l.CustomerId == customerId.Value && productIds.Contains(l.ProductId) && l.DeletedAt == null)
+                    .Select(l => l.ProductId)
+                    .ToListAsync();
+
+                foreach (var dto in dtos)
+                    dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
+            }
+
+            return Result<List<ProductListDto>>.Success(dtos);
+        }
+    }
+}
 
     }
 }

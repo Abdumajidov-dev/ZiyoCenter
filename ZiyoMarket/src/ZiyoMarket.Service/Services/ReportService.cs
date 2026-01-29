@@ -205,8 +205,9 @@ public class ReportService : IReportService
                 {
                     ProductId = g.Key.Id,
                     ProductName = g.Key.Name,
-                    CategoryName = g.Key.Category?.Name,
+                    CategoryName = g.Key.ProductCategories.FirstOrDefault()?.Category?.Name,
                     QuantitySold = g.Sum(x => x.Quantity),
+
                     TotalRevenue = g.Sum(x => x.UnitPrice * x.Quantity),
                     AveragePrice = g.Average(x => x.UnitPrice),
                     OrderCount = g.Select(x => x.OrderId).Distinct().Count(),
@@ -251,7 +252,8 @@ public class ReportService : IReportService
    oi.Order.DeletedAt == null &&
           DateTime.Parse(oi.Order.OrderDate) >= startDate &&
       DateTime.Parse(oi.Order.OrderDate) <= endDate,
-            new[] { "Order", "Product", "Product.Category" })
+            new[] { "Order", "Product", "Product.ProductCategories", "Product.ProductCategories.Category" })
+
           .ToListAsync();
 
             var report = new CategorySalesReportDto
@@ -259,11 +261,15 @@ public class ReportService : IReportService
           StartDate = startDate,
                 EndDate = endDate,
         CategorySales = orderItems
-           .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
+           .GroupBy(oi => new { 
+               CategoryId = oi.Product.ProductCategories.FirstOrDefault().CategoryId, 
+               CategoryName = oi.Product.ProductCategories.FirstOrDefault().Category.Name 
+           })
         .Select(g => new CategorySalesDetailDto
         {
             CategoryId = g.Key.CategoryId,
-            CategoryName = g.Key.Name,
+            CategoryName = g.Key.CategoryName,
+
             ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
             TotalQuantitySold = g.Sum(oi => oi.Quantity),
             TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
@@ -325,12 +331,15 @@ public class ReportService : IReportService
           oi.Order.DeletedAt == null &&
                 DateTime.Parse(oi.Order.OrderDate) >= startDate &&
   DateTime.Parse(oi.Order.OrderDate) <= endDate,
-        new[] { "Order", "Product", "Product.Category" })
-        .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
+        .GroupBy(oi => new { 
+            CategoryId = oi.Product.ProductCategories.FirstOrDefault().CategoryId, 
+            CategoryName = oi.Product.ProductCategories.FirstOrDefault().Category.Name 
+        })
   .Select(g => new TopCategoryDto
     {
             CategoryId = g.Key.CategoryId,
-         CategoryName = g.Key.Name,
+         CategoryName = g.Key.CategoryName,
+
  TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
            ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
         OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
@@ -432,11 +441,13 @@ public class ReportService : IReportService
                                       products.Average(p => p.Price * p.StockQuantity) : 0,
 
                 CategoryInventory = products
-                    .GroupBy(p => new { p.CategoryId, p.Category.Name })
+                    .SelectMany(p => p.ProductCategories.Select(pc => new { Product = p, Category = pc.Category }))
+                    .GroupBy(x => new { x.Category.Id, x.Category.Name })
                     .Select(g => new CategoryInventoryDto
                     {
-                        CategoryId = g.Key.CategoryId,
+                        CategoryId = g.Key.Id,
                         CategoryName = g.Key.Name,
+
                         ProductCount = g.Count(),
                         TotalStock = g.Sum(p => p.StockQuantity),
                         TotalValue = g.Sum(p => p.Price * p.StockQuantity),
@@ -453,8 +464,9 @@ public class ReportService : IReportService
                         ProductId = p.Id,
                         ProductName = p.Name,
                        // StockQuantity = p.StockQuantity,
-                        CategoryName = p.Category.Name
+                        CategoryName = p.ProductCategories.FirstOrDefault()?.Category?.Name ?? "N/A"
                     })
+
                     .ToList(),
 
                 ProductStock = products
@@ -462,7 +474,8 @@ public class ReportService : IReportService
                     {
                         ProductId = p.Id,
                         ProductName = p.Name,
-                        CategoryName = p.Category.Name,
+                        CategoryName = p.ProductCategories.FirstOrDefault()?.Category?.Name ?? "N/A",
+
                        // StockQuantity = p.StockQuantity,
                         Price = p.Price,
                        // TotalValue = p.Price * p.StockQuantity
@@ -555,8 +568,9 @@ public class ReportService : IReportService
                 {
                     ProductId = p.Id,
                     ProductName = p.Name,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.ProductCategories.FirstOrDefault()?.Category?.Name ?? "N/A",
                     CurrentStock = p.StockQuantity,
+
                     MinStockLevel = p.MinStockLevel,
                     StockDeficit = Math.Max(p.MinStockLevel - p.StockQuantity, 0),
                     Price = p.Price,

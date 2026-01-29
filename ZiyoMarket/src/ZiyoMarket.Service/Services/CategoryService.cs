@@ -31,13 +31,15 @@ public class CategoryService : ICategoryService
         {
             var category = await _unitOfWork.Categories
                 .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
-                    new[] { "Parent", "Children", "Products" });
+                    new[] { "Parent", "Children", "ProductCategories", "ProductCategories.Product" });
+
 
             if (category == null)
                 return Result<CategoryDto>.NotFound("Kategoriya topilmadi");
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+            dto.ProductCount = category.ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
 
             return Result<CategoryDto>.Success(dto);
         }
@@ -53,7 +55,9 @@ public class CategoryService : ICategoryService
         {
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
+
                 .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
@@ -64,7 +68,8 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -80,7 +85,9 @@ public class CategoryService : ICategoryService
         try
         {
             var categories = await _unitOfWork.Categories.Table
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
+
                 .Where(c => c.DeletedAt == null && c.ParentId == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
@@ -91,7 +98,8 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -114,7 +122,9 @@ public class CategoryService : ICategoryService
                 return Result<List<CategoryDto>>.NotFound("Ota kategoriya topilmadi");
 
             var categories = await _unitOfWork.Categories.Table
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
+
                 .Where(c => c.DeletedAt == null && c.ParentId == parentId)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
@@ -125,8 +135,9 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
             }
+
 
             return Result<List<CategoryDto>>.Success(dtos);
         }
@@ -187,7 +198,8 @@ public class CategoryService : ICategoryService
         try
         {
             var category = await _unitOfWork.Categories
-                .SelectAsync(c => c.Id == id && c.DeletedAt == null, new[] { "Products" });
+                .SelectAsync(c => c.Id == id && c.DeletedAt == null, new[] { "ProductCategories" });
+
 
             if (category == null)
                 return Result<CategoryDto>.NotFound("Kategoriya topilmadi");
@@ -228,7 +240,8 @@ public class CategoryService : ICategoryService
             await _unitOfWork.SaveChangesAsync();
 
             var dto = _mapper.Map<CategoryDto>(category);
-            dto.ProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+            dto.ProductCount = category.ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
 
             return Result<CategoryDto>.Success(dto, "Kategoriya muvaffaqiyatli yangilandi");
         }
@@ -244,14 +257,16 @@ public class CategoryService : ICategoryService
         {
             var category = await _unitOfWork.Categories
                 .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
-                    new[] { "Products", "Children" });
+                    new[] { "ProductCategories", "Children" });
+
 
             if (category == null)
                 return Result.NotFound("Kategoriya topilmadi");
 
             // Check if category has products
-            if (category.Products.Any(p => p.DeletedAt == null))
+            if (category.ProductCategories.Any())
                 return Result.BadRequest("Bu kategoriyada mahsulotlar mavjud. Avval mahsulotlarni o'chiring yoki boshqa kategoriyaga o'tkazing");
+
 
             // Check if category has children
             if (category.Children.Any(c => c.DeletedAt == null))
@@ -281,7 +296,9 @@ public class CategoryService : ICategoryService
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.Children)
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
+
                 .Where(c => c.DeletedAt == null)
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
@@ -292,7 +309,7 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -328,7 +345,8 @@ public class CategoryService : ICategoryService
         {
             var category = await _unitOfWork.Categories
                 .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
-                    new[] { "Children", "Children.Products" });
+                    new[] { "Children", "Children.ProductCategories", "Children.ProductCategories.Product" });
+
 
             if (category == null)
                 return Result<List<CategoryDto>>.NotFound("Kategoriya topilmadi");
@@ -339,8 +357,10 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < children.Count; i++)
             {
-                dtos[i].ProductCount = children[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = children[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
             }
+
+
 
             return Result<List<CategoryDto>>.Success(dtos);
         }
@@ -363,8 +383,10 @@ public class CategoryService : ICategoryService
 
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
                 .Where(c => c.DeletedAt == null &&
+
                            (c.Name.Contains(searchTerm) ||
                             (c.Description != null && c.Description.Contains(searchTerm))))
                 .OrderBy(c => c.DisplayOrder)
@@ -376,8 +398,10 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
             }
+
 
             return Result<List<CategoryDto>>.Success(dtos);
         }
@@ -393,8 +417,10 @@ public class CategoryService : ICategoryService
         {
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
                 .Where(c => c.DeletedAt == null && c.IsActive)
+
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -404,7 +430,9 @@ public class CategoryService : ICategoryService
             // Add product counts - safely handle null Products collection
             for (int i = 0; i < categories.Count; i++)
             {
-                dtos[i].ProductCount = categories[i].Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0;
+                dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
+
+
             }
 
             return Result<List<CategoryDto>>.Success(dtos);
@@ -425,7 +453,8 @@ public class CategoryService : ICategoryService
         {
             var category = await _unitOfWork.Categories
                 .SelectAsync(c => c.Id == categoryId && c.DeletedAt == null,
-                    new[] { "Parent", "Products" });
+                    new[] { "Parent", "ProductCategories", "ProductCategories.Product" });
+
 
             if (category == null)
                 return Result<CategoryWithProductCountDto>.NotFound("Kategoriya topilmadi");
@@ -436,8 +465,10 @@ public class CategoryService : ICategoryService
                 CategoryName = category.Name,
                 ParentId = category.ParentId,
                 ParentName = category.Parent?.Name,
-                ActiveProductCount = category.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0,
-                TotalProductCount = category.Products?.Count(p => p.DeletedAt == null) ?? 0,
+                ActiveProductCount = category.ProductCategories?
+                    .Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0,
+                TotalProductCount = category.ProductCategories?.Count(pc => pc.Product != null && pc.Product.DeletedAt == null) ?? 0,
+
                 IsActive = category.IsActive,
                 UpdatedAt = category.UpdatedAt
             };
@@ -456,11 +487,13 @@ public class CategoryService : ICategoryService
         {
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
+                    .ThenInclude(pc => pc.Product)
                 .Where(c => c.DeletedAt == null)
+
                 .OrderBy(c => c.DisplayOrder)
                 .ThenBy(c => c.Name)
-                .ToListAsync();
+                    .ToListAsync();
 
             var dtos = categories.Select(c => new CategoryWithProductCountDto
             {
@@ -468,11 +501,12 @@ public class CategoryService : ICategoryService
                 CategoryName = c.Name,
                 ParentId = c.ParentId,
                 ParentName = c.Parent?.Name,
-                ActiveProductCount = c.Products?.Count(p => p.IsActive && p.DeletedAt == null) ?? 0,
-                TotalProductCount = c.Products?.Count(p => p.DeletedAt == null) ?? 0,
+                ActiveProductCount = c.ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0,
+                TotalProductCount = c.ProductCategories?.Count(pc => pc.Product != null && pc.Product.DeletedAt == null) ?? 0,
                 IsActive = c.IsActive,
                 UpdatedAt = c.UpdatedAt
             }).ToList();
+
 
             return Result<List<CategoryWithProductCountDto>>.Success(dtos);
         }
@@ -550,9 +584,10 @@ public class CategoryService : ICategoryService
         try
         {
             var query = _unitOfWork.Categories.Table
-                .Include(c => c.Products)
+                .Include(c => c.ProductCategories)
                 .Include(c => c.Children)
                 .Where(c => c.DeletedAt == null);
+
 
             if (startDate.IsNullOrEmpty())
                 query = query.Where(c => c.CreatedAt == startDate);
@@ -564,8 +599,9 @@ public class CategoryService : ICategoryService
 
             // Only delete categories without products or children
             var deletableCategories = categories
-                .Where(c => !c.Products.Any(p => p.DeletedAt == null) &&
+                .Where(c => !c.ProductCategories.Any() &&
                            !c.Children.Any(child => child.DeletedAt == null))
+
                 .ToList();
 
             if (!deletableCategories.Any())
@@ -669,10 +705,6 @@ public class CategoryService : ICategoryService
         return false;
     }
 
-    public Task<Result> DeleteAllCategoriesAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
-    {
-        throw new NotImplementedException();
-    }
-
     #endregion
 }
+

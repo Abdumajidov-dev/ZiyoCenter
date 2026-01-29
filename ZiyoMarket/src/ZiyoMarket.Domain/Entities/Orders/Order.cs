@@ -807,7 +807,11 @@ public class Order : BaseAuditableEntity
             DeliveryFee = this.DeliveryFee,
             CustomerNotes = this.CustomerNotes,
             SellerNotes = this.SellerNotes,
-            AdminNotes = this.AdminNotes
+            AdminNotes = this.AdminNotes,
+            CreatedBy = this.CreatedBy,
+            CreatedAt = this.CreatedAt,
+            UpdatedAt = this.UpdatedAt,
+            DeletedAt = this.DeletedAt
         };
 
         return clone;

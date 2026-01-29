@@ -52,7 +52,8 @@ public class Category : BaseAuditableEntity
     /// <summary>
     /// Bu kategoriyaga tegishli mahsulotlar
     /// </summary>
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
+
 
     // Business Methods
 
@@ -166,14 +167,15 @@ public class Category : BaseAuditableEntity
     /// </summary>
     public int GetActiveProductsCount()
     {
-        return Products.Count(p => p.IsActive && !p.IsDeleted);
+        return ProductCategories.Count(pc => pc.Product != null && pc.Product.IsActive && !pc.Product.IsDeleted);
     }
+
 
     /// <summary>
     /// Kategoriyani o'chirish mumkinmi (mahsulot yo'q bo'lsa)
     /// </summary>
     public bool CanBeDeleted()
     {
-        return !Products.Any() && !Children.Any();
+        return !ProductCategories.Any() && !Children.Any();
     }
 }

@@ -49,5 +49,8 @@ namespace ZiyoMarket.Service.Interfaces
         Task<Result> ToggleLikeAsync(int productId, int customerId);
 
         Task<Result<List<ProductListDto>>> GetLikedProductsAsync(int customerId);
+
+        Task<Result<List<ProductListDto>>> GetSimilarProductsAsync(int productId, int count = 10, int? customerId = null);
     }
 }
+

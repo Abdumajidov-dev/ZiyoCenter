@@ -13,8 +13,9 @@ public class ProductListDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string QRCode { get; set; } = string.Empty;
-    public int CategoryId { get; set; }
-    public string CategoryName { get; set; } = string.Empty;
+    public List<int> CategoryIds { get; set; } = new();
+    public List<string> CategoryNames { get; set; } = new();
+
     public decimal Price { get; set; }
     public string FormattedPrice => $"{Price:N0} so'm";
     public int StockQuantity { get; set; }
@@ -35,9 +36,10 @@ public class ProductDetailDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string QRCode { get; set; } = string.Empty;
-    public int CategoryId { get; set; }
-    public string CategoryName { get; set; } = string.Empty;
-    public string CategoryPath { get; set; } = string.Empty;
+    public List<int> CategoryIds { get; set; } = new();
+    public List<string> CategoryNames { get; set; } = new();
+    public List<string> CategoryPaths { get; set; } = new();
+
     public decimal Price { get; set; }
     public string FormattedPrice => $"{Price:N0} so'm";
     public int StockQuantity { get; set; }
@@ -73,9 +75,10 @@ public class CreateProductDto
     [MaxLength(100)]
     public string QRCode { get; set; } = string.Empty;
     
-    [Required(ErrorMessage = "Category is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Invalid category")]
-    public int CategoryId { get; set; }
+    [Required(ErrorMessage = "At least one category is required")]
+    [MinLength(1, ErrorMessage = "At least one category is required")]
+    public List<int> CategoryIds { get; set; } = new();
+
     
     [Required(ErrorMessage = "Price is required")]
     [Range(0.01, 999999999.99, ErrorMessage = "Price must be between 0.01 and 999999999.99")]
@@ -119,9 +122,10 @@ public class UpdateProductDto
     [MaxLength(1000)]
     public string? Description { get; set; }
     
-    [Required(ErrorMessage = "Category is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Invalid category")]
-    public int CategoryId { get; set; }
+    [Required(ErrorMessage = "At least one category is required")]
+    [MinLength(1, ErrorMessage = "At least one category is required")]
+    public List<int> CategoryIds { get; set; } = new();
+
     
     [Required(ErrorMessage = "Price is required")]
     [Range(0.01, 999999999.99, ErrorMessage = "Price must be between 0.01 and 999999999.99")]
@@ -178,7 +182,8 @@ public class LowStockProductDto
 /// </summary>
 public class ProductFilterRequest : BaseFilterRequest
 {
-    public int? CategoryId { get; set; }
+    public List<int>? CategoryIds { get; set; }
+
     public string? Status { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
@@ -201,6 +206,7 @@ public class CategoryDto
     public int ProductCount { get; set; }
     public string? ImageUrl { get; set; }
     public DateTime CreatedAt { get; set; }
+    public List<CategoryDto> Children { get; set; } = new();
 }
 
 /// <summary>

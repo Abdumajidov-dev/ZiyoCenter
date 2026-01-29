@@ -72,8 +72,10 @@ public class CreateProductValidator : AbstractValidator<CreateProductDto>
             .NotEmpty().WithMessage("QR code is required")
             .MaximumLength(100).WithMessage("QR code must not exceed 100 characters");
         
-        RuleFor(x => x.CategoryId)
-            .GreaterThan(0).WithMessage("Valid category is required");
+        RuleFor(x => x.CategoryIds)
+            .NotEmpty().WithMessage("At least one category is required")
+            .Must(x => x != null && x.All(id => id > 0)).WithMessage("All category IDs must be greater than 0");
+
         
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than 0")
@@ -101,8 +103,10 @@ public class UpdateProductValidator : AbstractValidator<UpdateProductDto>
             .NotEmpty().WithMessage("Product name is required")
             .MaximumLength(300).WithMessage("Name must not exceed 300 characters");
         
-        RuleFor(x => x.CategoryId)
-            .GreaterThan(0).WithMessage("Valid category is required");
+        RuleFor(x => x.CategoryIds)
+            .NotEmpty().WithMessage("At least one category is required")
+            .Must(x => x != null && x.All(id => id > 0)).WithMessage("All category IDs must be greater than 0");
+
         
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than 0")

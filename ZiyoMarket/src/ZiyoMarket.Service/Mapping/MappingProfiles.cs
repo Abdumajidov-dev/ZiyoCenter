@@ -29,20 +29,24 @@ public class MappingProfiles : Profile
     {
         // Product mappings
         CreateMap<Product, ProductListDto>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : null))
+            .ForMember(dest => dest.CategoryIds, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.CategoryId).ToList()))
+            .ForMember(dest => dest.CategoryNames, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.Category.Name).ToList()))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
             .ForMember(dest => dest.LikesCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore());
+
         
         CreateMap<Product, ProductDetailDto>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.Name : null))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => src.Category != null ? src.Category.GetFullPath() : null))
+            .ForMember(dest => dest.CategoryIds, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.CategoryId).ToList()))
+            .ForMember(dest => dest.CategoryNames, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.Category.Name).ToList()))
+            .ForMember(dest => dest.CategoryPaths, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.Category.GetFullPath()).ToList()))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
             .ForMember(dest => dest.IsOutOfStock, opt => opt.MapFrom(src => src.IsOutOfStock))
             .ForMember(dest => dest.LikesCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore());
+
         
         CreateMap<CreateProductDto, Product>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -58,12 +62,15 @@ public class MappingProfiles : Profile
         // Category mappings
         CreateMap<Category, CategoryDto>()
             .ForMember(dest => dest.ParentName, opt => opt.MapFrom(src =>
-                src.Parent != null && src.Parent.Name != null ? src.Parent.Name : null))
+                src.Parent != null ? src.Parent.Name : null))
             .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
-            .ForMember(dest => dest.ProductCount, opt => opt.Ignore()) // Will be set manually in service
-            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl ?? null))
+            .ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src =>
+                src.ProductCategories != null ? src.ProductCategories.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) : 0))
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ImageUrl))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
-                ParseCreatedAt(src.CreatedAt)));
+                ParseCreatedAt(src.CreatedAt)))
+            .ForMember(dest => dest.Children, opt => opt.MapFrom(src => src.Children));
+
 
         CreateMap<SaveCategoryDto, Category>()
             .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder));

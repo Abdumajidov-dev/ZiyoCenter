@@ -32,6 +32,8 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<Admin> Admins { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductCategory> ProductCategories { get; set; }
+
     public DbSet<ProductLike> ProductLikes { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -67,10 +69,25 @@ public class ZiyoMarketDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ZiyoMarketDbContext).Assembly);
 
         modelBuilder.Entity<CashbackTransaction>()
-      .HasOne(ct => ct.Order)
-      .WithMany(o => o.CashbackTransactions)
-      .HasForeignKey(ct => ct.OrderId)
-      .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(ct => ct.Order)
+            .WithMany(o => o.CashbackTransactions)
+            .HasForeignKey(ct => ct.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Many-to-Many: Product <-> Category
+        modelBuilder.Entity<ProductCategory>()
+            .HasKey(pc => new { pc.ProductId, pc.CategoryId });
+
+        modelBuilder.Entity<ProductCategory>()
+            .HasOne(pc => pc.Product)
+            .WithMany(p => p.ProductCategories)
+            .HasForeignKey(pc => pc.ProductId);
+
+        modelBuilder.Entity<ProductCategory>()
+            .HasOne(pc => pc.Category)
+            .WithMany(c => c.ProductCategories)
+            .HasForeignKey(pc => pc.CategoryId);
+
 
         // Global query filters for soft delete
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

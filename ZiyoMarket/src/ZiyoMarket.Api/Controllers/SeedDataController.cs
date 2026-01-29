@@ -120,21 +120,26 @@ public class SeedDataController : ControllerBase
             .RuleFor(p => p.Description, f => f.Commerce.ProductDescription())
             .RuleFor(p => p.QrCode, f => f.Random.AlphaNumeric(12))
             .RuleFor(p => p.Price, f => f.Random.Decimal(1000, 500000))
-            .RuleFor(p => p.StockQuantity, f => f.Random.Int(0, 1000))
-            .RuleFor(p => p.CategoryId, f => f.PickRandom(categories).Id)
-            .RuleFor(p => p.Status, f => f.PickRandom<ProductStatus>())
-            .RuleFor(p => p.IsActive, f => f.Random.Bool(0.9f))
-            .RuleFor(p => p.MinStockLevel, f => f.Random.Int(5, 20))
-            .RuleFor(p => p.Weight, f => f.Random.Decimal(10, 5000))
-            .RuleFor(p => p.Manufacturer, f => f.Company.CompanyName())
-            .RuleFor(p => p.DisplayOrder, f => f.Random.Int(1, 100))
-            .RuleFor(p => p.CreatedAt, f => f.Date.Past(1).ToString("yyyy-MM-dd HH:mm:ss"));
+            .RuleFor(p => p.StockQuantity, f => f.Random.Int(0, 1000));
 
         var products = faker.Generate(10);
         await _context.Products.AddRangeAsync(products);
         await _context.SaveChangesAsync();
 
+        var f = new Faker();
+        // Seed ProductCategories
+        var productCategories = products.Select(p => new ProductCategory
+        {
+            ProductId = p.Id,
+            CategoryId = f.PickRandom(categories).Id,
+            CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
+        }).ToList();
+
+        await _context.ProductCategories.AddRangeAsync(productCategories);
+        await _context.SaveChangesAsync();
+
         return Ok(new { message = "10 products created successfully", data = products.Select(p => new { p.Id, p.Name, p.Price }) });
+
     }
 
     // ==================== CART ITEMS ====================
