@@ -540,9 +540,6 @@ namespace ZiyoMarket.Service.Services
             }
 
             return Result<List<ProductListDto>>.Success(dtos);
-        }
     }
 }
-
-    }
 }

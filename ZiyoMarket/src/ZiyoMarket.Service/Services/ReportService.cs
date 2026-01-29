@@ -330,8 +330,9 @@ public class ReportService : IReportService
          .SelectAll(oi => oi.DeletedAt == null &&
           oi.Order.DeletedAt == null &&
                 DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-  DateTime.Parse(oi.Order.OrderDate) <= endDate,
-        .GroupBy(oi => new { 
+                DateTime.Parse(oi.Order.OrderDate) <= endDate,
+                new[] { "Order", "Product", "Product.ProductCategories", "Product.ProductCategories.Category" })
+            .GroupBy(oi => new { 
             CategoryId = oi.Product.ProductCategories.FirstOrDefault().CategoryId, 
             CategoryName = oi.Product.ProductCategories.FirstOrDefault().Category.Name 
         })
@@ -449,10 +450,10 @@ public class ReportService : IReportService
                         CategoryName = g.Key.Name,
 
                         ProductCount = g.Count(),
-                        TotalStock = g.Sum(p => p.StockQuantity),
-                        TotalValue = g.Sum(p => p.Price * p.StockQuantity),
-                        LowStockCount = g.Count(p => p.IsLowStock),
-                        OutOfStockCount = g.Count(p => p.IsOutOfStock)
+                        TotalStock = g.Sum(p => p.Product.StockQuantity),
+                        TotalValue = g.Sum(p => p.Product.Price * p.Product.StockQuantity),
+                        LowStockCount = g.Count(p => p.Product.IsLowStock),
+                        OutOfStockCount = g.Count(p => p.Product.IsOutOfStock)
                     })
                     .OrderByDescending(x => x.TotalValue)
                     .ToList(),

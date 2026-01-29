@@ -579,7 +579,7 @@ public class CategoryService : ICategoryService
 
     #region Bulk Operations
 
-    public async Task<Result> DeleteAllCategoriesAsync(int deletedBy, string? startDate = null, string? endDate = null)
+    public async Task<Result> DeleteAllCategoriesAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
     {
         try
         {
@@ -588,12 +588,11 @@ public class CategoryService : ICategoryService
                 .Include(c => c.Children)
                 .Where(c => c.DeletedAt == null);
 
+            if (startDate.HasValue)
+                query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
 
-            if (startDate.IsNullOrEmpty())
-                query = query.Where(c => c.CreatedAt == startDate);
-
-            if (endDate.IsNullOrEmpty())
-                query = query.Where(c => c.CreatedAt == endDate);
+            if (endDate.HasValue)
+                query = query.Where(c => DateTime.Parse(c.CreatedAt) <= endDate.Value);
 
             var categories = await query.ToListAsync();
 
