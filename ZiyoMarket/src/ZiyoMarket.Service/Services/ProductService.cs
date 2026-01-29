@@ -32,6 +32,7 @@ namespace ZiyoMarket.Service.Services
             var product = await _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .FirstOrDefaultAsync(p => p.Id == productId && p.DeletedAt == null);
 
             if (product == null)
@@ -58,6 +59,7 @@ namespace ZiyoMarket.Service.Services
             var product = await _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .FirstOrDefaultAsync(p => p.QrCode == qrCode && p.DeletedAt == null);
 
             if (product == null)
@@ -82,6 +84,7 @@ namespace ZiyoMarket.Service.Services
             var query = _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .Where(p => p.DeletedAt == null);
 
             // Filtering
@@ -325,6 +328,7 @@ namespace ZiyoMarket.Service.Services
             var products = await _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .Where(p => likedIds.Contains(p.Id) && p.DeletedAt == null)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
@@ -358,6 +362,7 @@ namespace ZiyoMarket.Service.Services
             var products = await _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .Where(p => ids.Contains(p.Id) && p.DeletedAt == null && p.IsActive)
                 .ToListAsync();
 
@@ -378,6 +383,7 @@ namespace ZiyoMarket.Service.Services
             var products = await _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .Where(p => p.DeletedAt == null && p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
@@ -402,6 +408,7 @@ namespace ZiyoMarket.Service.Services
                 var query = _unitOfWork.Products.Table
                             .Include(p => p.ProductCategories)
                                 .ThenInclude(pc => pc.Category)
+                                    .ThenInclude(c => c.Parent)
                             .Where(p => p.DeletedAt == null && p.IsActive);
 
 
@@ -458,6 +465,7 @@ namespace ZiyoMarket.Service.Services
                 var query = _unitOfWork.Products.Table
                             .Include(p => p.ProductCategories)
                                 .ThenInclude(pc => pc.Category)
+                                    .ThenInclude(c => c.Parent)
                             .Where(p => p.DeletedAt == null && p.IsActive && p.ProductCategories.Any(pc => pc.CategoryId == categoryId));
 
                 var products = await query.ToListAsync();
@@ -504,6 +512,7 @@ namespace ZiyoMarket.Service.Services
             var similarProductsQuery = _unitOfWork.Products.Table
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
+                        .ThenInclude(c => c.Parent)
                 .Where(p => p.Id != productId && p.DeletedAt == null && p.IsActive && p.Status == ProductStatus.Active)
                 .Where(p => p.ProductCategories.Any(pc => categoryIds.Contains(pc.CategoryId)));
 
