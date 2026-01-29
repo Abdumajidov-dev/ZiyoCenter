@@ -75,9 +75,7 @@ public class ZiyoMarketDbContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
 
         // Many-to-Many: Product <-> Category
-        modelBuilder.Entity<ProductCategory>()
-            .HasKey(pc => new { pc.ProductId, pc.CategoryId });
-
+        // ProductCategory uses Id from BaseEntity as primary key
         modelBuilder.Entity<ProductCategory>()
             .HasOne(pc => pc.Product)
             .WithMany(p => p.ProductCategories)
