@@ -12,7 +12,7 @@ using ZiyoMarket.Data.Context;
 namespace ZiyoMarket.Data.Migrations
 {
     [DbContext(typeof(ZiyoMarketDbContext))]
-    [Migration("20260130055636_AddProductCategoriesTable")]
+    [Migration("20260130152620_AddProductCategoriesTable")]
     partial class AddProductCategoriesTable
     {
         /// <inheritdoc />
@@ -1805,7 +1805,7 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<DateTime>("AssignedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValue(new DateTime(2026, 1, 30, 5, 56, 35, 945, DateTimeKind.Utc).AddTicks(7812));
+                        .HasDefaultValue(new DateTime(2026, 1, 30, 15, 26, 19, 537, DateTimeKind.Utc).AddTicks(1686));
 
                     b.Property<int?>("AssignedBy")
                         .HasColumnType("integer");

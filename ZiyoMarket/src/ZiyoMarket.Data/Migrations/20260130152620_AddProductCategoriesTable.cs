@@ -12,116 +12,7 @@ namespace ZiyoMarket.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_CartItems_Users_UserId",
-                table: "CartItems");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_CashbackTransactions_Users_UserId",
-                table: "CashbackTransactions");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_OrderDiscounts_Users_UserId",
-                table: "OrderDiscounts");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Orders_Users_UserId",
-                table: "Orders");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ProductLikes_Users_UserId",
-                table: "ProductLikes");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Products_Categories_CategoryId",
-                table: "Products");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_SupportChats_Users_UserId",
-                table: "SupportChats");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Users_Email",
-                table: "Users");
-
-            migrationBuilder.DropIndex(
-                name: "IX_SupportChats_UserId",
-                table: "SupportChats");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Products_CategoryId",
-                table: "Products");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ProductLikes_UserId",
-                table: "ProductLikes");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Orders_UserId",
-                table: "Orders");
-
-            migrationBuilder.DropIndex(
-                name: "IX_OrderDiscounts_UserId",
-                table: "OrderDiscounts");
-
-            migrationBuilder.DropIndex(
-                name: "IX_CashbackTransactions_UserId",
-                table: "CashbackTransactions");
-
-            migrationBuilder.DropIndex(
-                name: "IX_CartItems_UserId",
-                table: "CartItems");
-
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "Users");
-
-            migrationBuilder.DropColumn(
-                name: "IsEmailVerified",
-                table: "Users");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "SupportChats");
-
-            migrationBuilder.DropColumn(
-                name: "CategoryId",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "ProductLikes");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "Orders");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "OrderDiscounts");
-
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "DeliveryPartners");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "CashbackTransactions");
-
-            migrationBuilder.DropColumn(
-                name: "UserId",
-                table: "CartItems");
-
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "AssignedAt",
-                table: "UserRoles",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(2026, 1, 30, 5, 56, 35, 945, DateTimeKind.Utc).AddTicks(7812),
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone",
-                oldDefaultValue: new DateTime(2026, 1, 13, 7, 19, 23, 91, DateTimeKind.Utc).AddTicks(4847));
-
+            // STEP 1: Create ProductCategories table FIRST (before dropping CategoryId)
             migrationBuilder.CreateTable(
                 name: "ProductCategories",
                 columns: table => new
@@ -161,7 +52,7 @@ namespace ZiyoMarket.Data.Migrations
                 table: "ProductCategories",
                 column: "ProductId");
 
-            // Migrate existing data from Products.CategoryId to ProductCategories
+            // STEP 2: Copy existing data from Products.CategoryId to ProductCategories
             migrationBuilder.Sql(@"
                 INSERT INTO ""ProductCategories"" (""ProductId"", ""CategoryId"", ""CreatedAt"")
                 SELECT 
@@ -171,6 +62,118 @@ namespace ZiyoMarket.Data.Migrations
                 FROM ""Products""
                 WHERE ""CategoryId"" IS NOT NULL AND ""DeletedAt"" IS NULL;
             ");
+
+            // STEP 3: Now drop CategoryId and related constraints
+            migrationBuilder.DropForeignKey(
+                name: "FK_Products_Categories_CategoryId",
+                table: "Products");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Products_CategoryId",
+                table: "Products");
+
+            migrationBuilder.DropColumn(
+                name: "CategoryId",
+                table: "Products");
+
+            // STEP 4: Drop other unrelated foreign keys and columns
+            migrationBuilder.DropForeignKey(
+                name: "FK_CartItems_Users_UserId",
+                table: "CartItems");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_CashbackTransactions_Users_UserId",
+                table: "CashbackTransactions");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_OrderDiscounts_Users_UserId",
+                table: "OrderDiscounts");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Orders_Users_UserId",
+                table: "Orders");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_ProductLikes_Users_UserId",
+                table: "ProductLikes");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_SupportChats_Users_UserId",
+                table: "SupportChats");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Users_Email",
+                table: "Users");
+
+            migrationBuilder.DropIndex(
+                name: "IX_SupportChats_UserId",
+                table: "SupportChats");
+
+            migrationBuilder.DropIndex(
+                name: "IX_ProductLikes_UserId",
+                table: "ProductLikes");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Orders_UserId",
+                table: "Orders");
+
+            migrationBuilder.DropIndex(
+                name: "IX_OrderDiscounts_UserId",
+                table: "OrderDiscounts");
+
+            migrationBuilder.DropIndex(
+                name: "IX_CashbackTransactions_UserId",
+                table: "CashbackTransactions");
+
+            migrationBuilder.DropIndex(
+                name: "IX_CartItems_UserId",
+                table: "CartItems");
+
+            migrationBuilder.DropColumn(
+                name: "Email",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "IsEmailVerified",
+                table: "Users");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "SupportChats");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "ProductLikes");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "Orders");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "OrderDiscounts");
+
+            migrationBuilder.DropColumn(
+                name: "Email",
+                table: "DeliveryPartners");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "CashbackTransactions");
+
+            migrationBuilder.DropColumn(
+                name: "UserId",
+                table: "CartItems");
+
+            migrationBuilder.AlterColumn<DateTime>(
+                name: "AssignedAt",
+                table: "UserRoles",
+                type: "timestamp with time zone",
+                nullable: false,
+                defaultValue: new DateTime(2026, 1, 30, 15, 26, 19, 537, DateTimeKind.Utc).AddTicks(1686),
+                oldClrType: typeof(DateTime),
+                oldType: "timestamp with time zone",
+                oldDefaultValue: new DateTime(2026, 1, 13, 7, 19, 23, 91, DateTimeKind.Utc).AddTicks(4847));
         }
 
         /// <inheritdoc />
@@ -201,7 +204,7 @@ namespace ZiyoMarket.Data.Migrations
                 defaultValue: new DateTime(2026, 1, 13, 7, 19, 23, 91, DateTimeKind.Utc).AddTicks(4847),
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone",
-                oldDefaultValue: new DateTime(2026, 1, 30, 5, 56, 35, 945, DateTimeKind.Utc).AddTicks(7812));
+                oldDefaultValue: new DateTime(2026, 1, 30, 15, 26, 19, 537, DateTimeKind.Utc).AddTicks(1686));
 
             migrationBuilder.AddColumn<int>(
                 name: "UserId",
