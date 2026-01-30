@@ -178,23 +178,35 @@ builder.Services.AddScoped<ZiyoMarket.Service.Interfaces.IClickService, ZiyoMark
 var app = builder.Build();
 
 // ✅ Auto-run migrations on startup (Railway deployment)
-if (app.Environment.IsProduction())
+// Run in all environments to ensure Railway applies migrations
+try
 {
-    try
+    Log.Information("🗄️  Running database migrations...");
+    using (var scope = app.Services.CreateScope())
     {
-        Log.Information("🗄️  Running database migrations...");
-        using (var scope = app.Services.CreateScope())
+        var dbContext = scope.ServiceProvider.GetRequiredService<ZiyoMarketDbContext>();
+        
+        // Check pending migrations
+        var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
+        if (pendingMigrations.Any())
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<ZiyoMarketDbContext>();
-            dbContext.Database.Migrate();
-            Log.Information("✅ Migrations completed successfully");
+            Log.Information("📋 Found {Count} pending migrations: {Migrations}", 
+                pendingMigrations.Count, string.Join(", ", pendingMigrations));
         }
+        else
+        {
+            Log.Information("✅ No pending migrations");
+        }
+        
+        dbContext.Database.Migrate();
+        Log.Information("✅ Migrations completed successfully");
     }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "❌ Migration failed: {Message}", ex.Message);
-        // Don't throw - let app start anyway for debugging
-    }
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "❌ Migration failed: {Message}", ex.Message);
+    Log.Error("Stack trace: {StackTrace}", ex.StackTrace);
+    // Don't throw - let app start anyway for debugging
 }
 
 // ✅ Global exception handler middleware (must be first)
