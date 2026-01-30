@@ -59,7 +59,7 @@ public class ProductLike : BaseEntity
     /// </summary>
     public bool IsProductActive()
     {
-        return Product != null && Product.IsActive && !Product.IsDeleted;
+        return Product != null && Product.IsActive && Product.DeletedAt == null;
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class ProductLike : BaseEntity
     /// </summary>
     public bool IsCustomerActive()
     {
-        return Customer != null && Customer.IsActive && !Customer.IsDeleted;
+        return Customer != null && Customer.IsActive && Customer.DeletedAt == null;
     }
 
     /// <summary>
@@ -75,6 +75,6 @@ public class ProductLike : BaseEntity
     /// </summary>
     public bool IsValid()
     {
-        return IsProductActive() && IsCustomerActive() && !IsDeleted;
+        return IsProductActive() && IsCustomerActive() && DeletedAt == null;
     }
 }

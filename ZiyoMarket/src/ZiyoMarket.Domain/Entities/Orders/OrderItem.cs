@@ -156,7 +156,7 @@ public class OrderItem : BaseEntity
     {
         return Product != null &&
                Product.IsAvailableForSale &&
-               !Product.IsDeleted;
+               Product.DeletedAt == null;
     }
 
     /// <summary>

@@ -89,7 +89,7 @@ public class CashbackTransaction : BaseEntity
     public bool IsActive => Type == CashbackTransactionType.Earned &&
                            RemainingAmount > 0 &&
                            DateTime.Parse(ExpiresAt) > DateTime.UtcNow &&
-                           !IsDeleted;
+                           DeletedAt == null;
 
     /// <summary>
     /// Cashback ishlatilganmi (to'liq)

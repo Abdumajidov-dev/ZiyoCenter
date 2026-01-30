@@ -118,7 +118,7 @@ public class Product : BaseAuditableEntity
     /// <summary>
     /// Sotuvga tayyormi
     /// </summary>
-    public bool IsAvailableForSale => IsActive && Status == ProductStatus.Active && !IsOutOfStock && !IsDeleted;
+    public bool IsAvailableForSale => IsActive && Status == ProductStatus.Active && !IsOutOfStock && DeletedAt == null;
 
     /// <summary>
     /// Narxni o'zgartirish

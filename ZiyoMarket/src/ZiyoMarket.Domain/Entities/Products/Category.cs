@@ -167,7 +167,7 @@ public class Category : BaseAuditableEntity
     /// </summary>
     public int GetActiveProductsCount()
     {
-        return ProductCategories.Count(pc => pc.Product != null && pc.Product.IsActive && !pc.Product.IsDeleted);
+        return ProductCategories.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null);
     }
 
 

@@ -191,7 +191,7 @@ public class DiscountReason : BaseAuditableEntity
     public decimal GetTotalDiscountsGiven()
     {
         return OrderDiscounts
-            .Where(od => !od.IsDeleted)
+            .Where(od => od.DeletedAt == null)
             .Sum(od => od.DiscountAmount);
     }
 
@@ -200,7 +200,7 @@ public class DiscountReason : BaseAuditableEntity
     /// </summary>
     public int GetUsageCount()
     {
-        return OrderDiscounts.Count(od => !od.IsDeleted);
+        return OrderDiscounts.Count(od => od.DeletedAt == null);
     }
 
     /// <summary>
@@ -209,7 +209,7 @@ public class DiscountReason : BaseAuditableEntity
     public DateTime? GetLastUsedDate()
     {
         return OrderDiscounts
-            .Where(od => !od.IsDeleted)
+            .Where(od => od.DeletedAt == null)
             .Max(od => (DateTime?)od.AppliedAt);
     }
 
@@ -218,7 +218,7 @@ public class DiscountReason : BaseAuditableEntity
     /// </summary>
     public bool CanBeDeleted()
     {
-        return !OrderDiscounts.Any(od => !od.IsDeleted);
+        return !OrderDiscounts.Any(od => od.DeletedAt == null);
     }
 
     /// <summary>
