@@ -290,3 +290,8 @@ Thumbs.db
 
 # Railway specific (optional)
 .railway/
+
+# Uploaded files (images, documents) - DO NOT commit user uploads!
+**/wwwroot/images/**/*
+!**/wwwroot/images/.gitkeep
+!**/wwwroot/images/*/.gitkeep

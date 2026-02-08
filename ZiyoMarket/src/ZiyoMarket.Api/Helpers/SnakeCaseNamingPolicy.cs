@@ -14,9 +14,9 @@ public class SnakeCaseNamingPolicy : JsonNamingPolicy
         if (string.IsNullOrEmpty(name))
             return name;
 
-        // Special case: convert 'Data' to 'date' instead of 'data'
-        if (name == "Data")
-            return "date";
+        // Removed special case - 'Data' will now correctly convert to 'data'
+        // if (name == "Data")
+        //     return "date";
 
         var result = new System.Text.StringBuilder();
         result.Append(char.ToLowerInvariant(name[0]));

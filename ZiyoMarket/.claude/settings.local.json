@@ -48,7 +48,8 @@
       "Bash(__NEW_LINE__ mv \"12_Interfaces_IProductService.cs\" \"IProductService.cs\")",
       "Bash(__NEW_LINE__ mv \"13_Interfaces_IOrderCashbackCartServices.cs\" \"IOrderCashbackCartServices.cs\")",
       "Bash(__NEW_LINE__ cd ../Services)",
-      "Bash(__NEW_LINE__ mv \"17_Services_ProductService.cs\" \"ProductService.cs\")"
+      "Bash(__NEW_LINE__ mv \"17_Services_ProductService.cs\" \"ProductService.cs\")",
+      "Bash(dotnet remove:*)"
     ],
     "deny": [],
     "ask": []

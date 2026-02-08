@@ -34,6 +34,7 @@ public class UnitOfWork : IUnitOfWork
     // Product Repositories
     public IRepository<Category> Categories { get; private set; }
     public IRepository<Product> Products { get; private set; }
+    public IRepository<ProductCategory> ProductCategories { get; private set; }
     public IRepository<ProductLike> ProductLikes { get; private set; }
     public IRepository<CartItem> CartItems { get; private set; }
 
@@ -80,6 +81,7 @@ public class UnitOfWork : IUnitOfWork
         
         Categories = new Repository<Category>(_context);
         Products = new Repository<Product>(_context);
+        ProductCategories = new Repository<ProductCategory>(_context);
         ProductLikes = new Repository<ProductLike>(_context);
         CartItems = new Repository<CartItem>(_context);
         Orders = new Repository<Order>(_context);

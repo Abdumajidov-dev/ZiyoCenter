@@ -135,11 +135,25 @@ The API uses snake_case for both URL routes and JSON payloads:
 
 ### Build and Run
 
+**On Windows (Current Environment):**
 ```bash
 # Build the solution
 dotnet build
 
-# Run the API (from src/ZiyoMarket.Api)
+# Run the API
+cd src\ZiyoMarket.Api
+dotnet run
+
+# Clean build artifacts (close Visual Studio first to avoid DLL locks)
+dotnet clean
+```
+
+**On Linux/Mac:**
+```bash
+# Build the solution
+dotnet build
+
+# Run the API
 cd src/ZiyoMarket.Api
 dotnet run
 
@@ -147,26 +161,43 @@ dotnet run
 dotnet clean
 ```
 
+**Important for Windows:** If you encounter "file is being used by another process" errors, close Visual Studio and any running instances of the API before running build/clean/migration commands.
+
 ### Database Migrations
 
-**IMPORTANT:** Always run EF Core commands from `src/ZiyoMarket.Api` directory, specifying the Data project:
+**IMPORTANT:** Always run EF Core commands from `src/ZiyoMarket.Api` directory, specifying the Data project.
 
+**On Windows (Current Environment):**
 ```bash
+# Navigate to API directory
+cd src\ZiyoMarket.Api
+
 # Create a new migration
+dotnet ef migrations add MigrationName --project ..\ZiyoMarket.Data
+
+# Apply migrations to database
+dotnet ef database update --project ..\ZiyoMarket.Data
+
+# Remove last migration (if not applied)
+dotnet ef migrations remove --project ..\ZiyoMarket.Data
+
+# View migration SQL
+dotnet ef migrations script --project ..\ZiyoMarket.Data
+```
+
+**On Linux/Mac:**
+```bash
+# Navigate to API directory
 cd src/ZiyoMarket.Api
+
+# Create a new migration
 dotnet ef migrations add MigrationName --project ../ZiyoMarket.Data
 
 # Apply migrations to database
 dotnet ef database update --project ../ZiyoMarket.Data
-
-# Remove last migration (if not applied)
-dotnet ef migrations remove --project ../ZiyoMarket.Data
-
-# View migration SQL
-dotnet ef migrations script --project ../ZiyoMarket.Data
 ```
 
-**Note:** On Windows, use `cd src\ZiyoMarket.Api` and `..\ZiyoMarket.Data` with backslashes.
+**Auto-Migration on Startup:** The application automatically runs pending migrations on startup (configured in Program.cs). This ensures Railway deployments always have the latest schema.
 
 ### Database Setup
 
@@ -268,6 +299,96 @@ POST /api/push-notification/send
 - Admin can send to specific users, batch users, or topics
 - Topics: `all_customers`, `new_products`, `promotions`
 
+### File Upload System (wwwroot)
+
+**Architecture:** Professional static file management with local and cloud storage support
+
+**Setup:**
+1. Static files served from `src/ZiyoMarket.Api/wwwroot/` folder
+2. Organized by category: products, categories, banners, users
+3. Configured in `appsettings.json` under `FileUploadSettings`
+
+**Folder Structure:**
+```
+wwwroot/
+└── images/
+    ├── products/      # Product images
+    ├── categories/    # Category images
+    ├── banners/       # Banner/promotional images
+    ├── users/         # User avatars
+    └── temp/          # Temporary uploads
+```
+
+**API Endpoints:**
+```
+POST /api/file_upload/product               [Authorize]
+POST /api/file_upload/product/multiple      [Authorize]
+POST /api/file_upload/category              [Authorize]
+POST /api/file_upload/banner                [Authorize]
+POST /api/file_upload/banner/multiple       [Authorize]
+POST /api/file_upload/user/avatar           [Authorize]
+DELETE /api/file_upload?filePath=...        [Authorize]
+POST /api/file_upload/delete-multiple       [Authorize]
+GET /api/file_upload/url?filePath=...       [Public]
+```
+
+**Validation:**
+- **Max File Size:** 5MB (configurable)
+- **Allowed Extensions:** .jpg, .jpeg, .png, .gif, .webp, .svg
+- **Authentication:** Required for all upload/delete operations
+- **Unique Names:** GUID-based filenames prevent conflicts
+
+**Usage Example:**
+```csharp
+// Upload image
+var uploadResult = await _fileUploadService.UploadImageAsync(file, ImageCategory.Product);
+
+// Save to entity
+product.ImageUrl = uploadResult.FilePath; // "images/products/abc123.jpg"
+await _unitOfWork.SaveChangesAsync();
+
+// Get full URL for display
+var fullUrl = _fileUploadService.GetFileUrl(product.ImageUrl);
+// Result: "http://localhost:8080/images/products/abc123.jpg"
+```
+
+**Entity Integration:**
+- `Product.ImageUrl` - Product images
+- `Category.ImageUrl` - Category images
+- `User.ImageUrl` - User avatars (new unified system)
+- Store relative paths in DB: `"images/products/abc123.jpg"`
+- Service generates full URLs dynamically based on environment
+
+**Production Deployment:**
+- **Railway:** Files are ephemeral (deleted on redeploy)
+- **Solution 1:** Use Railway Volumes for persistent storage
+- **Solution 2:** Migrate to cloud storage (AWS S3, Cloudinary, Azure Blob)
+
+See `FILE_UPLOAD_GUIDE.md` for complete documentation and examples.
+
+### Payment Integration (Click.uz)
+
+**Architecture:** Click payment gateway integration for online payments
+
+**Setup:**
+1. Configure Click credentials in `appsettings.json`:
+   ```json
+   "ClickSettings": {
+     "ServiceId": "your-service-id",
+     "MerchantId": "your-merchant-id",
+     "SecretKey": "your-secret-key",
+     "MerchantUserId": "your-merchant-user-id"
+   }
+   ```
+2. **CRITICAL:** Store credentials in environment variables or user secrets in production
+3. Click service is registered as Scoped in `ServiceExtension.cs`
+
+**Features:**
+- Payment request preparation
+- Payment verification
+- Transaction status checking
+- Integration with order system
+
 ### SMS Integration (Eskiz.uz)
 
 **Architecture:** Professional SMS service with `SmsLog` table and Eskiz.uz API integration
@@ -348,6 +469,11 @@ Three distinct user types with different capabilities:
 
 **JWT Claims:** Token includes `UserId`, `Email`, `UserType` claims for authorization
 
+**User System Architecture:**
+- **New System (in development):** `User`, `Role`, `Permission`, `UserRole`, `RolePermission` tables provide flexible RBAC
+- **Legacy System (current):** `Customer`, `Seller`, `Admin` separate tables (will be deprecated)
+- Both systems coexist in DbContext; new code should prepare for migration to unified user system
+
 ### Cashback System
 
 - 2% cashback on delivered orders
@@ -424,6 +550,22 @@ The `SeedDataController` provides endpoints to populate test data for developmen
 **Swagger UI:** `http://localhost:8080/swagger`
 
 **Note:** The API runs on port 8080 by default (configurable via `PORT` environment variable for cloud deployment).
+
+### Health Check Endpoints
+
+The API provides health check endpoints for monitoring:
+
+```bash
+# Basic health check (lightweight, no DB check)
+GET /health
+# Returns: {"status": "healthy", "timestamp": "...", "service": "ZiyoMarket API"}
+
+# Detailed health check (includes database connectivity)
+GET /health/detailed
+# Returns: {"status": "healthy", "timestamp": "...", "database": "connected"}
+```
+
+Use `/health` for load balancer health checks and `/health/detailed` for monitoring dashboards.
 
 ### Main Controllers (snake_case URLs)
 
@@ -564,8 +706,9 @@ When testing with Postman/Swagger/curl, always use snake_case for property names
 ### Available Repository Properties in UnitOfWork
 
 When working with services, these repositories are available through `_unitOfWork`:
-- `Customers`, `Sellers`, `Admins` - User management
-- `Products`, `Categories`, `ProductLikes`, `CartItems` - Product catalog
+- `Users`, `Roles`, `Permissions`, `UserRoles`, `RolePermissions` - New unified user system (in development)
+- `Customers`, `Sellers`, `Admins` - Legacy user management (current)
+- `Products`, `Categories`, `ProductCategories`, `ProductLikes`, `CartItems` - Product catalog
 - `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` - Order processing
 - `DeliveryPartners`, `OrderDeliveries` - Delivery management
 - `Notifications`, `DeviceTokens`, `SmsLogs` - Notifications (Push & SMS)

@@ -175,6 +175,11 @@ builder.Services.AddCustomServices();
 builder.Services.Configure<ZiyoMarket.Service.DTOs.Payments.Click.ClickSettings>(builder.Configuration.GetSection("ClickSettings"));
 builder.Services.AddScoped<ZiyoMarket.Service.Interfaces.IClickService, ZiyoMarket.Service.Services.ClickService>();
 
+// ✅ File Upload Services
+builder.Services.Configure<ZiyoMarket.Service.Helpers.FileUploadSettings>(builder.Configuration.GetSection("FileUploadSettings"));
+builder.Services.AddScoped<ZiyoMarket.Service.Interfaces.IFileUploadService, ZiyoMarket.Service.Services.FileUploadService>();
+builder.Services.AddHttpContextAccessor(); // Required for FileUploadService to get base URL
+
 var app = builder.Build();
 
 // ✅ Auto-run migrations on startup (Railway deployment)
@@ -223,6 +228,9 @@ app.UseSwaggerUI(options =>
 // ✅ HTTPS redirection (disabled for Railway, enabled for local)
 // Railway proxy handles HTTPS, but local dev needs it
 // app.UseHttpsRedirection(); // Disabled - not required
+
+// ✅ Static files serving (images, CSS, JS, etc.)
+app.UseStaticFiles(); // Serves files from wwwroot folder
 
 app.UseAuthentication();
 app.UseAuthorization();

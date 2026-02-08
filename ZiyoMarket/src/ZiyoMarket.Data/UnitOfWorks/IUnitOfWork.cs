@@ -27,6 +27,7 @@ public interface IUnitOfWork : IDisposable
     // Product Repositories
     IRepository<Category> Categories { get; }
     IRepository<Product> Products { get; }
+    IRepository<ProductCategory> ProductCategories { get; }
     IRepository<ProductLike> ProductLikes { get; }
     IRepository<CartItem> CartItems { get; }
 
