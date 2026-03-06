@@ -211,29 +211,42 @@ try
             }
             catch (Exception ex) when (ex.Message.Contains("42P07") || ex.Message.Contains("already exists"))
             {
-                // If migration fails because relation "Admins" already exists, it means the first migration
-                // was already applied manually or the DB was created from schema, but EFMigrationsHistory is empty.
-                Log.Warning("⚠️  Migration failed because tables already exist. Attempting to fix EFMigrationsHistory...");
-                
+                // Tables already exist but __EFMigrationsHistory is empty.
+                // Mark ALL known migrations as applied, then retry to apply only newer ones.
+                Log.Warning("⚠️  Migration failed because tables already exist. Fixing __EFMigrationsHistory...");
+
                 try
                 {
-                    // Manually insert the first migration if we know it exists
-                    if (pendingMigrations.Contains("20251215182414_FreshInitialMigration"))
+                    // Ensure the history table exists first
+                    dbContext.Database.ExecuteSqlRaw(
+                        "CREATE TABLE IF NOT EXISTS \"__EFMigrationsHistory\" (" +
+                        "\"MigrationId\" character varying(150) NOT NULL, " +
+                        "\"ProductVersion\" character varying(32) NOT NULL, " +
+                        "CONSTRAINT \"PK___EFMigrationsHistory\" PRIMARY KEY (\"MigrationId\"));");
+
+                    // Mark all migrations that are known to already be applied in the DB
+                    var migrationsToMark = new[]
+                    {
+                        "20251215182414_FreshInitialMigration",
+                        "20260105181500_AddDeviceTokenTable",
+                        "20260108080108_AddSmsLog",
+                        "20260113071923_AddUnifiedUserRolePermissionSystem",
+                        "20260130152620_AddProductCategoriesTable"
+                    };
+
+                    foreach (var migrationId in migrationsToMark)
                     {
                         dbContext.Database.ExecuteSqlRaw(
-                            "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
-                            "VALUES ('20251215182414_FreshInitialMigration', '8.0.0') ON CONFLICT DO NOTHING;");
-                        
-                        Log.Information("✅ Faked initial migration. Retrying remaining migrations...");
-                        
-                        // Retry migrations
-                        dbContext.Database.Migrate();
-                        Log.Information("✅ Remaining migrations completed successfully");
+                            $"INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
+                            $"VALUES ('{migrationId}', '8.0.0') ON CONFLICT DO NOTHING;");
+                        Log.Information("✅ Marked migration as applied: {MigrationId}", migrationId);
                     }
-                    else
-                    {
-                        throw; // Rethrow if it's not the initial migration
-                    }
+
+                    Log.Information("✅ All existing migrations marked. Retrying remaining migrations...");
+
+                    // Now apply any truly new migrations
+                    dbContext.Database.Migrate();
+                    Log.Information("✅ Remaining migrations completed successfully");
                 }
                 catch (Exception retryEx)
                 {
