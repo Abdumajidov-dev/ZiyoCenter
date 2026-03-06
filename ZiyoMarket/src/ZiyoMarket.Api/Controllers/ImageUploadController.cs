@@ -11,7 +11,6 @@ namespace ZiyoMarket.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/image_upload")]
-[ApiExplorerSettings(IgnoreApi = true)]
 public class ImageUploadController : BaseController
 {
     private readonly IFileUploadService _fileUploadService;
@@ -19,6 +18,28 @@ public class ImageUploadController : BaseController
     public ImageUploadController(IFileUploadService fileUploadService)
     {
         _fileUploadService = fileUploadService;
+    }
+
+    /// <summary>
+    /// DTO for single image upload
+    /// </summary>
+    public class ImageUploadDto
+    {
+        /// <summary>
+        /// The image file to upload
+        /// </summary>
+        public IFormFile File { get; set; } = null!;
+    }
+
+    /// <summary>
+    /// DTO for multiple image upload
+    /// </summary>
+    public class MultipleImageUploadDto
+    {
+        /// <summary>
+        /// List of image files to upload
+        /// </summary>
+        public List<IFormFile> Files { get; set; } = new();
     }
 
     /// <summary>
@@ -57,7 +78,7 @@ public class ImageUploadController : BaseController
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     public async Task<ActionResult<FileUploadResultDto>> UploadImage(
-        [FromForm] IFormFile file,
+        [FromForm] ImageUploadDto dto,
         [FromQuery] string type)
     {
         try
@@ -96,7 +117,7 @@ public class ImageUploadController : BaseController
             }
 
             // Upload and convert to WebP
-            var result = await _fileUploadService.UploadImageAsync(file, imageCategory);
+            var result = await _fileUploadService.UploadImageAsync(dto.File, imageCategory);
 
             return Ok(result);
         }
@@ -119,7 +140,7 @@ public class ImageUploadController : BaseController
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     public async Task<ActionResult<List<FileUploadResultDto>>> UploadMultipleImages(
-        [FromForm] List<IFormFile> files,
+        [FromForm] MultipleImageUploadDto dto,
         [FromQuery] string type)
     {
         try
@@ -158,7 +179,7 @@ public class ImageUploadController : BaseController
             }
 
             // Upload all files
-            var results = await _fileUploadService.UploadImagesAsync(files, imageCategory);
+            var results = await _fileUploadService.UploadImagesAsync(dto.Files, imageCategory);
 
             return Ok(results);
         }
