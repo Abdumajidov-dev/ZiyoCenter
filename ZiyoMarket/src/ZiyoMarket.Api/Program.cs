@@ -322,6 +322,32 @@ app.MapControllers();
 // ✅ Root'ga "API ishlayapti" degan test endpoint
 app.MapGet("/", () => Results.Ok("🚀 ZiyoMarket API is running! Visit /swagger"));
 
+// ✅ Diagnostic endpoint to see what tables exist (Temporary for debugging)
+app.MapGet("/debug/tables", async (ZiyoMarketDbContext dbContext) =>
+{
+    try 
+    {
+        var tables = new List<string>();
+        using (var command = dbContext.Database.GetDbConnection().CreateCommand())
+        {
+            command.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name;";
+            await dbContext.Database.OpenConnectionAsync();
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    tables.Add(reader.GetString(0));
+                }
+            }
+        }
+        return Results.Ok(new { count = tables.Count, tables });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // ✅ Health check endpoint for Railway (lightweight - no DB check during startup)
 app.MapGet("/health", () =>
 {
