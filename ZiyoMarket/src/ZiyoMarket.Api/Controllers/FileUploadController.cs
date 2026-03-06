@@ -11,6 +11,7 @@ namespace ZiyoMarket.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[ApiExplorerSettings(IgnoreApi = true)]
 public class FileUploadController : BaseController
 {
     private readonly IFileUploadService _fileUploadService;
