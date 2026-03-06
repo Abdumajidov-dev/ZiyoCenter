@@ -32,33 +32,12 @@ namespace ZiyoMarket.Data.Migrations
                 CREATE INDEX IF NOT EXISTS ""IX_ProductCategories_ProductId"" ON ""ProductCategories"" (""ProductId"");
                 CREATE INDEX IF NOT EXISTS ""IX_ProductCategories_CategoryId"" ON ""ProductCategories"" (""CategoryId"");
             ");
-
-            // Update AssignedAt default
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "AssignedAt",
-                table: "UserRoles",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(2026, 3, 6, 16, 0, 0, 359, DateTimeKind.Utc).AddTicks(2444),
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone",
-                oldDefaultValue: new DateTime(2026, 1, 30, 15, 26, 19, 537, DateTimeKind.Utc).AddTicks(1686));
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(name: "ProductCategories");
-
-            migrationBuilder.AlterColumn<DateTime>(
-                name: "AssignedAt",
-                table: "UserRoles",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(2026, 1, 30, 15, 26, 19, 537, DateTimeKind.Utc).AddTicks(1686),
-                oldClrType: typeof(DateTime),
-                oldType: "timestamp with time zone",
-                oldDefaultValue: new DateTime(2026, 3, 6, 16, 0, 0, 359, DateTimeKind.Utc).AddTicks(2444));
         }
     }
 }
