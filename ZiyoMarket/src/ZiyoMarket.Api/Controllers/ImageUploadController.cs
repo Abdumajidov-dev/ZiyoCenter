@@ -10,7 +10,7 @@ namespace ZiyoMarket.Api.Controllers;
 /// Unified image upload controller - Professional WebP conversion
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/image_upload")]
 public class ImageUploadController : BaseController
 {
     private readonly IFileUploadService _fileUploadService;
@@ -51,12 +51,13 @@ public class ImageUploadController : BaseController
     /// </remarks>
     [HttpPost]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(FileUploadResultDto), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     public async Task<ActionResult<FileUploadResultDto>> UploadImage(
         [FromForm] IFormFile file,
-        [FromForm] string type)
+        [FromQuery] string type)
     {
         try
         {
@@ -112,12 +113,13 @@ public class ImageUploadController : BaseController
     /// <returns>List of uploaded file details</returns>
     [HttpPost("multiple")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(List<FileUploadResultDto>), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
     public async Task<ActionResult<List<FileUploadResultDto>>> UploadMultipleImages(
         [FromForm] List<IFormFile> files,
-        [FromForm] string type)
+        [FromQuery] string type)
     {
         try
         {

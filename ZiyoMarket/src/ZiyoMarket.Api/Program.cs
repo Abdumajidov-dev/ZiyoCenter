@@ -96,6 +96,13 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+    // ✅ Support for file uploads in Swagger
+    options.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
 });
 
 // ✅ PostgreSQL ulanish (Railway environment variable support)
@@ -183,7 +190,6 @@ builder.Services.AddHttpContextAccessor(); // Required for FileUploadService to 
 var app = builder.Build();
 
 // ✅ Auto-run migrations on startup (Railway deployment)
-// Run in all environments to ensure Railway applies migrations
 try
 {
     Log.Information("🗄️  Running database migrations...");
@@ -191,27 +197,60 @@ try
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<ZiyoMarketDbContext>();
         
-        // Check pending migrations
+        // ✅ Check pending migrations
         var pendingMigrations = dbContext.Database.GetPendingMigrations().ToList();
         if (pendingMigrations.Any())
         {
             Log.Information("📋 Found {Count} pending migrations: {Migrations}", 
                 pendingMigrations.Count, string.Join(", ", pendingMigrations));
+            
+            try
+            {
+                dbContext.Database.Migrate();
+                Log.Information("✅ Migrations completed successfully");
+            }
+            catch (Exception ex) when (ex.Message.Contains("42P07") || ex.Message.Contains("already exists"))
+            {
+                // If migration fails because relation "Admins" already exists, it means the first migration
+                // was already applied manually or the DB was created from schema, but EFMigrationsHistory is empty.
+                Log.Warning("⚠️  Migration failed because tables already exist. Attempting to fix EFMigrationsHistory...");
+                
+                try
+                {
+                    // Manually insert the first migration if we know it exists
+                    if (pendingMigrations.Contains("20251215182414_FreshInitialMigration"))
+                    {
+                        dbContext.Database.ExecuteSqlRaw(
+                            "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") " +
+                            "VALUES ('20251215182414_FreshInitialMigration', '8.0.0') ON CONFLICT DO NOTHING;");
+                        
+                        Log.Information("✅ Faked initial migration. Retrying remaining migrations...");
+                        
+                        // Retry migrations
+                        dbContext.Database.Migrate();
+                        Log.Information("✅ Remaining migrations completed successfully");
+                    }
+                    else
+                    {
+                        throw; // Rethrow if it's not the initial migration
+                    }
+                }
+                catch (Exception retryEx)
+                {
+                    Log.Error(retryEx, "❌ Failed to fix and retry migrations");
+                }
+            }
         }
         else
         {
             Log.Information("✅ No pending migrations");
         }
-        
-        dbContext.Database.Migrate();
-        Log.Information("✅ Migrations completed successfully");
     }
 }
 catch (Exception ex)
 {
-    Log.Error(ex, "❌ Migration failed: {Message}", ex.Message);
-    Log.Error("Stack trace: {StackTrace}", ex.StackTrace);
-    // Don't throw - let app start anyway for debugging
+    Log.Error(ex, "❌ General Migration error: {Message}", ex.Message);
+    // Let app start anyway for debugging
 }
 
 // ✅ Global exception handler middleware (must be first)

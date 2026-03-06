@@ -57,8 +57,25 @@ public class CategoryController : BaseController
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateCategory([FromBody] SaveCategoryDto request)
     {
-        // Faqat asosiy kategoriya yaratish (ParentId ni null qilamiz)
-        request.ParentId = null;
+        // Allow creating both root and sub categories
+        var createdBy = GetCurrentUserId();
+        var result = await _categoryService.CreateCategoryAsync(request, createdBy);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return StatusCode(201, new { success = true, message = result.Message, data = result.Data });
+    }
+
+    /// <summary>
+    /// Create a subcategory under a specific parent
+    /// </summary>
+    [HttpPost("{parentId}/subcategory")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateSubCategory(int parentId, [FromBody] SaveCategoryDto request)
+    {
+        // Force the parent ID
+        request.ParentId = parentId;
 
         var createdBy = GetCurrentUserId();
         var result = await _categoryService.CreateCategoryAsync(request, createdBy);

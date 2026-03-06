@@ -69,7 +69,7 @@ public class ApiResponse : ApiResponse<object>
     /// <summary>
     /// Create failure response without data
     /// </summary>
-    public static new ApiResponse Failure(string message)
+    public static ApiResponse Failure(string message)
     {
         return new ApiResponse
         {

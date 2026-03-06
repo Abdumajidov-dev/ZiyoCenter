@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ZiyoMarket is a professional multi-user e-commerce platform built with .NET 10.0 and PostgreSQL. It supports three user types (Customers, Sellers, Admins) with features including offline/online sales, cashback rewards, delivery tracking, and a comprehensive admin panel.
+ZiyoMarket is a professional multi-user e-commerce platform built with .NET 8.0 and PostgreSQL. It supports three user types (Customers, Sellers, Admins) with features including offline/online sales, cashback rewards, delivery tracking, and a comprehensive admin panel.
 
 **Tech Stack:**
-- .NET 10.0 (ASP.NET Core Web API)
-- Entity Framework Core 9.0 with PostgreSQL (Npgsql)
+- .NET 8.0 (ASP.NET Core Web API)
+- Entity Framework Core 8.0 with PostgreSQL (Npgsql)
 - JWT Authentication
 - AutoMapper for object mapping
 - Serilog for logging
@@ -113,7 +113,24 @@ Controllers inherit from `BaseController` and follow RESTful conventions:
 int userId = GetCurrentUserId();           // Gets user ID from token
 string userType = GetCurrentUserType();    // Gets user type (Customer/Seller/Admin)
 bool isAuth = IsAuthenticated();           // Check if user is authenticated
+
+// Unified response helpers (returns ApiResponse<T> format)
+return SuccessResponse(data, "Success message");     // Success with data
+return SuccessResponse("Success message");           // Success without data
+return ErrorResponse("Error message");               // Error response
+return HandleResult(serviceResult);                  // Auto-handle service Result<T>
 ```
+
+**Unified Response Format:**
+All API responses follow a consistent format with `status`, `message`, and `data` fields:
+```json
+{
+  "status": true,
+  "message": "Success message",
+  "data": { /* actual data here */ }
+}
+```
+See `API_RESPONSE_FORMAT.md` for complete documentation.
 
 ### 5. Snake Case Convention (API URLs and JSON)
 
@@ -161,7 +178,13 @@ dotnet run
 dotnet clean
 ```
 
-**Important for Windows:** If you encounter "file is being used by another process" errors, close Visual Studio and any running instances of the API before running build/clean/migration commands.
+**Important for Windows:** If you encounter "file is being used by another process" errors during build/migration commands:
+1. Close Visual Studio completely
+2. Stop all running API instances (check Task Manager for `dotnet.exe` processes)
+3. Wait a few seconds for processes to fully terminate
+4. Run the command again
+
+This is a common issue on Windows where Visual Studio or IIS Express locks DLL files.
 
 ### Database Migrations
 
@@ -204,7 +227,7 @@ dotnet ef database update --project ../ZiyoMarket.Data
 ```bash
 # Create database in PostgreSQL
 psql -U postgres
-CREATE DATABASE "ZiyoDb";
+CREATE DATABASE "ZiyoNoorDb";
 \q
 
 # Apply migrations
@@ -229,8 +252,8 @@ For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md) f
 
 Located in `src/ZiyoMarket.Api/appsettings.json`:
 
-- **Local Development:** `Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;`
-- **Production:** Currently configured for Render.com PostgreSQL (update for your environment)
+- **Local Development:** `Server=localhost;Database=ZiyoNoorDb;User Id=postgres;Password=YOUR_PASSWORD;Port=5432;`
+- **Production:** Use Railway environment variables (see DEPLOYMENT.md)
 
 **IMPORTANT:** Never commit sensitive connection strings or secrets. Use environment variables or user secrets for local development:
 
@@ -449,12 +472,14 @@ POST /api/sms/verify-code
 - Automatic authentication with Eskiz.uz (token cached for 30 days)
 - Rate limiting for bulk SMS (100ms delay between sends)
 - SMS statistics and logging
+- **Privileged Users:** Hardcoded verification codes for specific phone numbers (configured in `appsettings.json` -> `PrivilegedUsers`)
 
 **Important Notes:**
 - Verification codes expire after 5 minutes
 - Phone number format: +998XXXXXXXXX
 - Development mode: `IsDevelopment: true` returns code in response
 - Production mode: Code only sent via SMS
+- Privileged users bypass SMS sending and use hardcoded codes (for testing/demo)
 - See `SMS_INTEGRATION_GUIDE.md` for detailed documentation
 
 ## Key Domain Concepts
@@ -591,19 +616,30 @@ All controller routes use snake_case format:
 
 ### Error Handling
 
-Services return DTOs or throw exceptions. Controllers should wrap service calls in try-catch:
+Services return `Result<T>` objects (not throwing exceptions for business logic errors). Controllers use `HandleResult()` for automatic response formatting:
 
 ```csharp
+// Recommended approach - Service returns Result<T>
+[HttpGet("{id}")]
+public async Task<IActionResult> GetById(int id)
+{
+    var result = await _service.GetById(id);
+    return HandleResult(result); // Automatically formats ApiResponse
+}
+
+// Alternative approach for try-catch scenarios
 try
 {
     var result = await _service.GetById(id);
-    return Ok(result);
+    return SuccessResponse(result, "Success");
 }
 catch (Exception ex)
 {
-    return BadRequest(ex.Message);
+    return ErrorResponse(ex.Message);
 }
 ```
+
+**Note:** Global exception handler middleware catches uncaught exceptions and returns them in unified `ApiResponse` format.
 
 ### Pagination
 
@@ -720,8 +756,13 @@ When working with services, these repositories are available through `_unitOfWor
 For comprehensive project understanding, refer to these additional documentation files:
 
 - **`PROJECT_STATUS.md`** - Current development status, pending tasks, known issues, and sprint progress
+- **`API_RESPONSE_FORMAT.md`** - Unified API response format specification and Flutter integration guide
 - **`FIREBASE_PUSH_NOTIFICATION_GUIDE.md`** - Complete guide for Firebase/FCM integration (Flutter + Backend)
 - **`SMS_INTEGRATION_GUIDE.md`** - Complete guide for SMS integration with Eskiz.uz (Verification codes, notifications)
+- **`FILE_UPLOAD_GUIDE.md`** - Complete guide for file upload system with wwwroot static files
 - **`SECURITY_WARNING.md`** - Security alerts and action items (check regularly)
+- **`DEPLOYMENT.md`** - Production deployment guide for Railway.app
+- **`BACKEND_DEVELOPER_GUIDE.md`** - Detailed backend development guide (150+ endpoints)
+- **`FLUTTER_DEVELOPER_GUIDE.md`** - Flutter/mobile integration guide with API examples
 
 **IMPORTANT:** When resuming work after a break, always check `PROJECT_STATUS.md` for current blockers and pending migrations.

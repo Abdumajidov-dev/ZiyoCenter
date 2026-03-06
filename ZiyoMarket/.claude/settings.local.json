@@ -49,7 +49,18 @@
       "Bash(__NEW_LINE__ mv \"13_Interfaces_IOrderCashbackCartServices.cs\" \"IOrderCashbackCartServices.cs\")",
       "Bash(__NEW_LINE__ cd ../Services)",
       "Bash(__NEW_LINE__ mv \"17_Services_ProductService.cs\" \"ProductService.cs\")",
-      "Bash(dotnet remove:*)"
+      "Bash(dotnet remove:*)",
+      "Bash(dotnet list:*)",
+      "Bash(powershell:*)",
+      "Bash(start dotnet run)",
+      "Bash(netstat:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjIiLCJVc2VyVHlwZSI6IkFkbWluIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQWRtaW4iLCJqdGkiOiJlYWY5OTFjZC1mODQ2LTRlOTMtYThhZC05NGM1YWMwZWI1YmIiLCJleHAiOjE3NzI0NjE1MDYsImlzcyI6IlppeW9NYXJrZXQiLCJhdWQiOiJaaXlvTWFya2V0VXNlcnMifQ.FfTVIbhVnvW_-1ELz1a7TJX7kfQhfJKg3_CFyrDMQU4\")",
+      "Bash(__NEW_LINE__ echo \"=== Elektronika uchun ichki kategoriyalar ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Kiyim-kechak uchun ichki kategoriyalar ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Uy-ro''zg''or uchun ichki kategoriyalar ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Oziq-ovqat uchun ichki kategoriyalar ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Sport va hordiq uchun ichki kategoriyalar ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Kitoblar uchun ichki kategoriyalar ===\")"
     ],
     "deny": [],
     "ask": []

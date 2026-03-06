@@ -30,11 +30,12 @@ public class TestImageController : BaseController
     /// </summary>
     [HttpPost("create-category-with-image")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult> CreateCategoryWithImage(
-        [FromForm] string name,
-        [FromForm] string? description,
-        [FromForm] int? parentId,
-        [FromForm] IFormFile? imageFile)
+        string name,
+        string? description,
+        int? parentId,
+        IFormFile? imageFile)
     {
         try
         {
@@ -90,14 +91,15 @@ public class TestImageController : BaseController
     /// </summary>
     [HttpPost("create-product-with-image")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult> CreateProductWithImage(
-        [FromForm] string name,
-        [FromForm] string? description,
-        [FromForm] string qrCode,
-        [FromForm] decimal price,
-        [FromForm] int stockQuantity,
-        [FromForm] List<int> categoryIds,
-        [FromForm] IFormFile? imageFile)
+        string name,
+        string? description,
+        string qrCode,
+        decimal price,
+        int stockQuantity,
+        List<int> categoryIds,
+        IFormFile? imageFile)
     {
         try
         {
@@ -171,9 +173,10 @@ public class TestImageController : BaseController
     /// </summary>
     [HttpPut("update-category-image/{categoryId}")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult> UpdateCategoryImage(
         int categoryId,
-        [FromForm] IFormFile imageFile)
+        IFormFile imageFile)
     {
         try
         {
@@ -219,9 +222,10 @@ public class TestImageController : BaseController
     /// </summary>
     [HttpPut("update-product-image/{productId}")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult> UpdateProductImage(
         int productId,
-        [FromForm] IFormFile imageFile)
+        IFormFile imageFile)
     {
         try
         {
