@@ -33,6 +33,7 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductCategory> ProductCategories { get; set; }
+    public DbSet<ProductImage> ProductImages { get; set; }
 
     public DbSet<ProductLike> ProductLikes { get; set; }
     public DbSet<CartItem> CartItems { get; set; }

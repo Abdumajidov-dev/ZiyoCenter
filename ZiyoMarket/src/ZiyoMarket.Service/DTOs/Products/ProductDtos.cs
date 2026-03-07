@@ -20,7 +20,7 @@ public class ProductListDto
     public string FormattedPrice => $"{Price:N0} so'm";
     public int StockQuantity { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string? ImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
     public bool IsAvailable { get; set; }
     public bool IsLowStock { get; set; }
     public int LikesCount { get; set; }
@@ -45,7 +45,7 @@ public class ProductDetailDto
     public int StockQuantity { get; set; }
     public int MinStockLevel { get; set; }
     public string Status { get; set; } = string.Empty;
-    public string? ImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
     public decimal? Weight { get; set; }
     public string? Dimensions { get; set; }
     public string? SKU { get; set; }
@@ -90,8 +90,7 @@ public class CreateProductDto
     [Range(0, int.MaxValue, ErrorMessage = "Min stock level cannot be negative")]
     public int MinStockLevel { get; set; } = 5;
     
-    [MaxLength(500)]
-    public string? ImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
     
     [Range(0, double.MaxValue, ErrorMessage = "Weight cannot be negative")]
     public decimal? Weight { get; set; }
@@ -134,8 +133,7 @@ public class UpdateProductDto
     [Range(0, int.MaxValue, ErrorMessage = "Min stock level cannot be negative")]
     public int MinStockLevel { get; set; }
     
-    [MaxLength(500)]
-    public string? ImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
     
     [Range(0, double.MaxValue, ErrorMessage = "Weight cannot be negative")]
     public decimal? Weight { get; set; }

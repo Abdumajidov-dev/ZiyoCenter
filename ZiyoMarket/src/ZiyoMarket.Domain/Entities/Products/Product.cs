@@ -86,7 +86,11 @@ public class Product : BaseAuditableEntity
     /// Mahsulot kategoriyalari
     /// </summary>
     public virtual ICollection<ProductCategory> ProductCategories { get; set; } = new List<ProductCategory>();
-
+    
+    /// <summary>
+    /// Mahsulotning galereya rasmlari
+    /// </summary>
+    public virtual ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
 
     /// <summary>
     /// Buyurtma item'lari

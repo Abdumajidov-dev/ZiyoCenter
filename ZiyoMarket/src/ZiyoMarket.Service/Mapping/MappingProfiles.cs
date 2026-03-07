@@ -33,8 +33,8 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.CategoryNames, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.Category.Name).ToList()))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
-            .ForMember(dest => dest.LikesCount, opt => opt.Ignore())
-            .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore());
+            .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore())
+            .ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src => src.Images.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList()));
 
         
         CreateMap<Product, ProductDetailDto>()
@@ -44,17 +44,19 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.IsAvailableForSale))
             .ForMember(dest => dest.IsLowStock, opt => opt.MapFrom(src => src.IsLowStock))
             .ForMember(dest => dest.IsOutOfStock, opt => opt.MapFrom(src => src.IsOutOfStock))
-            .ForMember(dest => dest.LikesCount, opt => opt.Ignore())
-            .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore());
+            .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore())
+            .ForMember(dest => dest.ImageUrls, opt => opt.MapFrom(src => src.Images.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList()));
 
         
         CreateMap<CreateProductDto, Product>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+            .ForMember(dest => dest.Images, opt => opt.Ignore())
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ProductStatus.Active));
         
         CreateMap<UpdateProductDto, Product>()
             .ForMember(dest => dest.QrCode, opt => opt.Ignore())
+            .ForMember(dest => dest.Images, opt => opt.Ignore())
             .ForMember(dest => dest.StockQuantity, opt => opt.Ignore());
         
         CreateMap<Product, LowStockProductDto>();
@@ -95,7 +97,7 @@ public class CartProfile : Profile
         // Cart mappings
         CreateMap<CartItem, CartItemDto>()
             .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : "Noma'lum mahsulot"))
-            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product != null ? src.Product.ImageUrl : null))
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product != null && src.Product.Images.Any() ? src.Product.Images.FirstOrDefault(i => i.IsPrimary).ImageUrl ?? src.Product.Images.First().ImageUrl : null))
             .ForMember(dest => dest.IsAvailable, opt => opt.MapFrom(src => src.Product != null && src.Product.IsAvailableForSale))
             .ForMember(dest => dest.AvailableStock, opt => opt.MapFrom(src => src.Product != null ? src.Product.StockQuantity : 0));
     }
@@ -186,7 +188,7 @@ public class OrderProfile : Profile
 
         // Order item mappings
         CreateMap<OrderItem, OrderItemDto>()
-            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product.ImageUrl));
+            .ForMember(dest => dest.ProductImage, opt => opt.MapFrom(src => src.Product != null && src.Product.Images.Any() ? src.Product.Images.FirstOrDefault(i => i.IsPrimary).ImageUrl ?? src.Product.Images.First().ImageUrl : null));
         
         // Order discount mappings
         CreateMap<OrderDiscount, OrderDiscountDto>()

@@ -30,6 +30,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
         {
             var product = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -57,6 +58,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<ProductDetailDto>> GetProductByQRCodeAsync(string qrCode, int? customerId = null)
         {
             var product = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -82,6 +84,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(ProductFilterRequest request, int? customerId = null)
         {
             var query = _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -178,6 +181,20 @@ namespace ZiyoMarket.Service.Services
                 product.ProductCategories.Add(new ProductCategory { CategoryId = categoryId });
             }
 
+            // Add images
+            if (request.ImageUrls != null && request.ImageUrls.Any())
+            {
+                for (int i = 0; i < request.ImageUrls.Count; i++)
+                {
+                    product.Images.Add(new ProductImage
+                    {
+                        ImageUrl = request.ImageUrls[i],
+                        IsPrimary = i == 0,
+                        DisplayOrder = i
+                    });
+                }
+            }
+
             await _unitOfWork.Products.InsertAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
@@ -187,6 +204,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<ProductDetailDto>> UpdateProductAsync(UpdateProductDto request, int updatedBy)
         {
             var product = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                 .FirstOrDefaultAsync(p => p.Id == request.Id && p.DeletedAt == null);
 
@@ -201,7 +219,6 @@ namespace ZiyoMarket.Service.Services
             product.Name = request.Name;
             product.Description = request.Description;
             product.Price = request.Price;
-            product.ImageUrl = request.ImageUrl;
             product.MinStockLevel = request.MinStockLevel;
             product.UpdatedBy = updatedBy;
             product.SearchText = product.GetSearchText();
@@ -212,6 +229,22 @@ namespace ZiyoMarket.Service.Services
             foreach (var categoryId in request.CategoryIds)
             {
                 product.ProductCategories.Add(new ProductCategory { ProductId = product.Id, CategoryId = categoryId });
+            }
+
+            // Update images
+            product.Images.Clear();
+            if (request.ImageUrls != null && request.ImageUrls.Any())
+            {
+                for (int i = 0; i < request.ImageUrls.Count; i++)
+                {
+                    product.Images.Add(new ProductImage
+                    {
+                        ProductId = product.Id,
+                        ImageUrl = request.ImageUrls[i],
+                        IsPrimary = i == 0,
+                        DisplayOrder = i
+                    });
+                }
             }
 
             await _unitOfWork.Products.Update(product, product.Id);
@@ -326,6 +359,7 @@ namespace ZiyoMarket.Service.Services
                 return Result<List<ProductListDto>>.Success(new List<ProductListDto>());
 
             var products = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -360,6 +394,7 @@ namespace ZiyoMarket.Service.Services
             var ids = likeCounts.Select(x => x.ProductId).ToList();
 
             var products = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -381,6 +416,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<ProductListDto>>> GetNewArrivalsAsync(int count = 10)
         {
             var products = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
@@ -406,6 +442,7 @@ namespace ZiyoMarket.Service.Services
             try
             {
                 var query = _unitOfWork.Products.Table
+                            .Include(p => p.Images)
                             .Include(p => p.ProductCategories)
                                 .ThenInclude(pc => pc.Category)
                                     .ThenInclude(c => c.Parent)
@@ -463,6 +500,7 @@ namespace ZiyoMarket.Service.Services
             try
             {
                 var query = _unitOfWork.Products.Table
+                            .Include(p => p.Images)
                             .Include(p => p.ProductCategories)
                                 .ThenInclude(pc => pc.Category)
                                     .ThenInclude(c => c.Parent)
@@ -500,6 +538,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<ProductListDto>>> GetSimilarProductsAsync(int productId, int count = 10, int? customerId = null)
         {
             var product = await _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                 .FirstOrDefaultAsync(p => p.Id == productId && p.DeletedAt == null);
 
@@ -510,6 +549,7 @@ namespace ZiyoMarket.Service.Services
 
             // Find products that share at least one category, ordered by number of shared categories
             var similarProductsQuery = _unitOfWork.Products.Table
+                .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
                     .ThenInclude(pc => pc.Category)
                         .ThenInclude(c => c.Parent)
