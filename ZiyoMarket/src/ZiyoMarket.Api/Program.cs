@@ -46,7 +46,7 @@ builder.Services.AddControllers(options =>
 
         // Optional: Configure other JSON options
         options.JsonSerializerOptions.WriteIndented = false; // Compact JSON
-        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        // options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
 
 // ✅ Disable automatic ModelState validation (we use ValidationFilter instead)
