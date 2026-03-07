@@ -52,7 +52,7 @@ public class AdminSeedController : ControllerBase
                 FirstName = "Super",
                 LastName = "Admin",
                 Username = "admin",
-                Phone = "998901234567",
+                Phone = "+998901234567",
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
                 Role = "SuperAdmin",
                 Permissions = null, // SuperAdmin'ga permissions kerak emas

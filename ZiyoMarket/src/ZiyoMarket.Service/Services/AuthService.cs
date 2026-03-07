@@ -624,6 +624,10 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(phone))
             return phone;
 
+        // If it looks like a username (contains letters), don't normalize it as a phone number
+        if (phone.Any(char.IsLetter))
+            return phone;
+
         // Remove all non-digit characters except +
         string cleaned = new string(phone.Where(c => char.IsDigit(c) || c == '+').ToArray());
 
