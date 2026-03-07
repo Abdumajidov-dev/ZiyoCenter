@@ -32,16 +32,23 @@ public class AdminSeedController : ControllerBase
 
             if (existingAdmin != null)
             {
+                // Force update phone and password to ensure they match current rules
+                existingAdmin.Phone = "+998901234567";
+                existingAdmin.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123");
+                
+                await _unitOfWork.Admins.Update(existingAdmin, existingAdmin.Id);
+                await _unitOfWork.SaveChangesAsync();
+
                 return Ok(new
                 {
                     success = true,
-                    message = "Test admin allaqachon mavjud",
+                    message = "Test admin ma'lumotlari yangilandi! (Raqam va Parol to'g'rilandi)",
                     data = new
                     {
                         username = existingAdmin.Username,
                         email = existingAdmin.Phone,
                         role = existingAdmin.Role,
-                        password = "Admin@123 (o'zgartirilmagan bo'lsa)"
+                        password = "Admin@123"
                     }
                 });
             }
