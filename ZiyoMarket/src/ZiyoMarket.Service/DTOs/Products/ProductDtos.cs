@@ -214,8 +214,6 @@ public class CategoryDto
 /// </summary>
 public class SaveCategoryDto
 {
-    public int? Id { get; set; }
-    
     [Required(ErrorMessage = "Category name is required")]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
@@ -228,6 +226,9 @@ public class SaveCategoryDto
     public int SortOrder { get; set; } = 0;
     
     public bool IsActive { get; set; } = true;
+
+    [MaxLength(500)]
+    public string? ImageUrl { get; set; }
 }
 /// <summary>
 /// Kategoriya va unga tegishli mahsulotlar soni haqida ma�lumot DTO

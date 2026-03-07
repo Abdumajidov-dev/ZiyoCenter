@@ -175,6 +175,7 @@ public class CategoryService : ICategoryService
                 ParentId = request.ParentId,
                 DisplayOrder = request.SortOrder,
                 IsActive = request.IsActive,
+                ImageUrl = request.ImageUrl,
                 CreatedBy = createdBy
             };
 
@@ -231,6 +232,7 @@ public class CategoryService : ICategoryService
             category.ChangeName(request.Name);
             category.UpdateDescription(request.Description);
             category.ChangeParent(request.ParentId);
+            category.UpdateImageUrl(request.ImageUrl);
             category.ChangeDisplayOrder(request.SortOrder);
             category.IsActive = request.IsActive;
             category.UpdatedBy = updatedBy;
