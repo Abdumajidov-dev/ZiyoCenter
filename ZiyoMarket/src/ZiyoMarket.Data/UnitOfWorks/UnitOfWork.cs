@@ -44,6 +44,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<OrderDiscount> OrderDiscounts { get; private set; }
     public IRepository<DiscountReason> DiscountReasons { get; private set; }
     public IRepository<CashbackTransaction> CashbackTransactions { get; private set; }
+    public IRepository<PaymentProof> PaymentProofs { get; private set; }
 
     // Delivery Repositories
     public IRepository<DeliveryPartner> DeliveryPartners { get; private set; }
@@ -89,6 +90,7 @@ public class UnitOfWork : IUnitOfWork
         OrderDiscounts = new Repository<OrderDiscount>(_context);
         DiscountReasons = new Repository<DiscountReason>(_context);
         CashbackTransactions = new Repository<CashbackTransaction>(_context);
+        PaymentProofs = new Repository<PaymentProof>(_context);
         DeliveryPartners = new Repository<DeliveryPartner>(_context);
         OrderDeliveries = new Repository<OrderDelivery>(_context);
         Notifications = new Repository<Notification>(_context);

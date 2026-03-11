@@ -16,6 +16,7 @@ using ZiyoMarket.Service.DTOs.Admins;
 using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.DTOs.Sms;
+using ZiyoMarket.Service.DTOs.Payment;
 using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Mapping;
@@ -308,5 +309,30 @@ public class SmsProfile : Profile
         CreateMap<SmsLog, SmsLogDto>()
             .ForMember(dest => dest.Purpose, opt => opt.MapFrom(src => src.Purpose.ToString()))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+    }
+}
+
+/// <summary>
+/// Payment mapping profile
+/// </summary>
+public class PaymentProfile : Profile
+{
+    public PaymentProfile()
+    {
+        // PaymentProof to PaymentProofResultDto
+        CreateMap<PaymentProof, PaymentProofResultDto>()
+            .ForMember(dest => dest.OrderNumber, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderNumber : ""))
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Order != null && src.Order.Customer != null ? src.Order.Customer.FullName : ""))
+            .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Order != null && src.Order.Customer != null ? src.Order.Customer.Phone : ""))
+            .ForMember(dest => dest.StatusText, opt => opt.MapFrom(src => src.GetStatusText()))
+            .ForMember(dest => dest.ReviewedByName, opt => opt.Ignore()); // Set manually in controller
+
+        // SubmitPaymentProofDto to PaymentProof
+        CreateMap<SubmitPaymentProofDto, PaymentProof>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
+            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethod.BankTransfer))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatus.UnderReview))
+            .ForMember(dest => dest.ProofImageUrl, opt => opt.Ignore());
     }
 }

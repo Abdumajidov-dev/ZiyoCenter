@@ -37,6 +37,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<OrderDiscount> OrderDiscounts { get; }
     IRepository<DiscountReason> DiscountReasons { get; }
     IRepository<CashbackTransaction> CashbackTransactions { get; }
+    IRepository<PaymentProof> PaymentProofs { get; }
 
     // Delivery Repositories
     IRepository<DeliveryPartner> DeliveryPartners { get; }

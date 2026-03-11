@@ -42,6 +42,7 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<OrderDiscount> OrderDiscounts { get; set; }
     public DbSet<DiscountReason> DiscountReasons { get; set; }
     public DbSet<CashbackTransaction> CashbackTransactions { get; set; }
+    public DbSet<PaymentProof> PaymentProofs { get; set; }
     public DbSet<DeliveryPartner> DeliveryPartners { get; set; }
     public DbSet<OrderDelivery> OrderDeliveries { get; set; }
     public DbSet<Notification> Notifications { get; set; }

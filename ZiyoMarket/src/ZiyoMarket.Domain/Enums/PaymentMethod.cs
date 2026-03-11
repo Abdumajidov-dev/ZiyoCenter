@@ -28,5 +28,10 @@ public enum PaymentMethod
     /// <summary>
     /// Click to'lov tizimi orqali
     /// </summary>
-    Click = 5
+    Click = 5,
+
+    /// <summary>
+    /// Bank o'tkazmasi - Mijoz to'g'ridan-to'g'ri admin kartasiga o'tkazadi
+    /// </summary>
+    BankTransfer = 6
 }

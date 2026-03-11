@@ -60,7 +60,14 @@
       "Bash(__NEW_LINE__ echo \"=== Uy-ro''zg''or uchun ichki kategoriyalar ===\")",
       "Bash(__NEW_LINE__ echo \"=== Oziq-ovqat uchun ichki kategoriyalar ===\")",
       "Bash(__NEW_LINE__ echo \"=== Sport va hordiq uchun ichki kategoriyalar ===\")",
-      "Bash(__NEW_LINE__ echo \"=== Kitoblar uchun ichki kategoriyalar ===\")"
+      "Bash(__NEW_LINE__ echo \"=== Kitoblar uchun ichki kategoriyalar ===\")",
+      "Bash(if not exist \"wwwroot\\images\\payment_proofs\" mkdir \"wwwroot\\images\\payment_proofs\")",
+      "Bash(python3:*)",
+      "Bash(CUSTOMER_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjQiLCJVc2VyVHlwZSI6IkN1c3RvbWVyIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQ3VzdG9tZXIiLCJqdGkiOiI4Y2M2NmRhZi00ZTNhLTQxZWYtOTExMS0yNWQ4YmM1ZmY4YjMiLCJleHAiOjE3NzMzNTQ3ODksImlzcyI6IlppeW9NYXJrZXQiLCJhdWQiOiJaaXlvTWFya2V0VXNlcnMifQ.VUucZchM7ilZel3W77jsBnlmMtyoeZyrjBYLYXkvRi0\")",
+      "Bash(__NEW_LINE__ curl -s -X POST \"http://localhost:8081/api/order/create\" )",
+      "Bash(__NEW_LINE__ echo \"=== TEST 2: My Payment Proofs (Customer) ===\")",
+      "Bash(__NEW_LINE__ echo \"=== TEST 3: Payment Stats (Should fail - Admin only) ===\")",
+      "Bash(__NEW_LINE__ echo \"=== TEST 4: Pending Payments (Should fail - Admin only) ===\")"
     ],
     "deny": [],
     "ask": []

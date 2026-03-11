@@ -68,6 +68,11 @@ public class Order : BaseAuditableEntity
     public PaymentMethod PaymentMethod { get; set; }
 
     /// <summary>
+    /// To'lov holati (Manual Payment Verification uchun)
+    /// </summary>
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
+
+    /// <summary>
     /// To'lov reference (transaction ID from payment gateway)
     /// </summary>
     public string? PaymentReference { get; set; }
@@ -142,6 +147,11 @@ public class Order : BaseAuditableEntity
     /// Cashback tranzaksiyalari (earned)
     /// </summary>
     public virtual ICollection<CashbackTransaction> CashbackTransactions { get; set; } = new List<CashbackTransaction>();
+
+    /// <summary>
+    /// To'lov isbotlari (Manual Payment Verification)
+    /// </summary>
+    public virtual ICollection<PaymentProof> PaymentProofs { get; set; } = new List<PaymentProof>();
 
     // ==================== COMPUTED PROPERTIES ====================
 
@@ -416,6 +426,51 @@ public class Order : BaseAuditableEntity
         PaymentMethod = method;
         PaymentReference = reference;
         PaidAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+        // BankTransfer bo'lsa, admin tasdiqini kutadi
+        if (method == PaymentMethod.BankTransfer)
+        {
+            PaymentStatus = PaymentStatus.AwaitingProof;
+        }
+        else
+        {
+            // Boshqa to'lov usullari darhol tasdiqlangan
+            PaymentStatus = PaymentStatus.Verified;
+        }
+
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// To'lovni tasdiqlash (Admin) - Bank Transfer uchun
+    /// </summary>
+    public void VerifyPayment(int adminId)
+    {
+        if (PaymentStatus == PaymentStatus.Verified)
+            throw new InvalidOperationException("To'lov allaqachon tasdiqlangan");
+
+        if (PaymentStatus == PaymentStatus.Pending)
+            throw new InvalidOperationException("To'lov isboti hali yuklanmagan");
+
+        PaymentStatus = PaymentStatus.Verified;
+        PaidAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+        UpdatedBy = adminId;
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// To'lovni rad etish (Admin)
+    /// </summary>
+    public void RejectPayment(int adminId, string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ArgumentException("Rad etish sababi kiritilishi shart");
+
+        PaymentStatus = PaymentStatus.Rejected;
+        AdminNotes = string.IsNullOrEmpty(AdminNotes)
+            ? $"To'lov rad etildi: {reason}"
+            : $"{AdminNotes}\nTo'lov rad etildi: {reason}";
+        UpdatedBy = adminId;
         MarkAsUpdated();
     }
 
