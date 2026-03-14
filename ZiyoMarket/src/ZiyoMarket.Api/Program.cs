@@ -117,7 +117,7 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 // ✅ Parse Railway PostgreSQL URL format to Npgsql connection string
-if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://"))
+if (connectionString.StartsWith("postgresql://") || connectionString.StartsWith("postgres://")) 
 {
     try
     {
@@ -378,23 +378,23 @@ catch (Exception ex)
 // ✅ Global exception handler middleware (must be first)
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
-// ✅ Swagger'ni har doim yoqamiz (nafaqat Development'da)
+// ✅ HTTPS redirection (disabled for Railway, enabled for local)
+// Railway proxy handles HTTPS, but local dev needs it
+// app.UseHttpsRedirection(); // Disabled - not required
+
+// ✅ Static files serving (images, CSS, JS, etc.) - BEFORE routing
+app.UseStaticFiles(); // Serves files from wwwroot folder
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ✅ Swagger'ni routing'dan OLDIN yoqamiz
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "ZiyoMarket API v1");
     options.RoutePrefix = "swagger"; // => /swagger
 });
-
-// ✅ HTTPS redirection (disabled for Railway, enabled for local)
-// Railway proxy handles HTTPS, but local dev needs it
-// app.UseHttpsRedirection(); // Disabled - not required
-
-// ✅ Static files serving (images, CSS, JS, etc.)
-app.UseStaticFiles(); // Serves files from wwwroot folder
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 // Default route
 app.MapControllers();

@@ -606,6 +606,7 @@ All controller routes use snake_case format:
 - **`/api/support`** - Customer support chats
 - **`/api/notification`** - Push notifications
 - **`/api/content`** - CMS (blogs, news, FAQs)
+- **`/api/banner`** - Banner management (Create, Read, Update, Delete, Publish, Unpublish)
 - **`/api/report`** - Sales reports, analytics
 - **`/api/customer`** - Customer management (Admin)
 - **`/api/seller`** - Seller management (Admin)
@@ -715,18 +716,35 @@ Add logging in services/controllers via constructor injection: `ILogger<ClassNam
 
 ## Desktop Admin Panel
 
-The solution includes a separate desktop admin panel project (`ZiyoMarket.AdminPanel`) for Windows desktop administration:
+The project has a **separate WPF admin panel** project for Windows desktop administration:
 
-- Built with WPF (Windows Presentation Foundation)
+- **Location:** `C:\Users\abdum\OneDrive\Desktop\AdminPanel\ZiyoNurAdminPanel.Ui`
+- Built with WPF (Windows Presentation Foundation) and .NET 8
+- Uses MaterialDesign themes for modern UI
+- Follows MVVM pattern with CommunityToolkit.Mvvm
 - Consumes the ZiyoMarket API via HTTP client
 - Provides admin dashboard, reports, and management interfaces
-- Located in `src/ZiyoMarket.AdminPanel/`
 
 **Run Admin Panel:**
 ```bash
-cd src/ZiyoMarket.AdminPanel
-dotnet run
+cd C:\Users\abdum\OneDrive\Desktop\AdminPanel\ZiyoNurAdminPanel.Ui
+dotnet run --project ZiyoNurAdminPanel.Ui/ZiyoNurAdminPanel.Ui.csproj
 ```
+
+**Features:**
+- Full CRUD for Products, Categories, Orders, Customers, Sellers, Admins
+- Banner management (NEW) - Create, edit, publish, unpublish banners
+- Dashboard with statistics
+- Role and permission management
+- Reports and analytics
+- File upload support
+- Real-time notifications
+
+**API Configuration:**
+- Update `appsettings.json` → `ApiSettings.BaseUrl` to point to backend API
+- Default: `http://localhost:8081/api/`
+
+See admin panel's `CLAUDE.md` for detailed documentation.
 
 ## Important Development Notes
 
@@ -749,7 +767,8 @@ When working with services, these repositories are available through `_unitOfWor
 - `DeliveryPartners`, `OrderDeliveries` - Delivery management
 - `Notifications`, `DeviceTokens`, `SmsLogs` - Notifications (Push & SMS)
 - `SupportChats`, `SupportMessages` - Customer support
-- `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration
+- `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration and CMS
+- `Banners` (via Contents with ContentType.Banner) - Marketing banners
 
 ## Project Status and Context Files
 
