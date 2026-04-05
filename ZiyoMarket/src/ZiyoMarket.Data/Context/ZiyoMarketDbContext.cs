@@ -111,7 +111,7 @@ public class ZiyoMarketDbContext : DbContext
 
         foreach (var entry in entries)
         {
-            var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
 
             switch (entry.State)
             {
@@ -121,6 +121,29 @@ public class ZiyoMarketDbContext : DbContext
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = now;
                     break;
+            }
+        }
+
+        // Ensure all DateTime properties are Utc (PostgreSQL requirement for timestamptz columns)
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            var properties = entry.Metadata.GetProperties()
+                .Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?));
+
+            foreach (var property in properties)
+            {
+                var val = entry.Property(property.Name).CurrentValue;
+                if (val is DateTime dt)
+                {
+                    if (dt.Kind == DateTimeKind.Local)
+                    {
+                        entry.Property(property.Name).CurrentValue = dt.ToUniversalTime();
+                    }
+                    else if (dt.Kind == DateTimeKind.Unspecified)
+                    {
+                        entry.Property(property.Name).CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                    }
+                }
             }
         }
 

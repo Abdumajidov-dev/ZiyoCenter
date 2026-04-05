@@ -74,12 +74,18 @@ public class OrderService : IOrderService
             if (request.Status.HasValue)
                 query = query.Where(o => o.Status == request.Status.Value);
 
-            // Date range
+            // Date range (using string comparison since OrderDate is stored as string)
             if (request.DateFrom.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) >= request.DateFrom.Value);
+            {
+                var dateFromStr = request.DateFrom.Value.ToString("yyyy-MM-dd");
+                query = query.Where(o => string.Compare(o.OrderDate, dateFromStr) >= 0);
+            }
 
             if (request.DateTo.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) <= request.DateTo.Value);
+            {
+                var dateToStr = request.DateTo.Value.ToString("yyyy-MM-dd 23:59:59");
+                query = query.Where(o => string.Compare(o.OrderDate, dateToStr) <= 0);
+            }
 
             query = query.OrderByDescending(o => o.OrderDate);
 
@@ -522,10 +528,14 @@ public class OrderService : IOrderService
     {
         try
         {
+            // Convert DateTime to string format for comparison
+            var dateFromStr = dateFrom.ToString("yyyy-MM-dd");
+            var dateToStr = dateTo.ToString("yyyy-MM-dd 23:59:59");
+
             var orders = await _unitOfWork.Orders
                 .SelectAll(o => o.DeletedAt == null &&
-                    DateTime.Parse(o.OrderDate) >= dateFrom &&
-                    DateTime.Parse(o.OrderDate) <= dateTo)
+                    string.Compare(o.OrderDate, dateFromStr) >= 0 &&
+                    string.Compare(o.OrderDate, dateToStr) <= 0)
                 .ToListAsync();
 
             var summary = new OrderSummaryDto
@@ -592,11 +602,18 @@ public class OrderService : IOrderService
         {
             var query = _unitOfWork.Orders.Table.Where(o => o.DeletedAt == null);
 
+            // Use string comparison since OrderDate is stored as string
             if (startDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) >= startDate.Value);
+            {
+                var startDateStr = startDate.Value.ToString("yyyy-MM-dd");
+                query = query.Where(o => string.Compare(o.OrderDate, startDateStr) >= 0);
+            }
 
             if (endDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) <= endDate.Value);
+            {
+                var endDateStr = endDate.Value.ToString("yyyy-MM-dd 23:59:59");
+                query = query.Where(o => string.Compare(o.OrderDate, endDateStr) <= 0);
+            }
 
             var orders = await query.ToListAsync();
 

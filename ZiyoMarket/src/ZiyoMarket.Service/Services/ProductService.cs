@@ -175,6 +175,12 @@ namespace ZiyoMarket.Service.Services
             product.Status = ProductStatus.Active;
             product.SearchText = product.GetSearchText();
 
+            // Compatibility: set CategoryId for legacy database schema
+            if (request.CategoryId.HasValue)
+                product.CategoryId = request.CategoryId.Value;
+            else if (request.CategoryIds.Any())
+                product.CategoryId = request.CategoryIds.First();
+
             // Add categories
             foreach (var categoryId in request.CategoryIds)
             {
@@ -218,6 +224,12 @@ namespace ZiyoMarket.Service.Services
 
             product.Name = request.Name;
             product.Description = request.Description;
+
+            // Compatibility: set CategoryId for legacy database schema
+            if (request.CategoryId.HasValue)
+                product.CategoryId = request.CategoryId.Value;
+            else if (request.CategoryIds.Any())
+                product.CategoryId = request.CategoryIds.First();
             product.Price = request.Price;
             product.MinStockLevel = request.MinStockLevel;
             product.UpdatedBy = updatedBy;

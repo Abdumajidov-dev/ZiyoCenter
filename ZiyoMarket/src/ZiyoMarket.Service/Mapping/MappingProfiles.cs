@@ -53,10 +53,13 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
             .ForMember(dest => dest.Images, opt => opt.Ignore())
+            .ForMember(dest => dest.QrCode, opt => opt.MapFrom(src => src.QRCode))
+            .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ProductStatus.Active));
         
         CreateMap<UpdateProductDto, Product>()
-            .ForMember(dest => dest.QrCode, opt => opt.Ignore())
+            .ForMember(dest => dest.QrCode, opt => opt.MapFrom(src => src.QRCode))
+            .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
             .ForMember(dest => dest.Images, opt => opt.Ignore())
             .ForMember(dest => dest.StockQuantity, opt => opt.Ignore());
         
@@ -269,6 +272,10 @@ public class ContentProfile : Profile
         // Content entity to DTOs
         CreateMap<Content, ContentDetailDto>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ContentType.ToString()))
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ContentUrl))
+            .ForMember(dest => dest.VideoUrl, opt => opt.MapFrom(src => src.ContentUrl))
+            .ForMember(dest => dest.Content, opt => opt.MapFrom(src => src.ContentData))
+            .ForMember(dest => dest.DurationSeconds, opt => opt.MapFrom(src => src.VideoDuration))
             .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.ValidFrom))
             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
             .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
@@ -284,6 +291,7 @@ public class ContentProfile : Profile
             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
             .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
             .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ContentUrl))
             .ForMember(dest => dest.PublishedAt, opt => opt.MapFrom(src => src.ValidFrom))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)));
 
@@ -291,8 +299,11 @@ public class ContentProfile : Profile
         CreateMap<SaveContentDto, Content>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.ContentType, opt => opt.MapFrom(src => src.Type))
-            .ForMember(dest => dest.ValidFrom, opt => opt.MapFrom(src => src.StartDate ?? DateTime.UtcNow))
-            .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate))
+            .ForMember(dest => dest.ContentUrl, opt => opt.MapFrom(src => src.ImageUrl ?? src.VideoUrl))
+            .ForMember(dest => dest.ContentData, opt => opt.MapFrom(src => src.Content))
+            .ForMember(dest => dest.VideoDuration, opt => opt.MapFrom(src => src.DurationSeconds))
+            .ForMember(dest => dest.ValidFrom, opt => opt.MapFrom(src => (src.StartDate ?? DateTime.UtcNow).ToUniversalTime()))
+            .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate.HasValue ? src.EndDate.Value.ToUniversalTime() : (DateTime?)null))
             .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsPublished));
     }

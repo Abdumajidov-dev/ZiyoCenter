@@ -195,11 +195,18 @@ public class SellerService : ISellerService
             var query = _unitOfWork.Orders.Table
                 .Where(o => o.SellerId == sellerId && o.DeletedAt == null);
 
+            // Use string comparison since OrderDate is stored as string
             if (startDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) >= startDate.Value);
+            {
+                var startDateStr = startDate.Value.ToString("yyyy-MM-dd");
+                query = query.Where(o => string.Compare(o.OrderDate, startDateStr) >= 0);
+            }
 
             if (endDate.HasValue)
-                query = query.Where(o => DateTime.Parse(o.OrderDate) <= endDate.Value);
+            {
+                var endDateStr = endDate.Value.ToString("yyyy-MM-dd 23:59:59");
+                query = query.Where(o => string.Compare(o.OrderDate, endDateStr) <= 0);
+            }
 
             var orders = await query.ToListAsync();
 

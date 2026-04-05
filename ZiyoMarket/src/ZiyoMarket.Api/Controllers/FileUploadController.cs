@@ -28,7 +28,7 @@ public class FileUploadController : BaseController
     [HttpPost("product")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<FileUploadResultDto>> UploadProductImage([FromForm] IFormFile file)
+    public async Task<ActionResult<FileUploadResultDto>> UploadProductImage(IFormFile file)
     {
         try
         {
@@ -49,7 +49,7 @@ public class FileUploadController : BaseController
     [HttpPost("product/multiple")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<List<FileUploadResultDto>>> UploadProductImages([FromForm] List<IFormFile> files)
+    public async Task<ActionResult<List<FileUploadResultDto>>> UploadProductImages(List<IFormFile> files)
     {
         try
         {
@@ -70,7 +70,7 @@ public class FileUploadController : BaseController
     [HttpPost("category")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<FileUploadResultDto>> UploadCategoryImage([FromForm] IFormFile file)
+    public async Task<ActionResult<FileUploadResultDto>> UploadCategoryImage(IFormFile file)
     {
         try
         {
@@ -91,7 +91,7 @@ public class FileUploadController : BaseController
     [HttpPost("banner")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<FileUploadResultDto>> UploadBannerImage([FromForm] IFormFile file)
+    public async Task<ActionResult<FileUploadResultDto>> UploadBannerImage(IFormFile file)
     {
         try
         {
@@ -112,7 +112,7 @@ public class FileUploadController : BaseController
     [HttpPost("banner/multiple")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<List<FileUploadResultDto>>> UploadBannerImages([FromForm] List<IFormFile> files)
+    public async Task<ActionResult<List<FileUploadResultDto>>> UploadBannerImages(List<IFormFile> files)
     {
         try
         {
@@ -133,7 +133,7 @@ public class FileUploadController : BaseController
     [HttpPost("user/avatar")]
     [Authorize]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<FileUploadResultDto>> UploadUserAvatar([FromForm] IFormFile file)
+    public async Task<ActionResult<FileUploadResultDto>> UploadUserAvatar(IFormFile file)
     {
         try
         {

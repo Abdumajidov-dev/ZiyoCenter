@@ -24,11 +24,15 @@ public class ReportService : IReportService
      {
             var stats = new DashboardStatsDto();
 
+            // Convert DateTime to string format for comparison (OrderDate is stored as string)
+            var startDateStr = startDate.ToString("yyyy-MM-dd");
+            var endDateStr = endDate.ToString("yyyy-MM-dd 23:59:59");
+
             var orders = await _unitOfWork.Orders
- .SelectAll(o => o.DeletedAt == null &&
-        DateTime.Parse(o.OrderDate) >= startDate &&
-           DateTime.Parse(o.OrderDate) <= endDate)
-    .ToListAsync();
+                .SelectAll(o => o.DeletedAt == null &&
+                    string.Compare(o.OrderDate, startDateStr) >= 0 &&
+                    string.Compare(o.OrderDate, endDateStr) <= 0)
+                .ToListAsync();
 
     stats.TotalOrders = orders.Count;
        stats.TotalRevenue = orders.Sum(o => o.FinalPrice);
@@ -40,8 +44,9 @@ public class ReportService : IReportService
           stats.CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled);
 
             stats.CustomerCount = await _unitOfWork.Customers.CountAsync(c => c.DeletedAt == null);
- stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
-            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.IsLowStock);
+            stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
+            // Use direct comparison instead of computed property IsLowStock for EF Core translation
+            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.StockQuantity <= p.MinStockLevel);
 
             return Result<DashboardStatsDto>.Success(stats);
         }
@@ -56,11 +61,15 @@ public class ReportService : IReportService
     {
         try
         {
-       var orders = await _unitOfWork.Orders
-      .SelectAll(o => o.DeletedAt == null &&
-       DateTime.Parse(o.OrderDate) >= startDate &&
-      DateTime.Parse(o.OrderDate) <= endDate)
-  .ToListAsync();
+            // Convert DateTime to string format for comparison
+            var startDateStr = startDate.ToString("yyyy-MM-dd");
+            var endDateStr = endDate.ToString("yyyy-MM-dd 23:59:59");
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                    string.Compare(o.OrderDate, startDateStr) >= 0 &&
+                    string.Compare(o.OrderDate, endDateStr) <= 0)
+                .ToListAsync();
 
          var chartData = new List<ChartDataDto>();
 
@@ -115,11 +124,15 @@ public class ReportService : IReportService
     {
         try
       {
-        var orders = await _unitOfWork.Orders
-           .SelectAll(o => o.DeletedAt == null &&
-               DateTime.Parse(o.OrderDate) >= startDate &&
-            DateTime.Parse(o.OrderDate) <= endDate)
-         .ToListAsync();
+            // Convert DateTime to string format for comparison
+            var startDateStr = startDate.ToString("yyyy-MM-dd");
+            var endDateStr = endDate.ToString("yyyy-MM-dd 23:59:59");
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                    string.Compare(o.OrderDate, startDateStr) >= 0 &&
+                    string.Compare(o.OrderDate, endDateStr) <= 0)
+                .ToListAsync();
 
             var report = new SalesReportDto
       {

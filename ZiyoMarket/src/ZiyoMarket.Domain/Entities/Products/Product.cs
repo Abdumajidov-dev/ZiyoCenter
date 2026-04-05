@@ -1,4 +1,4 @@
-﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Domain.Common;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Enums;
 
@@ -36,8 +36,20 @@ public class Product : BaseAuditableEntity
     /// </summary>
     public int StockQuantity { get; set; } = 0;
 
-    // CategoryId has been removed in favor of Many-to-Many relationship through ProductCategories
-    // public int CategoryId { get; set; }
+    /// <summary>
+    /// SKU (Stock Keeping Unit)
+    /// </summary>
+    public string? SKU { get; set; }
+
+    /// <summary>
+    /// Shtrix-kod
+    /// </summary>
+    public string? Barcode { get; set; }
+
+    /// <summary>
+    /// Legacy Category ID (for database compatibility)
+    /// </summary>
+    public int CategoryId { get; set; }
 
 
     /// <summary>
@@ -298,6 +310,12 @@ public class Product : BaseAuditableEntity
 
         if (!string.IsNullOrEmpty(Manufacturer))
             searchParts.Add(Manufacturer);
+
+        if (!string.IsNullOrEmpty(SKU))
+            searchParts.Add(SKU);
+
+        if (!string.IsNullOrEmpty(Barcode))
+            searchParts.Add(Barcode);
 
         return string.Join(" ", searchParts).ToLowerInvariant();
     }

@@ -11,6 +11,9 @@ using ZiyoMarket.Api.Middleware;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Service.DTOs.Auth;
 
+// ✅ Npgsql 6.0+ DateTime UTC Fix
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ✅ Railway PORT configuration
@@ -97,12 +100,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    // ✅ Support for file uploads in Swagger
-    options.MapType<IFormFile>(() => new OpenApiSchema
-    {
-        Type = "string",
-        Format = "binary"
-    });
 });
 
 // ✅ PostgreSQL ulanish (Railway environment variable support)
@@ -297,6 +294,24 @@ try
                 );
                 CREATE INDEX IF NOT EXISTS ""IX_ProductCategories_ProductId"" ON ""ProductCategories"" (""ProductId"");
                 CREATE INDEX IF NOT EXISTS ""IX_ProductCategories_CategoryId"" ON ""ProductCategories"" (""CategoryId"");
+
+                -- ✅ Ensure Products table has SKU and Barcode columns
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'Products' AND column_name = 'SKU'
+                    ) THEN
+                        ALTER TABLE ""Products"" ADD COLUMN ""SKU"" text;
+                    END IF;
+
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'Products' AND column_name = 'Barcode'
+                    ) THEN
+                        ALTER TABLE ""Products"" ADD COLUMN ""Barcode"" text;
+                    END IF;
+                END $$;
             ");
             Log.Information("✅ Core tables ensured (Users, Roles, ProductCategories, etc.)");
         }

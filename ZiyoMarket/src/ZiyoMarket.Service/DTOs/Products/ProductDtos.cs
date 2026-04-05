@@ -24,6 +24,9 @@ public class ProductListDto
     public bool IsAvailable { get; set; }
     public bool IsLowStock { get; set; }
     public int LikesCount { get; set; }
+    public string? Manufacturer { get; set; }
+    public string? SKU { get; set; }
+    public string? Barcode { get; set; }
     public bool IsLikedByCurrentUser { get; set; }
 }
 
@@ -50,6 +53,7 @@ public class ProductDetailDto
     public string? Dimensions { get; set; }
     public string? SKU { get; set; }
     public string? Barcode { get; set; }
+    public string? Manufacturer { get; set; }
     public bool IsAvailable { get; set; }
     public bool IsLowStock { get; set; }
     public bool IsOutOfStock { get; set; }
@@ -103,6 +107,16 @@ public class CreateProductDto
     
     [MaxLength(100)]
     public string? Barcode { get; set; }
+
+    [MaxLength(300)]
+    public string? Manufacturer { get; set; }
+
+    public int SortOrder { get; set; } = 0;
+
+    /// <summary>
+    /// Legacy Category ID (for database compatibility)
+    /// </summary>
+    public int? CategoryId { get; set; }
 }
 
 /// <summary>
@@ -113,7 +127,9 @@ public class UpdateProductDto
     [Required]
     [Range(1, int.MaxValue)]
     public int Id { get; set; }
-    
+    [Required(ErrorMessage = "QR code is required")]
+    [MaxLength(100)]
+    public string QRCode { get; set; } = string.Empty;
     [Required(ErrorMessage = "Product name is required")]
     [MaxLength(300)]
     public string Name { get; set; } = string.Empty;
@@ -140,6 +156,22 @@ public class UpdateProductDto
     
     [MaxLength(100)]
     public string? Dimensions { get; set; }
+
+    [MaxLength(100)]
+    public string? SKU { get; set; }
+
+    [MaxLength(100)]
+    public string? Barcode { get; set; }
+
+    [MaxLength(300)]
+    public string? Manufacturer { get; set; }
+
+    public int SortOrder { get; set; }
+
+    /// <summary>
+    /// Legacy Category ID (for database compatibility)
+    /// </summary>
+    public int? CategoryId { get; set; }
 }
 
 /// <summary>
