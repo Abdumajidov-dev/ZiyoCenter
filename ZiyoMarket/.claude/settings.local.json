@@ -72,7 +72,8 @@
       "Bash(python:*)",
       "Bash(tasklist:*)",
       "Bash(start http://localhost:8081/swagger)",
-      "Bash(start dotnet run --project ZiyoNurAdminPanel.UiZiyoNurAdminPanel.Ui.csproj)"
+      "Bash(start dotnet run --project ZiyoNurAdminPanel.UiZiyoNurAdminPanel.Ui.csproj)",
+      "Bash(\"src/ZiyoMarket.Api/wwwroot/updates/README.txt\")"
     ],
     "deny": [],
     "ask": []

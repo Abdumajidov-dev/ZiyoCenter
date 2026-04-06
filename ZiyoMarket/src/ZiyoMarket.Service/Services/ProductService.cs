@@ -18,17 +18,44 @@ namespace ZiyoMarket.Service.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
-        public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
+        // Cache keys constants
+        private const string PRODUCT_DETAIL_KEY = "product:detail:{0}";
+        private const string PRODUCT_LIST_KEY = "product:list:{0}";
+        private const string FEATURED_PRODUCTS_KEY = "product:featured";
+        private const string NEW_ARRIVALS_KEY = "product:new-arrivals";
+        private const string LOW_STOCK_KEY = "product:low-stock";
+        private const string PRODUCT_PREFIX = "product:";
+
+        public ProductService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         // ===================== CRUD =====================
 
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
         {
+            // Cache key (without customer ID for shared cache)
+            var cacheKey = string.Format(PRODUCT_DETAIL_KEY, productId);
+
+            // Try get from cache first
+            var cachedProduct = await _cacheService.GetAsync<ProductDetailDto>(cacheKey);
+            if (cachedProduct != null)
+            {
+                // Update customer-specific fields if needed
+                if (customerId.HasValue)
+                {
+                    cachedProduct.IsLikedByCurrentUser = await _unitOfWork.ProductLikes
+                        .AnyAsync(l => l.ProductId == productId && l.CustomerId == customerId.Value && l.DeletedAt == null);
+                }
+                return Result<ProductDetailDto>.Success(cachedProduct);
+            }
+
+            // Cache miss - load from database
             var product = await _unitOfWork.Products.Table
                 .Include(p => p.Images)
                 .Include(p => p.ProductCategories)
@@ -40,7 +67,7 @@ namespace ZiyoMarket.Service.Services
                 return Result<ProductDetailDto>.NotFound($"Product with ID {productId} not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
-            
+
             // Map categories manually since AutoMapper might need complex configuration for M2M
             dto.CategoryIds = product.ProductCategories.Select(pc => pc.CategoryId).ToList();
             dto.CategoryNames = product.ProductCategories.Select(pc => pc.Category.Name).ToList();
@@ -51,6 +78,9 @@ namespace ZiyoMarket.Service.Services
             if (customerId.HasValue)
                 dto.IsLikedByCurrentUser = await _unitOfWork.ProductLikes
                     .AnyAsync(l => l.ProductId == productId && l.CustomerId == customerId.Value && l.DeletedAt == null);
+
+            // Cache for 5 minutes
+            await _cacheService.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(5));
 
             return Result<ProductDetailDto>.Success(dto);
         }
@@ -204,6 +234,9 @@ namespace ZiyoMarket.Service.Services
             await _unitOfWork.Products.InsertAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
+            // Invalidate product list caches
+            await _cacheService.RemoveByPrefixAsync(PRODUCT_PREFIX);
+
             return await GetProductByIdAsync(product.Id);
         }
 
@@ -262,6 +295,10 @@ namespace ZiyoMarket.Service.Services
             await _unitOfWork.Products.Update(product, product.Id);
             await _unitOfWork.SaveChangesAsync();
 
+            // Invalidate caches for this product and related lists
+            await _cacheService.RemoveAsync(string.Format(PRODUCT_DETAIL_KEY, product.Id));
+            await _cacheService.RemoveByPrefixAsync(PRODUCT_PREFIX);
+
             return await GetProductByIdAsync(product.Id);
         }
 
@@ -276,6 +313,10 @@ namespace ZiyoMarket.Service.Services
 
             await _unitOfWork.Products.Update(product, product.Id);
             await _unitOfWork.SaveChangesAsync();
+
+            // Invalidate all product caches
+            await _cacheService.RemoveAsync(string.Format(PRODUCT_DETAIL_KEY, productId));
+            await _cacheService.RemoveByPrefixAsync(PRODUCT_PREFIX);
 
             return Result.Success("Product deleted successfully");
         }

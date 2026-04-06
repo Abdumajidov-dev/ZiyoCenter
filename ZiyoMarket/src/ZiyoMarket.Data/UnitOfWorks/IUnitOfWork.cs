@@ -57,6 +57,10 @@ public interface IUnitOfWork : IDisposable
     IRepository<SystemSetting> SystemSettings { get; }
     IRepository<DailySalesSummary> DailySalesSummaries { get; }
 
+    // Auto-Update System Repositories
+    IRepository<AppVersion> AppVersions { get; }
+    IRepository<UpdateDownload> UpdateDownloads { get; }
+
     // Transaction Management
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

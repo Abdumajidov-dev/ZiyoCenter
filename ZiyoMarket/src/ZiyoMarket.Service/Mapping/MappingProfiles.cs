@@ -17,7 +17,9 @@ using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.DTOs.Sms;
 using ZiyoMarket.Service.DTOs.Payment;
+using ZiyoMarket.Service.DTOs.Update;
 using ZiyoMarket.Domain.Enums;
+using ZiyoMarket.Domain.Entities.Systems;
 
 namespace ZiyoMarket.Service.Mapping;
 
@@ -345,5 +347,22 @@ public class PaymentProfile : Profile
             .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethod.BankTransfer))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatus.UnderReview))
             .ForMember(dest => dest.ProofImageUrl, opt => opt.Ignore());
+    }
+}
+
+
+/// <summary>
+/// Auto-Update mapping profile
+/// </summary>
+public class UpdateProfile : Profile
+{
+    public UpdateProfile()
+    {
+        CreateMap<AppVersion, AppVersionDto>()
+            .ForMember(dest => dest.DownloadCount, opt => opt.Ignore()); // Set manually
+
+        CreateMap<AppVersion, UpdateInfoDto>()
+            .ForMember(dest => dest.UpdateAvailable, opt => opt.Ignore())
+            .ForMember(dest => dest.CurrentVersion, opt => opt.Ignore());
     }
 }

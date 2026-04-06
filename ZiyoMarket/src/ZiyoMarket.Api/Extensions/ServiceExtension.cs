@@ -55,10 +55,13 @@ public static class ServiceExtension
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IDeviceTokenService, DeviceTokenService>();
 
+        // ========== Caching Service ==========
+        services.AddMemoryCache(); // Required for verification code caching and performance optimization
+        services.AddScoped<ICacheService, CacheService>();
+
         // ========== SMS Services (Eskiz.uz) ==========
         services.AddHttpClient<EskizSmsClient>(); // Register HttpClient for Eskiz.uz API
         services.AddScoped<ISmsService, SmsService>();
-        services.AddMemoryCache(); // Required for verification code caching
 
         // ========== Support & Chat ==========
         services.AddScoped<ISupportService, SupportService>();
@@ -75,6 +78,9 @@ public static class ServiceExtension
         services.AddScoped<IPermissionManagementService, PermissionManagementService>();
 
         services.AddScoped<ISupportService, SupportService>();
+
+        // ========== Auto-Update System ==========
+        services.AddScoped<IUpdateService, UpdateService>();
 
         return services;
     }

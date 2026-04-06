@@ -64,6 +64,10 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<SystemSetting> SystemSettings { get; private set; }
     public IRepository<DailySalesSummary> DailySalesSummaries { get; private set; }
 
+    // Auto-Update System Repositories
+    public IRepository<AppVersion> AppVersions { get; private set; }
+    public IRepository<UpdateDownload> UpdateDownloads { get; private set; }
+
     public UnitOfWork(ZiyoMarketDbContext context)
     {
         _context = context;
@@ -101,6 +105,10 @@ public class UnitOfWork : IUnitOfWork
         Contents = new Repository<Content>(_context);
         SystemSettings = new Repository<SystemSetting>(_context);
         DailySalesSummaries = new Repository<DailySalesSummary>(_context);
+
+        // Auto-update system
+        AppVersions = new Repository<AppVersion>(_context);
+        UpdateDownloads = new Repository<UpdateDownload>(_context);
     }
 
     public async Task<int> SaveChangesAsync()

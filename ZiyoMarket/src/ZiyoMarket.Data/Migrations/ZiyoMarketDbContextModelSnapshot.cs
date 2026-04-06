@@ -1333,6 +1333,74 @@ namespace ZiyoMarket.Data.Migrations
                     b.ToTable("SupportMessages");
                 });
 
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Systems.AppVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DeletedAt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DownloadUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsCritical")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("MinVersionRequired")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ReleaseDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ReleaseNotes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Sha256Hash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UpdatedAt")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("VersionNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppVersions");
+                });
+
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Systems.DailySalesSummary", b =>
                 {
                     b.Property<int>("Id")
@@ -1503,6 +1571,58 @@ namespace ZiyoMarket.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SystemSettings");
+                });
+
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Systems.UpdateDownload", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClientVersion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CountryCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeletedAt")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DownloadDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("DownloadDuration")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsSuccessful")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Platform")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UpdatedAt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text");
+
+                    b.Property<int>("VersionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VersionId");
+
+                    b.ToTable("UpdateDownloads");
                 });
 
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Users.Admin", b =>
@@ -1934,7 +2054,7 @@ namespace ZiyoMarket.Data.Migrations
                     b.Property<DateTime>("AssignedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp without time zone")
-                        .HasDefaultValue(new DateTime(2026, 3, 24, 4, 38, 33, 589, DateTimeKind.Utc).AddTicks(530));
+                        .HasDefaultValue(new DateTime(2026, 4, 6, 5, 11, 20, 246, DateTimeKind.Utc).AddTicks(8088));
 
                     b.Property<int?>("AssignedBy")
                         .HasColumnType("integer");
@@ -2230,6 +2350,17 @@ namespace ZiyoMarket.Data.Migrations
                     b.Navigation("ReplyToMessage");
                 });
 
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Systems.UpdateDownload", b =>
+                {
+                    b.HasOne("ZiyoMarket.Domain.Entities.Systems.AppVersion", "Version")
+                        .WithMany("Downloads")
+                        .HasForeignKey("VersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Version");
+                });
+
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Users.RolePermission", b =>
                 {
                     b.HasOne("ZiyoMarket.Domain.Entities.Users.Permission", "Permission")
@@ -2319,6 +2450,11 @@ namespace ZiyoMarket.Data.Migrations
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Support.SupportMessage", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Systems.AppVersion", b =>
+                {
+                    b.Navigation("Downloads");
                 });
 
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Users.Admin", b =>

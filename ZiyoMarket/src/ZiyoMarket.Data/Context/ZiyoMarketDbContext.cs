@@ -54,6 +54,10 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<SystemSetting> SystemSettings { get; set; }
     public DbSet<DailySalesSummary> DailySalesSummaries { get; set; }
 
+    // Auto-update system
+    public DbSet<AppVersion> AppVersions { get; set; }
+    public DbSet<UpdateDownload> UpdateDownloads { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);

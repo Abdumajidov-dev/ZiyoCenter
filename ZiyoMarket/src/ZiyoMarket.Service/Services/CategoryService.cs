@@ -16,11 +16,19 @@ public class CategoryService : ICategoryService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ICacheService _cacheService;
 
-    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper)
+    // Cache keys
+    private const string ALL_CATEGORIES_KEY = "categories:all";
+    private const string CATEGORY_DETAIL_KEY = "category:detail:{0}";
+    private const string CATEGORY_TREE_KEY = "categories:tree";
+    private const string CATEGORY_PREFIX = "category";
+
+    public CategoryService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
     {
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
     }
 
     #region CRUD Operations
@@ -53,6 +61,12 @@ public class CategoryService : ICategoryService
     {
         try
         {
+            // Try get from cache
+            var cachedCategories = await _cacheService.GetAsync<List<CategoryDto>>(ALL_CATEGORIES_KEY);
+            if (cachedCategories != null)
+                return Result<List<CategoryDto>>.Success(cachedCategories);
+
+            // Cache miss - load from database
             var categories = await _unitOfWork.Categories.Table
                 .Include(c => c.Parent)
                 .Include(c => c.ProductCategories)
@@ -69,8 +83,10 @@ public class CategoryService : ICategoryService
             for (int i = 0; i < categories.Count; i++)
             {
                 dtos[i].ProductCount = categories[i].ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
-
             }
+
+            // Cache for 1 hour (categories don't change often)
+            await _cacheService.SetAsync(ALL_CATEGORIES_KEY, dtos, TimeSpan.FromHours(1));
 
             return Result<List<CategoryDto>>.Success(dtos);
         }
@@ -183,6 +199,9 @@ public class CategoryService : ICategoryService
             await _unitOfWork.Categories.InsertAsync(category);
             await _unitOfWork.SaveChangesAsync();
 
+            // Invalidate all category caches
+            await _cacheService.RemoveByPrefixAsync(CATEGORY_PREFIX);
+
             var dto = _mapper.Map<CategoryDto>(category);
             dto.ProductCount = 0;
 
@@ -241,6 +260,10 @@ public class CategoryService : ICategoryService
             await _unitOfWork.Categories.Update(category,category.Id);
             await _unitOfWork.SaveChangesAsync();
 
+            // Invalidate all category caches
+            await _cacheService.RemoveAsync(string.Format(CATEGORY_DETAIL_KEY, id));
+            await _cacheService.RemoveByPrefixAsync(CATEGORY_PREFIX);
+
             var dto = _mapper.Map<CategoryDto>(category);
             dto.ProductCount = category.ProductCategories?.Count(pc => pc.Product != null && pc.Product.IsActive && pc.Product.DeletedAt == null) ?? 0;
 
@@ -278,6 +301,10 @@ public class CategoryService : ICategoryService
             //category.MarkAsDeleted();
             _unitOfWork.Categories.Delete(category);
             await _unitOfWork.SaveChangesAsync();
+
+            // Invalidate all category caches
+            await _cacheService.RemoveAsync(string.Format(CATEGORY_DETAIL_KEY, categoryId));
+            await _cacheService.RemoveByPrefixAsync(CATEGORY_PREFIX);
 
             return Result.Success("Kategoriya muvaffaqiyatli o'chirildi");
         }
