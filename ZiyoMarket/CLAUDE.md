@@ -128,6 +128,13 @@ dotnet run
 dotnet clean
 ```
 
+### Auto-Migration on Startup
+
+`Program.cs` automatically runs `db.Database.MigrateAsync()` and `DataSeeder.SeedAsync()` on every startup. This means:
+- Pending migrations are applied automatically when the API starts
+- Default seed data (SystemSettings, Categories, DiscountReasons, DeliveryPartners, Admin user) is inserted if not present
+- Manual `dotnet ef database update` is only needed if you want to apply migrations without starting the API
+
 ### Database Migrations
 
 **IMPORTANT:** Always run EF Core commands from `src/ZiyoMarket.Api` directory, specifying the Data project:
@@ -180,15 +187,15 @@ For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md) f
 Located in `src/ZiyoMarket.Api/appsettings.json`:
 
 - **Local Development:** `Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;`
-- **Production:** Currently configured for Render.com PostgreSQL (update for your environment)
+- **Production:** Currently configured for Railway.app PostgreSQL
 
-**IMPORTANT:** Never commit sensitive connection strings or secrets. Use environment variables or user secrets for local development:
+**WARNING:** The current `appsettings.json` has a Railway.app production connection string committed to source control. For local development, override it using user secrets so you don't accidentally use the production database:
 
 ```bash
-# Use user secrets (recommended for local dev)
 dotnet user-secrets init --project src/ZiyoMarket.Api
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "YOUR_CONNECTION_STRING" --project src/ZiyoMarket.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;" --project src/ZiyoMarket.Api
 ```
+
 
 ### JWT Settings
 
@@ -259,10 +266,29 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 
 ### Authentication Flow
 
-1. **Register:** POST `/api/auth/register` with user details
-2. **Login:** POST `/api/auth/login` returns `AccessToken` and `RefreshToken`
-3. **Authorized Requests:** Include `Authorization: Bearer {AccessToken}` header
-4. **Refresh Token:** POST `/api/auth/refresh-token` when access token expires
+**Public endpoints (no auth required):**
+- `POST /api/auth/login` — login with `{phone_or_email, password, user_type}`; returns `AccessToken`. Admin uses username or email; Customer/Seller use phone or email.
+- `POST /api/auth/register` — universal registration with `{first_name, last_name, phone, password, user_type, username?, address?}`. Customer: open. Admin/Seller: requires Admin JWT.
+- `POST /api/auth/password-reset/request` — request password reset code
+- `POST /api/auth/password-reset/confirm` — confirm reset with code and new password
+- `POST /api/auth/verification/send` — send verification code to phone/email
+- `POST /api/auth/verification/verify` — verify the code
+- `POST /api/auth/validate-token` — validate a JWT token
+- `POST /api/auth/dev/create-admin` — create admin (Development environment only)
+
+**Protected endpoints (Bearer token required):**
+- `GET /api/auth/profile` — get current user profile
+- `POST /api/auth/logout` — logout current user
+- `POST /api/auth/change-password` — change password
+- `POST /api/auth/change-role` — move user between roles (Admin only)
+
+**Authorized Requests:** Include `Authorization: Bearer {AccessToken}` header
+
+**Note:** There is no refresh token endpoint. Access tokens are valid for 24 hours (1440 minutes). Users must re-login when the token expires.
+
+**Logout** is stateless — JWT is removed client-side. Server-side logout only logs the action.
+
+**Password reset / verification codes** are currently printed to the console (`Console.WriteLine`) only — SMS/Email integration is not yet implemented (marked as TODO in `AuthService`). When integrating a real SMS provider, update `RequestPasswordResetAsync` and `SendVerificationCodeAsync` in `AuthService.cs`.
 
 ### Seed Data for Testing
 
@@ -281,11 +307,12 @@ The `SeedDataController` provides endpoints to populate test data for developmen
 ## API Structure
 
 **Base URL:** `https://localhost:5001/api/`
-**Swagger:** `https://localhost:5001/swagger`
+**Swagger:** `https://localhost:5001/swagger` (always enabled, not just in Development)
+**Health Check:** `GET /health` — checks database connectivity
 
 ### Main Controllers
 
-- **AuthController** - Registration, login, token refresh
+- **AuthController** - Registration, login, logout, password reset, verification, role management
 - **ProductController** - Product CRUD, search, QR code lookup, stock management
 - **CategoryController** - Hierarchical category management
 - **CartController** - Shopping cart operations
@@ -296,21 +323,55 @@ The `SeedDataController` provides endpoints to populate test data for developmen
 - **NotificationController** - Push notifications
 - **ContentController** - CMS (blogs, news, FAQs)
 - **ReportController** - Sales reports, analytics
-- **CustomerController** - Customer management (Admin)
 - **SellerController** - Seller management (Admin)
 - **AdminController** - Admin user management
 
 ## Common Patterns in This Codebase
 
+### Custom Exceptions
+
+Use typed exceptions from `Service/Exceptions/` instead of throwing generic exceptions:
+
+- `NotFoundException(entityName, id)` — 404
+- `BusinessRuleException(message)` — 400
+- `DuplicateException(entityName, field, value)` — 409
+- `UnauthorizedException(message)` — 401
+- `ForbiddenException(message)` — 403
+- `InsufficientStockException(productName, requested, available)` — 400
+- `InsufficientCashbackException(requested, available)` — 400
+- `OrderCannotBeCancelledException(orderId, currentStatus)` — 400
+- `ExternalServiceException(serviceName, message)` — 503
+
+### Result Pattern
+
+`Service/Results/` provides `Result` and `Result<T>` for operations that need to signal success/failure without throwing, and `PaginationResponse<T>` for paginated data:
+
+```csharp
+// In service
+return Result<ProductDto>.Success(dto);
+return Result<ProductDto>.NotFound("Product not found");
+
+// PaginationResponse
+return new PaginationResponse<ProductDto>(items, totalCount, page, pageSize);
+```
+
+### FluentValidation
+
+Validators live in `Service/Validators/`. Existing validators: `LoginRequestValidator`, `RegisterCustomerValidator`, `CreateProductValidator`, `UpdateProductValidator`, `CreateOrderValidator`, `UpdateStockValidator`, `ApplyDiscountValidator`. Add new validators in the same file following the same pattern.
+
 ### Error Handling
 
-Services return DTOs or throw exceptions. Controllers should wrap service calls in try-catch:
+Services return DTOs or throw custom exceptions. Controllers should wrap service calls in try-catch:
 
 ```csharp
 try
 {
     var result = await _service.GetById(id);
     return Ok(result);
+}
+catch (NotFoundException ex)
+{
+    return NotFound(ex.Message);
 }
 catch (Exception ex)
 {
@@ -376,9 +437,15 @@ All repositories inherit from `Repository<T>` and provide these methods:
 
 ## Testing
 
-**Default Admin Credentials:**
-- Email: `admin@ziyomarket.uz`
-- Password: `Admin@123`
+**Default SuperAdmin Credentials** (seeded automatically on first startup):
+- Username: `Bek`
+- Phone: `+998882641919`
+- Password: `2641919`
+- UserType: `Admin`
+
+Login via: `POST /api/auth/login` with `{"phone_or_email": "Bek", "password": "2641919", "user_type": "Admin"}`
+
+**Note:** Admin login uses username or email (not phone). Customer/Seller login uses phone or email.
 
 **Swagger UI:** Use "Authorize" button with format: `Bearer {your-token-here}`
 

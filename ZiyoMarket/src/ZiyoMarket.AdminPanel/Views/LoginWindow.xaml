@@ -41,8 +41,8 @@
                       Margin="0,0,0,30"
                       HorizontalAlignment="Center"/>
 
-            <!-- Phone TextBox -->
-            <TextBox materialDesign:HintAssist.Hint="Telefon raqam"
+            <!-- Phone/Username TextBox -->
+            <TextBox materialDesign:HintAssist.Hint="Telefon raqam yoki username"
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                      Margin="0,0,0,20"
                      FontSize="14"
@@ -91,7 +91,7 @@
                 </Button.Content>
             </Button>
 
-            <TextBlock Text="Test: admin / admin123"
+            <TextBlock Text="Test: +998882641919 yoki Bek / 2641919"
                       FontSize="11"
                       Foreground="Gray"
                       Margin="0,20,0,0"

@@ -7,6 +7,7 @@ using System.Text;
 using ZiyoMarket.Api.Extensions;
 using ZiyoMarket.Api.Helpers;
 using ZiyoMarket.Data.Context;
+using ZiyoMarket.Data.Seed;
 using ZiyoMarket.Service.DTOs.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,6 +109,21 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddCustomServices();
 
 var app = builder.Build();
+
+// Seed default data (SuperAdmin, categories, system settings, etc.)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ZiyoMarketDbContext>();
+    try
+    {
+        await db.Database.MigrateAsync();
+        await DataSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Database seed/migration xatosi: {Message}", ex.Message);
+    }
+}
 
 // ✅ Swagger’ni har doim yoqamiz (nafaqat Development’da)
 app.UseSwagger();

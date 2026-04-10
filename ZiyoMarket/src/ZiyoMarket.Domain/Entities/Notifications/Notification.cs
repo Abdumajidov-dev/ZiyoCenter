@@ -55,11 +55,6 @@ public class Notification : BaseEntity
     public bool IsPushSent { get; set; } = false;
 
     /// <summary>
-    /// Email yuborilganmi
-    /// </summary>
-    public bool IsEmailSent { get; set; } = false;
-
-    /// <summary>
     /// SMS yuborilganmi
     /// </summary>
     public bool IsSmsSent { get; set; } = false;
@@ -68,11 +63,6 @@ public class Notification : BaseEntity
     /// Push notification yuborilgan sana
     /// </summary>
     public DateTime? PushSentAt { get; set; }
-
-    /// <summary>
-    /// Email yuborilgan sana
-    /// </summary>
-    public DateTime? EmailSentAt { get; set; }
 
     /// <summary>
     /// SMS yuborilgan sana
@@ -266,16 +256,6 @@ public class Notification : BaseEntity
     }
 
     /// <summary>
-    /// Email yuborildi deb belgilash
-    /// </summary>
-    public void MarkEmailSent()
-    {
-        IsEmailSent = true;
-        EmailSentAt = DateTime.UtcNow;
-        MarkAsUpdated();
-    }
-
-    /// <summary>
     /// SMS yuborildi deb belgilash
     /// </summary>
     public void MarkSmsSent()
@@ -369,7 +349,7 @@ public class Notification : BaseEntity
     public bool IsFullySent()
     {
         // Kamida bitta kanal orqali yuborilgan bo'lishi kerak
-        return IsPushSent || IsEmailSent || IsSmsSent;
+        return IsPushSent || IsSmsSent;
     }
 
     /// <summary>
@@ -380,7 +360,6 @@ public class Notification : BaseEntity
         var channels = new List<string>();
 
         if (IsPushSent) channels.Add("Push");
-        if (IsEmailSent) channels.Add("Email");
         if (IsSmsSent) channels.Add("SMS");
 
         return channels;

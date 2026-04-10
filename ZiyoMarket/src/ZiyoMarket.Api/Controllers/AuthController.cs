@@ -42,7 +42,7 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Universal register for all user types (Customer, Seller, Admin)
+    /// Register for Customer and Seller only. Admin registration requires SuperAdmin authorization.
     /// </summary>
     /// <param name="request">User registration data with UserType</param>
     /// <returns>Access token and user profile</returns>
@@ -50,6 +50,17 @@ public class AuthController : BaseController
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterUserDto request)
     {
+        // Admin yoki Seller yaratish uchun SuperAdmin bo'lishi shart
+        if (request.UserType == "Admin" || request.UserType == "Seller")
+        {
+            if (!IsAuthenticated())
+                return StatusCode(401, new { message = "Admin/Seller registration requires authentication" });
+
+            var callerType = GetCurrentUserType();
+            if (callerType != "Admin")
+                return StatusCode(403, new { message = "Only admins can register Admin or Seller accounts" });
+        }
+
         var result = await _authService.RegisterUserAsync(request);
 
         if (!result.IsSuccess)
@@ -92,14 +103,18 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Create development admin (No authentication required - For development/testing only)
+    /// Create development admin (Development environment only - disabled in production)
     /// </summary>
     /// <param name="request">Admin registration data</param>
     /// <returns>Access token and admin profile</returns>
     [HttpPost("dev/create-admin")]
     [AllowAnonymous]
-    public async Task<IActionResult> CreateDevAdmin([FromBody] CreateDevAdminDto request)
+    public async Task<IActionResult> CreateDevAdmin([FromBody] CreateDevAdminDto request,
+        [FromServices] IWebHostEnvironment env)
     {
+        if (!env.IsDevelopment())
+            return StatusCode(404, new { message = "Not found" });
+
         var result = await _authService.CreateDevAdminAsync(request);
 
         if (!result.IsSuccess)
@@ -163,7 +178,7 @@ public class AuthController : BaseController
     /// <summary>
     /// Request password reset (send verification code)
     /// </summary>
-    /// <param name="request">Phone/Email and UserType</param>
+    /// <param name="request">Phone and UserType</param>
     /// <returns>Success message</returns>
     [HttpPost("password-reset/request")]
     [AllowAnonymous]
@@ -203,15 +218,15 @@ public class AuthController : BaseController
     }
 
     /// <summary>
-    /// Send verification code to phone/email
+    /// Send verification code to phone
     /// </summary>
-    /// <param name="request">Phone or email</param>
+    /// <param name="request">Phone number</param>
     /// <returns>Success message</returns>
     [HttpPost("verification/send")]
     [AllowAnonymous]
     public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeRequestDto request)
     {
-        var result = await _authService.SendVerificationCodeAsync(request.PhoneOrEmail);
+        var result = await _authService.SendVerificationCodeAsync(request.Phone);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
@@ -226,13 +241,13 @@ public class AuthController : BaseController
     /// <summary>
     /// Verify code
     /// </summary>
-    /// <param name="request">Phone/Email and verification code</param>
+    /// <param name="request">Phone and verification code</param>
     /// <returns>Success message</returns>
     [HttpPost("verification/verify")]
     [AllowAnonymous]
     public async Task<IActionResult> VerifyCode([FromBody] VerifyCodeDto request)
     {
-        var result = await _authService.VerifyCodeAsync(request.PhoneOrEmail, request.Code);
+        var result = await _authService.VerifyCodeAsync(request.Phone, request.Code);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });

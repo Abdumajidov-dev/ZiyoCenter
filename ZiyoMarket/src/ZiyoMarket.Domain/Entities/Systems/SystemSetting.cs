@@ -424,7 +424,6 @@ public class SystemSetting : BaseAuditableEntity
             new() { SettingKey = "Store.Name", SettingValue = "Ziyo Kutubxonasi", Description = "Do'kon nomi", Category = "Store" },
             new() { SettingKey = "Store.Address", SettingValue = "Toshkent sh., Chilonzor tumani", Description = "Do'kon manzili", Category = "Store" },
             new() { SettingKey = "Store.Phone", SettingValue = "+998712345678", Description = "Do'kon telefoni", Category = "Store" },
-            new() { SettingKey = "Store.Email", SettingValue = "info@ziyomarket.uz", Description = "Do'kon email", Category = "Store" },
 
             // Cashback settings
             new() { SettingKey = "Cashback.Percentage", SettingValue = "2.0", Description = "Cashback foizi", DataType = "Number", MinValue = 0, MaxValue = 10, Category = "Cashback" },
@@ -437,7 +436,6 @@ public class SystemSetting : BaseAuditableEntity
 
             // Notification settings
             new() { SettingKey = "Notification.PushEnabled", SettingValue = "true", Description = "Push notification yoqilganmi", DataType = "Boolean", Category = "Notification" },
-            new() { SettingKey = "Notification.EmailEnabled", SettingValue = "true", Description = "Email notification yoqilganmi", DataType = "Boolean", Category = "Notification" },
             new() { SettingKey = "Notification.SmsEnabled", SettingValue = "false", Description = "SMS notification yoqilganmi", DataType = "Boolean", Category = "Notification" },
 
             // Payment settings

@@ -70,17 +70,21 @@ public static class DataSeeder
             await context.DeliveryPartners.AddRangeAsync(partners);
         }
 
-        // Admin User
+        // SuperAdmin — only seeded if no admins exist at all
         if (!context.Admins.Any())
         {
-            var admin = new Admin
+            var superAdmin = new Admin
             {
-                Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), // Change this!
-                Role = "SuperAdmin"
+                FirstName = "Avazbek",
+                LastName = "Abdumajidov",
+                Username = "Bek",
+                Phone = "+998882641919",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("2641919"),
+                Role = "SuperAdmin",
+                IsActive = true
             };
 
-            await context.Admins.AddAsync(admin);
+            await context.Admins.AddAsync(superAdmin);
         }
 
         await context.SaveChangesAsync();

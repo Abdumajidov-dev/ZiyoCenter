@@ -33,11 +33,6 @@ public class SellerListDto
     public string Phone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email
-    /// </summary>
-    public string? Email { get; set; }
-
-    /// <summary>
     /// Rol (Seller yoki Manager)
     /// </summary>
     public string Role { get; set; } = "Seller";
@@ -101,11 +96,6 @@ public class SellerDetailDto
     /// Telefon raqami
     /// </summary>
     public string Phone { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Email
-    /// </summary>
-    public string? Email { get; set; }
 
     /// <summary>
     /// Rol (Seller yoki Manager)
@@ -184,11 +174,6 @@ public class CreateSellerDto
     public string Phone { get; set; } = string.Empty;
 
     /// <summary>
-    /// Email (ixtiyoriy)
-    /// </summary>
-    public string? Email { get; set; }
-
-    /// <summary>
     /// Parol (majburiy)
     /// Minimum 6 ta belgi
     /// </summary>
@@ -224,11 +209,6 @@ public class UpdateSellerDto
     /// Telefon raqami (majburiy, unique)
     /// </summary>
     public string Phone { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Email (ixtiyoriy)
-    /// </summary>
-    public string? Email { get; set; }
 
     /// <summary>
     /// Rol (majburiy)

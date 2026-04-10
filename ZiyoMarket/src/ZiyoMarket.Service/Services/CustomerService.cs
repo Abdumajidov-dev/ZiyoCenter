@@ -102,7 +102,6 @@ public class CustomerService : ICustomerService
             if (existingPhone)
                 return Result<CustomerDetailDto>.Conflict("Phone number already exists");
 
-            // Check if email exists
             var customer = _mapper.Map<Customer>(request);
             customer.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password ?? "123456");
             customer.CashbackBalance = 0;

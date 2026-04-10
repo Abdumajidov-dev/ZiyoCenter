@@ -133,7 +133,6 @@ public class DeliveryService : IDeliveryService
             {
                 Name = request.Name,
                 Phone = request.Phone,
-                Email = request.Email,
                 DeliveryType = request.DeliveryType,
                 PricePerDelivery = request.PricePerDelivery,
                 EstimatedDays = request.EstimatedDays,
@@ -197,7 +196,6 @@ public class DeliveryService : IDeliveryService
             // Update properties
             partner.ChangeName(request.Name);
             partner.UpdatePhone(request.Phone);
-            partner.UpdateEmail(request.Email);
             partner.DeliveryType = request.DeliveryType;
             partner.UpdatePrice(request.PricePerDelivery);
             partner.UpdateEstimatedDays(request.EstimatedDays);
@@ -680,7 +678,6 @@ public class DeliveryService : IDeliveryService
                     PricePerDelivery = data.Price,
                     EstimatedDays = data.Days,
                     Phone = $"+998901234{(i + 1):D3}",
-                    Email = $"{data.Name.ToLower().Replace(" ", "")}@example.com",
                     IsActive = true,
                     DisplayOrder = i + 1,
                     ServiceAreas = "Toshkent, Samarqand, Buxoro",

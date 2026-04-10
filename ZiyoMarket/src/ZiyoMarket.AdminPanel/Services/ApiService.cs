@@ -33,12 +33,12 @@ public class ApiService : IApiService
 
             if (response.IsSuccessStatusCode)
             {
-                var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                var wrapper = await response.Content.ReadFromJsonAsync<LoginApiResponse>();
                 return new ApiResponse<LoginResponse>
                 {
                     Success = true,
-                    Message = "Login successful",
-                    Data = loginResponse
+                    Message = wrapper?.Message ?? "Login successful",
+                    Data = wrapper?.Data
                 };
             }
 
@@ -46,7 +46,7 @@ public class ApiService : IApiService
             return new ApiResponse<LoginResponse>
             {
                 Success = false,
-                Message = $"Login failed: {errorContent}"
+                Message = $"Login failed: {response.StatusCode}"
             };
         }
         catch (Exception ex)

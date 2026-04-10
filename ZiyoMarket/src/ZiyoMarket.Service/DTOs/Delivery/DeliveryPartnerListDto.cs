@@ -35,8 +35,6 @@ public class DeliveryPartnerCreateDto
     public decimal? MaxWeight { get; set; }
     [Phone]
     public string? Phone { get; set; }
-    [EmailAddress]
-    public string? Email { get; set; }
     public string? ServiceAreas { get; set; }
     public bool IsActive { get; set; } = true;
     public int DisplayOrder { get; set; } = 0;
@@ -54,7 +52,6 @@ public class DeliveryPartnerDetailDto
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Phone { get; set; }
-    public string? Email { get; set; }
     public string DeliveryType { get; set; } = string.Empty;
     public decimal PricePerDelivery { get; set; }
     public int EstimatedDays { get; set; }
@@ -158,9 +155,6 @@ public class SaveDeliveryPartnerDto
 
     [Phone]
     public string? Phone { get; set; }
-
-    [EmailAddress]
-    public string? Email { get; set; }
 
     public string? ServiceAreas { get; set; }
 

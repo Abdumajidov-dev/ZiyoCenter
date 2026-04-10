@@ -207,7 +207,6 @@ public class NotificationProfile : Profile
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.NotificationType.ToString()))
             .ForMember(dest => dest.UserType, opt => opt.MapFrom(src => src.UserType.ToString()))
             .ForMember(dest => dest.PushSent, opt => opt.MapFrom(src => src.IsPushSent))
-            .ForMember(dest => dest.EmailSent, opt => opt.MapFrom(src => src.IsEmailSent))
             .ForMember(dest => dest.SMSSent, opt => opt.MapFrom(src => src.IsSmsSent))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)));
     }

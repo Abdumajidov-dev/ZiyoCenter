@@ -100,15 +100,6 @@ public class SellerService : ISellerService
             if (existingPhone)
                 return Result<SellerDetailDto>.Conflict("Phone number already exists");
 
-            if (!string.IsNullOrWhiteSpace(request.Email))
-            {
-                var existingEmail = await _unitOfWork.Sellers
-                    .AnyAsync(s => s.Phone == request.Phone && !s.IsDeleted);
-
-                if (existingEmail)
-                    return Result<SellerDetailDto>.Conflict("Email already exists");
-            }
-
             var seller = _mapper.Map<Seller>(request);
             seller.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
             seller.Role = request.Role ?? "Seller";

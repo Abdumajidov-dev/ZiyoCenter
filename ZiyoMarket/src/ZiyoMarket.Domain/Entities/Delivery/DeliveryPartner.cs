@@ -19,11 +19,6 @@ public class DeliveryPartner : BaseAuditableEntity
     public string? Phone { get; set; }
 
     /// <summary>
-    /// Email manzili
-    /// </summary>
-    public string? Email { get; set; }
-
-    /// <summary>
     /// Yetkazib berish turi
     /// </summary>
     public string DeliveryType { get; set; } = string.Empty; // "Postal", "Courier", "Express"
@@ -152,15 +147,6 @@ public class DeliveryPartner : BaseAuditableEntity
     public void UpdatePhone(string? phone)
     {
         Phone = phone?.Trim();
-        MarkAsUpdated();
-    }
-
-    /// <summary>
-    /// Email manzilini yangilash
-    /// </summary>
-    public void UpdateEmail(string? email)
-    {
-        Email = email?.Trim();
         MarkAsUpdated();
     }
 

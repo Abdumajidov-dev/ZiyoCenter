@@ -68,14 +68,14 @@ public interface IAuthService
     Task<Result> ResetPasswordAsync(ResetPasswordConfirmDto request);
     
     /// <summary>
-    /// Send verification code to phone or email
+    /// Send verification code to phone
     /// </summary>
-    Task<Result> SendVerificationCodeAsync(string phoneOrEmail);
-    
+    Task<Result> SendVerificationCodeAsync(string phone);
+
     /// <summary>
     /// Verify code
     /// </summary>
-    Task<Result> VerifyCodeAsync(string phoneOrEmail, string code);
+    Task<Result> VerifyCodeAsync(string phone, string code);
     
     /// <summary>
     /// Generate JWT access token

@@ -23,7 +23,6 @@ public class NotificationDto
     public bool IsRead { get; set; }
     public DateTime? ReadAt { get; set; }
     public bool PushSent { get; set; }
-    public bool EmailSent { get; set; }
     public bool SMSSent { get; set; }
     public DateTime CreatedAt { get; set; }
 }
@@ -60,7 +59,6 @@ public class CreateNotificationDto
     public string? ImageUrl { get; set; }
 
     public bool SendPush { get; set; } = true;
-    public bool SendEmail { get; set; } = false;
     public bool SendSMS { get; set; } = false;
 }
 

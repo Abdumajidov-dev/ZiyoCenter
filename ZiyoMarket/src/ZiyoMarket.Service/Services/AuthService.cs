@@ -43,9 +43,9 @@ public class AuthService : IAuthService
             // Find user based on UserType
             object? user = request.UserType switch
             {
-                "Customer" => await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Seller" => await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Admin" => await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail),
+                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
+                "Seller" => await FindSellerByPhoneAsync(request.Phone),
+                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
                 _ => null
             };
 
@@ -403,9 +403,9 @@ public class AuthService : IAuthService
             // Find user
             object? user = request.UserType switch
             {
-                "Customer" => await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Seller" => await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail),
-                "Admin" => await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail),
+                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
+                "Seller" => await FindSellerByPhoneAsync(request.Phone),
+                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
                 _ => null
             };
 
@@ -418,9 +418,9 @@ public class AuthService : IAuthService
             // Generate and send verification code
             var code = GenerateVerificationCode();
 
-            // TODO: Send code via SMS/Email
+            // TODO: Send code via SMS
             // For now, just log it (in production, integrate with SMS/Email service)
-            Console.WriteLine($"Verification code for {request.PhoneOrEmail}: {code}");
+            Console.WriteLine($"Verification code for {request.Phone}: {code}");
 
             // In production: Store code in cache/database with expiration
 
@@ -444,7 +444,7 @@ public class AuthService : IAuthService
             string userType = "";
 
             // Try to find in all user types
-            var customer = await FindCustomerByPhoneOrEmailAsync(request.PhoneOrEmail);
+            var customer = await FindCustomerByPhoneAsync(request.Phone);
             if (customer != null)
             {
                 user = customer;
@@ -452,7 +452,7 @@ public class AuthService : IAuthService
             }
             else
             {
-                var seller = await FindSellerByPhoneOrEmailAsync(request.PhoneOrEmail);
+                var seller = await FindSellerByPhoneAsync(request.Phone);
                 if (seller != null)
                 {
                     user = seller;
@@ -460,7 +460,7 @@ public class AuthService : IAuthService
                 }
                 else
                 {
-                    var admin = await FindAdminByUsernameOrEmailAsync(request.PhoneOrEmail);
+                    var admin = await FindAdminByUsernameOrPhoneAsync(request.Phone);
                     if (admin != null)
                     {
                         user = admin;
@@ -502,14 +502,14 @@ public class AuthService : IAuthService
 
     // ============ Verification ============
 
-    public async Task<Result> SendVerificationCodeAsync(string phoneOrEmail)
+    public async Task<Result> SendVerificationCodeAsync(string phone)
     {
         try
         {
             var code = GenerateVerificationCode();
 
-            // TODO: Send via SMS/Email
-            Console.WriteLine($"Verification code for {phoneOrEmail}: {code}");
+            // TODO: Send via SMS
+            Console.WriteLine($"Verification code for {phone}: {code}");
 
             await Task.CompletedTask;
             return Result.Success("Verification code sent");
@@ -520,7 +520,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<Result> VerifyCodeAsync(string phoneOrEmail, string code)
+    public async Task<Result> VerifyCodeAsync(string phone, string code)
     {
         try
         {
@@ -545,10 +545,22 @@ public class AuthService : IAuthService
     {
         try
         {
+            // Determine the role claim value:
+            // For Admin users, fetch their sub-role (Admin/SuperAdmin) from DB.
+            // For Customer/Seller, the userType itself is used as the role.
+            string roleClaimValue = userType;
+            if (userType == "Admin")
+            {
+                var adminEntity = await _unitOfWork.Admins.GetByIdAsync(userId);
+                if (adminEntity != null)
+                    roleClaimValue = adminEntity.Role; // "Admin" or "SuperAdmin"
+            }
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim("UserType", userType),
+                new Claim(ClaimTypes.Role, roleClaimValue), // used by [Authorize(Roles = "...")]
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -608,22 +620,22 @@ public class AuthService : IAuthService
 
     // ============ Helper Methods ============
 
-    private async Task<Customer?> FindCustomerByPhoneOrEmailAsync(string phoneOrEmail)
+    private async Task<Customer?> FindCustomerByPhoneAsync(string phone)
     {
         return await _unitOfWork.Customers
-            .SelectAsync(c => c.Phone == phoneOrEmail);
+            .SelectAsync(c => c.Phone == phone);
     }
 
-    private async Task<Seller?> FindSellerByPhoneOrEmailAsync(string phoneOrEmail)
+    private async Task<Seller?> FindSellerByPhoneAsync(string phone)
     {
         return await _unitOfWork.Sellers
-            .SelectAsync(s => s.Phone == phoneOrEmail);
+            .SelectAsync(s => s.Phone == phone);
     }
 
-    private async Task<Admin?> FindAdminByUsernameOrEmailAsync(string usernameOrEmail)
+    private async Task<Admin?> FindAdminByUsernameOrPhoneAsync(string usernameOrPhone)
     {
         return await _unitOfWork.Admins
-            .SelectAsync(a => (a.Username == usernameOrEmail || a.Phone == usernameOrEmail));
+            .SelectAsync(a => (a.Username == usernameOrPhone || a.Phone == usernameOrPhone));
     }
 
     private string GetPasswordHash(object user, string userType)

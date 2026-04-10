@@ -38,18 +38,6 @@ public static class StringExtensions
     }
 
     /// <summary>
-    /// Validate email format
-    /// </summary>
-    public static bool IsValidEmail(this string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return false;
-
-        var pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
-        return Regex.IsMatch(email, pattern);
-    }
-
-    /// <summary>
     /// Truncate string to max length
     /// </summary>
     public static string Truncate(this string value, int maxLength)
