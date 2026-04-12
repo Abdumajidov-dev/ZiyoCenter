@@ -86,8 +86,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // ✅ PostgreSQL ulanish
+var connectionString = GetConnectionString(builder.Configuration);
 builder.Services.AddDbContext<ZiyoMarketDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // ✅ JWT sozlamalari
 builder.Services.Configure<JwtSettings>(
@@ -185,3 +186,37 @@ app.MapGet("/health", async (ZiyoMarketDbContext dbContext) =>
 });
 
 app.Run();
+
+// ✅ Connection stringni Railway uchun avtomatlashtirish
+static string GetConnectionString(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        // Railway o'zgaruvchilari
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                       ?? Environment.GetEnvironmentVariable("DATABASE_PUBLIC_URL");
+                       
+        if (!string.IsNullOrEmpty(databaseUrl))
+        {
+            try
+            {
+                var uri = new Uri(databaseUrl);
+                var userInfo = uri.UserInfo.Split(':');
+                var host = uri.Host;
+                var port = uri.Port;
+                var database = uri.AbsolutePath.TrimStart('/');
+
+                return $"Host={host};Port={port};Database={database};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true;";
+            }
+            catch
+            {
+                return connectionString;
+            }
+        }
+    }
+    
+    return connectionString;
+}
+
