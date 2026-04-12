@@ -4,6 +4,8 @@ using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Service.DTOs.Reports;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
+using ZiyoMarket.Service.Helpers;
+using ZiyoMarket.Domain.Enums;
 
 namespace ZiyoMarket.Service.Services;
 
@@ -631,9 +633,11 @@ public class ReportService : IReportService
             {
                 StartDate = startDate,
                 EndDate = endDate,
-                TotalCashbackEarned = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Earned).Sum(t => t.Amount),
-                TotalCashbackUsed = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Used).Sum(t => t.Amount),
-                TransactionCount = transactions.Count
+                TotalCashbackEarned = transactions.Where(t => t.Type == CashbackTransactionType.Earned).Sum(t => t.Amount),
+                TotalCashbackUsed = transactions.Where(t => t.Type == CashbackTransactionType.Used).Sum(t => t.Amount),
+                TransactionsEarned = transactions.Count(t => t.Type == CashbackTransactionType.Earned),
+                TransactionsUsed = transactions.Count(t => t.Type == CashbackTransactionType.Used),
+                TransactionsExpired = transactions.Count(t => t.Type == CashbackTransactionType.Expired)
             };
 
             return Result<CashbackAnalyticsDto>.Success(analytics);
