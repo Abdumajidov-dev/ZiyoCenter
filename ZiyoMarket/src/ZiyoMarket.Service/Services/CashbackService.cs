@@ -29,7 +29,7 @@ public class CashbackService : ICashbackService
                 return Result<CashbackSummaryDto>.NotFound("Customer not found");
 
             var transactions = await _unitOfWork.CashbackTransactions
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+                .SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null)
                 .ToListAsync();
 
             // Muddati tugayotgan cashback ni olish
@@ -64,7 +64,7 @@ public class CashbackService : ICashbackService
         try
         {
             var transactions = await _unitOfWork.CashbackTransactions
-                .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Order" })
+                .SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null, new[] { "Order" })
                 .OrderByDescending(c => c.EarnedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -133,7 +133,7 @@ public class CashbackService : ICashbackService
                 .SelectAll(c => c.CustomerId == customerId &&
                                c.RemainingAmount > 0 &&
                                DateTime.Parse(c.ExpiresAt) > DateTime.UtcNow &&
-                               !c.IsDeleted)
+                               c.DeletedAt == null)
                 .OrderBy(c => c.ExpiresAt) // FIFO
                 .ToListAsync();
 
@@ -192,7 +192,7 @@ public class CashbackService : ICashbackService
             var expiredTransactions = await _unitOfWork.CashbackTransactions
                 .SelectAll(c => c.RemainingAmount > 0 &&
                                DateTime.Parse(c.ExpiresAt) <= DateTime.UtcNow &&
-                               !c.IsDeleted)
+                               c.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var transaction in expiredTransactions)
@@ -260,7 +260,7 @@ public class CashbackService : ICashbackService
                                c.RemainingAmount > 0 &&
                                DateTime.Parse(c.ExpiresAt) <= expiryDate &&
                                DateTime.Parse(c.ExpiresAt) > DateTime.UtcNow && // ✅ Hali muddati o'tmagan
-                               !c.IsDeleted)
+                               c.DeletedAt == null)
                 .SumAsync(c => c.RemainingAmount);
 
             return Result<decimal>.Success(expiringAmount);
@@ -276,7 +276,7 @@ public class CashbackService : ICashbackService
     {
         try
         {
-            var query = _unitOfWork.CashbackTransactions.Table.Where(c => !c.IsDeleted);
+            var query = _unitOfWork.CashbackTransactions.Table.Where(c => c.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(c => DateTime.Parse(c.EarnedAt) >= startDate.Value);

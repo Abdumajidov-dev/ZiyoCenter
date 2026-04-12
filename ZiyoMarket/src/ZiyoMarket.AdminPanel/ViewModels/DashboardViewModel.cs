@@ -35,17 +35,17 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void NavigateToUsers()
+    private void NavigateToCustomers()
     {
-        CurrentPage = "Foydalanuvchilar";
-        // TODO: Navigate to users view
+        CurrentPage = "Mijozlar";
+        CurrentView = App.GetService<Views.CustomersView>();
     }
 
     [RelayCommand]
-    private void NavigateToSupport()
+    private void NavigateToNotifications()
     {
-        CurrentPage = "Qo'llab-quvvatlash";
-        // TODO: Navigate to support view
+        CurrentPage = "Bildirishnomalar";
+        CurrentView = App.GetService<Views.NotificationsView>();
     }
 
     [RelayCommand]

@@ -1,16 +1,21 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 using ZiyoMarket.Api.Extensions;
 using ZiyoMarket.Api.Helpers;
+using ZiyoMarket.Api.Settings;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Data.Seed;
 using ZiyoMarket.Service.DTOs.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Fix PostgreSQL DateTime Local vs UTC mapping errors
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -23,12 +28,16 @@ builder.Host.UseSerilog();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Use snake_case naming policy for JSON serialization
+        // Barcha request/response lar snake_case bo'lishi uchun
         options.JsonSerializerOptions.PropertyNamingPolicy = new SnakeCaseNamingPolicy();
-        // Optional: Configure other JSON options
-        options.JsonSerializerOptions.WriteIndented = false; // Compact JSON
+        // Deserialization da ham naming policy qo'llaniladi; snake_case bo'lmagan nomlar qabul qilinmaydi
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = false;
+        options.JsonSerializerOptions.WriteIndented = false;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+
+// To'lov sozlamalari
+builder.Services.Configure<PaymentSettings>(builder.Configuration.GetSection("PaymentSettings"));
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -46,6 +55,9 @@ builder.Services.AddSwaggerGen(options =>
             Email = "support@ziyomarket.uz"
         }
     });
+
+    // Swagger schema da property nomlarini snake_case qilish
+    options.SchemaFilter<SnakeCaseSchemaFilter>();
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -93,16 +105,18 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+    options.MapInboundClaims = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = true,
+        ValidateLifetime = jwtSettings.ValidateLifetime,
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
         ValidAudience = jwtSettings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = ClaimTypes.Role
     };
 });
 
@@ -134,6 +148,7 @@ app.UseSwaggerUI(options =>
 });
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // wwwroot/uploads/ uchun
 app.UseAuthentication();
 app.UseAuthorization();
 

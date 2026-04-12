@@ -89,7 +89,7 @@ public class NotificationService : INotificationService
             var query = _unitOfWork.Notifications.Table
                 .Where(n => n.UserId == userId &&
                     n.UserType.ToString() == userType &&
-                    !n.IsDeleted)
+                    n.DeletedAt == null)
                 .OrderByDescending(n => n.CreatedAt)
                 .Skip(skip)
                 .Take(pageSize);
@@ -113,7 +113,7 @@ public class NotificationService : INotificationService
                 .CountAsync(n => n.UserId == userId &&
                 n.UserType.ToString() == userType &&
                 !n.IsRead &&
-                !n.IsDeleted);
+                n.DeletedAt == null);
 
             return Result<int>.Success(count);
         }
@@ -157,7 +157,7 @@ public class NotificationService : INotificationService
                 .Where(n => n.UserId == userId &&
                     n.UserType.ToString() == userType &&
                     !n.IsRead &&
-                    !n.IsDeleted)
+                    n.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var notification in notifications)
@@ -302,7 +302,7 @@ public class NotificationService : INotificationService
 
             // Get all active admins
             var admins = await _unitOfWork.Admins
-                .SelectAll(a => a.IsActive && !a.IsDeleted)
+                .SelectAll(a => a.IsActive && a.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var admin in admins)
@@ -332,11 +332,62 @@ public class NotificationService : INotificationService
         }
     }
 
+    public async Task NotifyAdminsAboutPaymentReceiptAsync(int orderId, int customerId, decimal finalPrice)
+    {
+        try
+        {
+            var order = await _unitOfWork.Orders
+                .SelectAsync(o => o.Id == orderId, new[] { "Customer" });
+
+            var customerName = order?.Customer != null
+                ? $"{order.Customer.FirstName} {order.Customer.LastName}"
+                : $"Mijoz #{customerId}";
+
+            var orderNumber = order?.OrderNumber ?? $"#{orderId}";
+
+            var admins = await _unitOfWork.Admins
+                .SelectAll(a => a.IsActive && a.DeletedAt == null)
+                .ToListAsync();
+
+            foreach (var admin in admins)
+            {
+                var notification = new Notification
+                {
+                    Title = "To'lov cheki keldi",
+                    Message = $"{customerName} {orderNumber} buyurtmasi uchun to'lov chekini yubordi. Summa: {finalPrice:N0} so'm",
+                    NotificationType = NotificationType.PaymentReceiptUploaded,
+                    Priority = "High",
+                    UserId = admin.Id,
+                    UserType = UserType.Admin,
+                    ActionUrl = $"/admin/orders/{orderId}",
+                    ActionText = "Tasdiqlash",
+                    Data = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        order_id = orderId,
+                        customer_id = customerId,
+                        customer_name = customerName,
+                        order_number = orderNumber,
+                        final_price = finalPrice,
+                        receipt_url = order?.PaymentReceiptUrl
+                    })
+                };
+
+                await _unitOfWork.Notifications.InsertAsync(notification);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+        catch
+        {
+            // Notification xatoligi asosiy jarayonni to'xtatmasligi kerak
+        }
+    }
+
     public async Task<Result> DeleteAllNotificationsAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null)
     {
         try
         {
-            var query = _unitOfWork.Notifications.Table.Where(n => !n.IsDeleted);
+            var query = _unitOfWork.Notifications.Table.Where(n => n.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(n => DateTime.Parse(n.CreatedAt) >= startDate.Value);
@@ -415,7 +466,7 @@ public class NotificationService : INotificationService
         try
         {
             var admins = await _unitOfWork.Admins
-                .SelectAll(a => a.IsActive && !a.IsDeleted)
+                .SelectAll(a => a.IsActive && a.DeletedAt == null)
                 .ToListAsync();
 
             foreach (var admin in admins)

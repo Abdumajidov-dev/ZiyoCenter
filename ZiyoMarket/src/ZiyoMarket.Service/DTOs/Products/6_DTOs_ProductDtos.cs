@@ -24,6 +24,8 @@ public class ProductListDto
     public bool IsLowStock { get; set; }
     public int LikesCount { get; set; }
     public bool IsLikedByCurrentUser { get; set; }
+    public string? Manufacturer { get; set; }
+    public string? Barcode { get; set; }
 }
 
 /// <summary>
@@ -48,6 +50,14 @@ public class ProductDetailDto
     public string? Dimensions { get; set; }
     public string? SKU { get; set; }
     public string? Barcode { get; set; }
+    public string? Manufacturer { get; set; }
+    public string? Publisher { get; set; }
+    public int? PublishYear { get; set; }
+    public int? PageCount { get; set; }
+    public string? Language { get; set; }
+    public string? Edition { get; set; }
+    public List<string> ImageUrls { get; set; } = new();
+    public List<int> CategoryIds { get; set; } = new();
     public bool IsAvailable { get; set; }
     public bool IsLowStock { get; set; }
     public bool IsOutOfStock { get; set; }
@@ -101,6 +111,16 @@ public class CreateProductDto
     
     [MaxLength(100)]
     public string? Barcode { get; set; }
+
+    public string? Manufacturer { get; set; }
+    public string? Publisher { get; set; }
+    public int? PublishYear { get; set; }
+    public int? PageCount { get; set; }
+    public string? Language { get; set; }
+    public string? Edition { get; set; }
+    
+    public List<string> ImageUrls { get; set; } = new();
+    public List<int> CategoryIds { get; set; } = new();
 }
 
 /// <summary>
@@ -138,6 +158,20 @@ public class UpdateProductDto
     
     [MaxLength(100)]
     public string? Dimensions { get; set; }
+
+    [MaxLength(100)]
+    public string? Barcode { get; set; }
+    
+    public string? SKU { get; set; }
+    public string? Manufacturer { get; set; }
+    public string? Publisher { get; set; }
+    public int? PublishYear { get; set; }
+    public int? PageCount { get; set; }
+    public string? Language { get; set; }
+    public string? Edition { get; set; }
+    
+    public List<string> ImageUrls { get; set; } = new();
+    public List<int> CategoryIds { get; set; } = new();
 }
 
 /// <summary>
@@ -222,7 +256,7 @@ public class SaveCategoryDto
     public bool IsActive { get; set; } = true;
 }
 /// <summary>
-/// Kategoriya va unga tegishli mahsulotlar soni haqida ma’lumot DTO
+/// Kategoriya va unga tegishli mahsulotlar soni haqida maï¿½lumot DTO
 /// </summary>
 public class CategoryWithProductCountDto
 {
@@ -257,7 +291,7 @@ public class CategoryWithProductCountDto
     public int TotalProductCount { get; set; }
 
     /// <summary>
-    /// Kategoriya faolmi yoki yo‘qmi
+    /// Kategoriya faolmi yoki yoï¿½qmi
     /// </summary>
     public bool IsActive { get; set; }
 
@@ -267,7 +301,7 @@ public class CategoryWithProductCountDto
     public string? UpdatedAt { get; set; }
 }
 /// <summary>
-/// Kategoriyalar tartibini (sort order) o‘zgartirish uchun DTO
+/// Kategoriyalar tartibini (sort order) oï¿½zgartirish uchun DTO
 /// </summary>
 public class ReorderCategoryDto
 {
@@ -286,7 +320,7 @@ public class ReorderCategoryDto
     public int SortOrder { get; set; }
 
     /// <summary>
-    /// Ota kategoriya ID (agar mavjud bo‘lsa)
+    /// Ota kategoriya ID (agar mavjud boï¿½lsa)
     /// </summary>
     public int? ParentId { get; set; }
 }

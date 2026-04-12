@@ -15,188 +15,169 @@ public class ReportService : IReportService
     public ReportService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
-   _mapper = mapper;
+        _mapper = mapper;
     }
 
     public async Task<Result<DashboardStatsDto>> GetDashboardStatsAsync(DateTime startDate, DateTime endDate)
     {
-      try
-     {
+        try
+        {
             var stats = new DashboardStatsDto();
 
-            var orders = await _unitOfWork.Orders
- .SelectAll(o => !o.IsDeleted &&
-        DateTime.Parse(o.OrderDate) >= startDate &&
-           DateTime.Parse(o.OrderDate) <= endDate)
-    .ToListAsync();
+            // Handle default dates
+            if (startDate == DateTime.MinValue) startDate = DateTime.UtcNow.AddDays(-30);
+            if (endDate == DateTime.MinValue) endDate = DateTime.UtcNow;
 
-    stats.TotalOrders = orders.Count;
-       stats.TotalRevenue = orders.Sum(o => o.FinalPrice);
-        stats.TotalDiscounts = orders.Sum(o => o.DiscountApplied);
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                           o.OrderDate.CompareTo(startStr) >= 0 &&
+                           o.OrderDate.CompareTo(endStr) <= 0)
+                .ToListAsync();
+
+            stats.TotalOrders = orders.Count;
+            stats.TotalRevenue = orders.Sum(o => o.FinalPrice);
+            stats.TotalDiscounts = orders.Sum(o => o.DiscountApplied);
             stats.AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0;
 
- stats.OnlineOrders = orders.Count(o => o.SellerId == null);
-   stats.OfflineOrders = orders.Count(o => o.SellerId != null);
-          stats.CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled);
+            stats.OnlineOrders = orders.Count(o => o.SellerId == null);
+            stats.OfflineOrders = orders.Count(o => o.SellerId != null);
+            stats.CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled);
 
-            stats.CustomerCount = await _unitOfWork.Customers.CountAsync(c => !c.IsDeleted);
- stats.ProductCount = await _unitOfWork.Products.CountAsync(p => !p.IsDeleted);
-            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => !p.IsDeleted && p.IsLowStock);
+            stats.CustomerCount = await _unitOfWork.Customers.CountAsync(c => c.DeletedAt == null);
+            stats.TotalCustomers = stats.CustomerCount;
+            stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
+            stats.TotalProducts = stats.ProductCount;
+            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.IsLowStock);
 
             return Result<DashboardStatsDto>.Success(stats);
         }
         catch (Exception ex)
-  {
+        {
             return Result<DashboardStatsDto>.InternalError($"Error: {ex.Message}");
         }
     }
 
-  public async Task<Result<List<ChartDataDto>>> GetSalesChartDataAsync(
+    public async Task<Result<List<ChartDataDto>>> GetSalesChartDataAsync(
         DateTime startDate, DateTime endDate, string groupBy = "day")
     {
         try
         {
-       var orders = await _unitOfWork.Orders
-      .SelectAll(o => !o.IsDeleted &&
-       DateTime.Parse(o.OrderDate) >= startDate &&
-      DateTime.Parse(o.OrderDate) <= endDate)
-  .ToListAsync();
+            if (startDate == DateTime.MinValue) startDate = DateTime.UtcNow.AddDays(-30);
+            if (endDate == DateTime.MinValue) endDate = DateTime.UtcNow;
 
-         var chartData = new List<ChartDataDto>();
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                           o.OrderDate.CompareTo(startStr) >= 0 &&
+                           o.OrderDate.CompareTo(endStr) <= 0)
+                .ToListAsync();
+
+            var chartData = new List<ChartDataDto>();
 
             switch (groupBy.ToLower())
-  {
-     case "day":
-       chartData = orders
-      .GroupBy(o => DateTime.Parse(o.OrderDate).Date)
-        .Select(g => new ChartDataDto
-           {
- Label = g.Key.ToString("dd/MM/yyyy"),
-   Value = g.Sum(o => o.FinalPrice)
-           })
-   .OrderBy(x => DateTime.ParseExact(x.Label, "dd/MM/yyyy", null))
-        .ToList();
-              break;
+            {
+                case "day":
+                    chartData = orders
+                        .GroupBy(o => SafeTypeHelper.ToDateTime(o.OrderDate, DateTime.MinValue).Date)
+                        .Select(g => new ChartDataDto
+                        {
+                            Label = g.Key.ToString("dd/MM/yyyy"),
+                            Value = g.Sum(o => o.FinalPrice)
+                        })
+                        .OrderBy(x => DateTime.ParseExact(x.Label, "dd/MM/yyyy", null))
+                        .ToList();
+                    break;
 
-        case "month":
-            chartData = orders
-            .GroupBy(o => new { month = DateTime.Parse(o.OrderDate).Month, year = DateTime.Parse(o.OrderDate).Year })
-          .Select(g => new ChartDataDto
-          {
-         Label = $"{g.Key.month}/{g.Key.year}",
-   Value = g.Sum(o => o.FinalPrice)
-            })
-        .OrderBy(x => DateTime.ParseExact(x.Label, "M/yyyy", null))
-           .ToList();
-    break;
+                case "month":
+                    chartData = orders
+                        .GroupBy(o => new { month = SafeTypeHelper.ToDateTime(o.OrderDate, DateTime.MinValue).Month, year = SafeTypeHelper.ToDateTime(o.OrderDate, DateTime.MinValue).Year })
+                        .Select(g => new ChartDataDto
+                        {
+                            Label = $"{g.Key.month}/{g.Key.year}",
+                            Value = g.Sum(o => o.FinalPrice)
+                        })
+                        .OrderBy(x => DateTime.ParseExact(x.Label, "M/yyyy", null))
+                        .ToList();
+                    break;
 
-            case "year":
-       chartData = orders
-  .GroupBy(o => DateTime.Parse(o.OrderDate).Year)
-    .Select(g => new ChartDataDto
-         {
-              Label = g.Key.ToString(),
-       Value = g.Sum(o => o.FinalPrice)
-               })
- .OrderBy(x => x.Label)
-         .ToList();
-         break;
-   }
+                case "year":
+                    chartData = orders
+                        .GroupBy(o => SafeTypeHelper.ToDateTime(o.OrderDate, DateTime.MinValue).Year)
+                        .Select(g => new ChartDataDto
+                        {
+                            Label = g.Key.ToString(),
+                            Value = g.Sum(o => o.FinalPrice)
+                        })
+                        .OrderBy(x => x.Label)
+                        .ToList();
+                    break;
+            }
 
             return Result<List<ChartDataDto>>.Success(chartData);
         }
         catch (Exception ex)
-   {
-      return Result<List<ChartDataDto>>.InternalError($"Error: {ex.Message}");
+        {
+            return Result<List<ChartDataDto>>.InternalError($"Error: {ex.Message}");
         }
     }
 
     public async Task<Result<SalesReportDto>> GetSalesReportAsync(DateTime startDate, DateTime endDate)
     {
         try
-      {
-        var orders = await _unitOfWork.Orders
-           .SelectAll(o => !o.IsDeleted &&
-               DateTime.Parse(o.OrderDate) >= startDate &&
-            DateTime.Parse(o.OrderDate) <= endDate)
-         .ToListAsync();
+        {
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                           o.OrderDate.CompareTo(startStr) >= 0 &&
+                           o.OrderDate.CompareTo(endStr) <= 0)
+                .ToListAsync();
 
             var report = new SalesReportDto
-      {
-   StartDate = startDate,
-     EndDate = endDate,
-    TotalOrders = orders.Count,
-      TotalRevenue = orders.Sum(o => o.FinalPrice),
-    TotalDiscount = orders.Sum(o => o.DiscountApplied),
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TotalOrders = orders.Count,
+                TotalRevenue = orders.Sum(o => o.FinalPrice),
+                TotalDiscount = orders.Sum(o => o.DiscountApplied),
                 TotalCashbackUsed = orders.Sum(o => o.CashbackUsed),
-   AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0,
-   OnlineOrders = orders.Count(o => o.SellerId == null),
-              OfflineOrders = orders.Count(o => o.SellerId != null),
-        CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled),
-         OrdersByStatus = orders.GroupBy(o => o.Status)
-         .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
-   .ToDictionary(x => x.Status, x => x.Count)
-     };
+                AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0,
+                OnlineOrders = orders.Count(o => o.SellerId == null),
+                OfflineOrders = orders.Count(o => o.SellerId != null),
+                CancelledOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Cancelled),
+                OrdersByStatus = orders.GroupBy(o => o.Status)
+                    .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
+                    .ToDictionary(x => x.Status, x => x.Count)
+            };
 
-          return Result<SalesReportDto>.Success(report);
+            return Result<SalesReportDto>.Success(report);
         }
         catch (Exception ex)
         {
-   return Result<SalesReportDto>.InternalError($"Error: {ex.Message}");
+            return Result<SalesReportDto>.InternalError($"Error: {ex.Message}");
         }
     }
 
-//    public async Task<Result<ProductSalesReportDto>> GetProductSalesReportAsync(DateTime startDate, DateTime endDate)
-//    {
-//     try
-//        {
-//     var orderItems = await _unitOfWork.OrderItems
-//                .SelectAll(oi => !oi.IsDeleted && 
-//        !oi.Order.IsDeleted &&
-//    DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-//DateTime.Parse(oi.Order.OrderDate) <= endDate,
-//       new[] { "Order", "Product" })
-//             .ToListAsync();
-
-// var report = new ProductSalesReportDto
-//       {
-//     StartDate = startDate,
-//                EndDate = endDate,
-// TotalProductsSold = orderItems.Sum(oi => oi.Quantity),
-//     TotalRevenue = orderItems.Sum(oi => oi.UnitPrice * oi.Quantity),
-//       AverageUnitPrice = orderItems.Any() ? orderItems.Average(oi => oi.UnitPrice) : 0,
-//       ProductSales = orderItems
-//   .GroupBy(oi => new { oi.ProductId, oi.Product.Name })
-//               .Select(g => new ProductSaleDto
-//       {
-//    ProductId = g.Key.ProductId,
-//          ProductName = g.Key.Name,
-//     QuantitySold = g.Sum(oi => oi.Quantity),
-//         Revenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
-//  AveragePrice = g.Average(oi => oi.UnitPrice)
-//          })
-//     .OrderByDescending(x => x.Revenue)
-//     .ToList()
-//          };
-
-//       return Result<ProductSalesReportDto>.Success(report);
-//        }
-//        catch (Exception ex)
-//        {
-//  return Result<ProductSalesReportDto>.InternalError($"Error: {ex.Message}");
-//        }
-//    }
     public async Task<Result<ProductSalesReportDto>> GetProductSalesReportAsync(DateTime startDate, DateTime endDate)
     {
         try
         {
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
             var orderItems = await _unitOfWork.OrderItems.Table
                 .Include(oi => oi.Product)
                 .Include(oi => oi.Order)
-                .Where(oi => !oi.IsDeleted &&
-                             !oi.Order.IsDeleted &&
-                             oi.Order.OrderDate == startDate.ToLongDateString() &&
-                             oi.Order.OrderDate == endDate.ToLongDateString())
+                .Where(oi => oi.DeletedAt == null &&
+                             oi.Order.DeletedAt == null &&
+                             oi.Order.OrderDate.CompareTo(startStr) >= 0 &&
+                             oi.Order.OrderDate.CompareTo(endStr) <= 0)
                 .ToListAsync();
 
             var grouped = orderItems
@@ -210,7 +191,6 @@ public class ReportService : IReportService
                     TotalRevenue = g.Sum(x => x.UnitPrice * x.Quantity),
                     AveragePrice = g.Average(x => x.UnitPrice),
                     OrderCount = g.Select(x => x.OrderId).Distinct().Count(),
-                   // StockRemaining = g.Key.Stock,
                     IsLowStock = g.Key.IsLowStock
                 })
                 .OrderByDescending(x => x.TotalRevenue)
@@ -224,7 +204,6 @@ public class ReportService : IReportService
                 UniqueProductsSold = grouped.Count,
                 TotalRevenue = grouped.Sum(x => x.TotalRevenue),
                 AverageProductPrice = grouped.Any() ? grouped.Average(x => x.AveragePrice) : 0,
-                //AverageQuantityPerProduct = grouped.Any() ? grouped.Average(x => x.QuantitySold) : 0,
                 ProductSales = grouped,
                 TopProducts = grouped.Take(5).Select(x => new ChartDataDto
                 {
@@ -246,41 +225,42 @@ public class ReportService : IReportService
     {
         try
         {
-   var orderItems = await _unitOfWork.OrderItems
-      .SelectAll(oi => !oi.IsDeleted &&
-   !oi.Order.IsDeleted &&
-          DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-      DateTime.Parse(oi.Order.OrderDate) <= endDate,
-            new[] { "Order", "Product", "Product.Category" })
-          .ToListAsync();
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var orderItems = await _unitOfWork.OrderItems
+                .SelectAll(oi => oi.DeletedAt == null &&
+                                 oi.Order.DeletedAt == null &&
+                                 oi.Order.OrderDate.CompareTo(startStr) >= 0 &&
+                                 oi.Order.OrderDate.CompareTo(endStr) <= 0,
+                           new[] { "Order", "Product", "Product.Category" })
+                .ToListAsync();
 
             var report = new CategorySalesReportDto
             {
-          StartDate = startDate,
+                StartDate = startDate,
                 EndDate = endDate,
-        CategorySales = orderItems
-           .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
-        .Select(g => new CategorySalesDetailDto
-        {
-            CategoryId = g.Key.CategoryId,
-            CategoryName = g.Key.Name,
-            ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
-            TotalQuantitySold = g.Sum(oi => oi.Quantity),
-            TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
-            AveragePrice = g.Average(oi => oi.UnitPrice),
-            OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
-        })
+                CategorySales = orderItems
+                    .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
+                    .Select(g => new CategorySalesDetailDto
+                    {
+                        CategoryId = g.Key.CategoryId,
+                        CategoryName = g.Key.Name,
+                        ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
+                        TotalQuantitySold = g.Sum(oi => oi.Quantity),
+                        TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                        AveragePrice = g.Average(oi => oi.UnitPrice),
+                        OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
+                    })
+                    .ToList()
+            };
 
-       //.OrderByDescending(x => x.Revenue)
-          .ToList()
-  };
-
- return Result<CategorySalesReportDto>.Success(report);
+            return Result<CategorySalesReportDto>.Success(report);
         }
         catch (Exception ex)
-  {
-        return Result<CategorySalesReportDto>.InternalError($"Error: {ex.Message}");
- }
+        {
+            return Result<CategorySalesReportDto>.InternalError($"Error: {ex.Message}");
+        }
     }
 
     public async Task<Result<List<TopProductDto>>> GetTopProductsAsync(
@@ -288,62 +268,68 @@ public class ReportService : IReportService
     {
         try
         {
-        var topProducts = await _unitOfWork.OrderItems
-      .SelectAll(oi => !oi.IsDeleted &&
-     !oi.Order.IsDeleted &&
-     DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-           DateTime.Parse(oi.Order.OrderDate) <= endDate,
-     new[] { "Order", "Product" })
-              .GroupBy(oi => new { oi.ProductId, oi.Product.Name })
-     .Select(g => new TopProductDto
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var topProducts = await _unitOfWork.OrderItems
+                .SelectAll(oi => oi.DeletedAt == null &&
+                                 oi.Order.DeletedAt == null &&
+                                 oi.Order.OrderDate.CompareTo(startStr) >= 0 &&
+                                 oi.Order.OrderDate.CompareTo(endStr) <= 0,
+                           new[] { "Order", "Product" })
+                .GroupBy(oi => new { oi.ProductId, oi.Product.Name })
+                .Select(g => new TopProductDto
                 {
-        ProductId = g.Key.ProductId,
-        ProductName = g.Key.Name,
-               TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
-               QuantitySold = g.Sum(oi => oi.Quantity),
- OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
-       })
-        .OrderByDescending(x => x.TotalRevenue)
-             .Take(count)
-    .ToListAsync();
+                    ProductId = g.Key.ProductId,
+                    ProductName = g.Key.Name,
+                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    QuantitySold = g.Sum(oi => oi.Quantity),
+                    OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
+                })
+                .OrderByDescending(x => x.TotalRevenue)
+                .Take(count)
+                .ToListAsync();
 
             return Result<List<TopProductDto>>.Success(topProducts);
         }
         catch (Exception ex)
         {
- return Result<List<TopProductDto>>.InternalError($"Error: {ex.Message}");
-  }
+            return Result<List<TopProductDto>>.InternalError($"Error: {ex.Message}");
+        }
     }
 
     public async Task<Result<List<TopCategoryDto>>> GetTopCategoriesAsync(
         DateTime startDate, DateTime endDate, int count = 10)
     {
- try
+        try
         {
-  var topCategories = await _unitOfWork.OrderItems
-         .SelectAll(oi => !oi.IsDeleted &&
-          !oi.Order.IsDeleted &&
-                DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-  DateTime.Parse(oi.Order.OrderDate) <= endDate,
-        new[] { "Order", "Product", "Product.Category" })
-        .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
-  .Select(g => new TopCategoryDto
-    {
-            CategoryId = g.Key.CategoryId,
-         CategoryName = g.Key.Name,
- TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
-           ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
-        OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
-      })
-     .OrderByDescending(x => x.TotalRevenue)
-     .Take(count)
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var topCategories = await _unitOfWork.OrderItems
+                .SelectAll(oi => oi.DeletedAt == null &&
+                                 oi.Order.DeletedAt == null &&
+                                 oi.Order.OrderDate.CompareTo(startStr) >= 0 &&
+                                 oi.Order.OrderDate.CompareTo(endStr) <= 0,
+                           new[] { "Order", "Product", "Product.Category" })
+                .GroupBy(oi => new { oi.Product.CategoryId, oi.Product.Category.Name })
+                .Select(g => new TopCategoryDto
+                {
+                    CategoryId = g.Key.CategoryId,
+                    CategoryName = g.Key.Name,
+                    TotalRevenue = g.Sum(oi => oi.UnitPrice * oi.Quantity),
+                    ProductCount = g.Select(oi => oi.ProductId).Distinct().Count(),
+                    OrderCount = g.Select(oi => oi.OrderId).Distinct().Count()
+                })
+                .OrderByDescending(x => x.TotalRevenue)
+                .Take(count)
                 .ToListAsync();
 
             return Result<List<TopCategoryDto>>.Success(topCategories);
         }
         catch (Exception ex)
         {
- return Result<List<TopCategoryDto>>.InternalError($"Error: {ex.Message}");
+            return Result<List<TopCategoryDto>>.InternalError($"Error: {ex.Message}");
         }
     }
 
@@ -352,67 +338,74 @@ public class ReportService : IReportService
     {
         try
         {
-   var topCustomers = await _unitOfWork.Orders
-        .SelectAll(o => !o.IsDeleted &&
-  DateTime.Parse(o.OrderDate) >= startDate &&
-           DateTime.Parse(o.OrderDate) <= endDate,
-          new[] { "Customer" })
-            .GroupBy(o => new { o.CustomerId, o.Customer.FirstName, o.Customer.LastName })
-      .Select(g => new TopCustomerDto
-{
-   CustomerId = g.Key.CustomerId,
-     CustomerName = $"{g.Key.FirstName} {g.Key.LastName}",
-  TotalOrders = g.Count(),
-        TotalSpent = g.Sum(o => o.FinalPrice)
- })
-        .OrderByDescending(x => x.TotalSpent)
-   .Take(count)
-    .ToListAsync();
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
 
-       return Result<List<TopCustomerDto>>.Success(topCustomers);
-    }
+            var topCustomers = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                                o.OrderDate.CompareTo(startStr) >= 0 &&
+                                o.OrderDate.CompareTo(endStr) <= 0,
+                           new[] { "Customer" })
+                .GroupBy(o => new { o.CustomerId, o.Customer.FirstName, o.Customer.LastName })
+                .Select(g => new TopCustomerDto
+                {
+                    CustomerId = g.Key.CustomerId,
+                    CustomerName = $"{g.Key.FirstName} {g.Key.LastName}",
+                    TotalOrders = g.Count(),
+                    TotalSpent = g.Sum(o => o.FinalPrice)
+                })
+                .OrderByDescending(x => x.TotalSpent)
+                .Take(count)
+                .ToListAsync();
+
+            return Result<List<TopCustomerDto>>.Success(topCustomers);
+        }
         catch (Exception ex)
         {
-  return Result<List<TopCustomerDto>>.InternalError($"Error: {ex.Message}");
+            return Result<List<TopCustomerDto>>.InternalError($"Error: {ex.Message}");
         }
     }
 
     public async Task<Result<List<TopSellerDto>>> GetTopSellersAsync(
- DateTime startDate, DateTime endDate, int count = 10)
+        DateTime startDate, DateTime endDate, int count = 10)
     {
         try
         {
-            var topSellers = await _unitOfWork.Orders
-  .SelectAll(o => !o.IsDeleted &&
-         o.SellerId != null &&
-        DateTime.Parse(o.OrderDate) >= startDate &&
-     DateTime.Parse(o.OrderDate) <= endDate,
-     new[] { "Seller" })
-        .GroupBy(o => new { o.SellerId, o.Seller.FirstName, o.Seller.LastName })
-         .Select(g => new TopSellerDto
-       {
-   SellerId = g.Key.SellerId.Value,
-             SellerName = $"{g.Key.FirstName} {g.Key.LastName}",
-      TotalOrders = g.Count(),
-       TotalRevenue = g.Sum(o => o.FinalPrice)
-          })
-    .OrderByDescending(x => x.TotalRevenue)
-                .Take(count)
-             .ToListAsync();
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
 
-      return Result<List<TopSellerDto>>.Success(topSellers);
+            var topSellers = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                                o.SellerId != null &&
+                                o.OrderDate.CompareTo(startStr) >= 0 &&
+                                o.OrderDate.CompareTo(endStr) <= 0,
+                           new[] { "Seller" })
+                .GroupBy(o => new { o.SellerId, o.Seller.FirstName, o.Seller.LastName })
+                .Select(g => new TopSellerDto
+                {
+                    SellerId = g.Key.SellerId.Value,
+                    SellerName = $"{g.Key.FirstName} {g.Key.LastName}",
+                    TotalOrders = g.Count(),
+                    TotalRevenue = g.Sum(o => o.FinalPrice)
+                })
+                .OrderByDescending(x => x.TotalRevenue)
+                .Take(count)
+                .ToListAsync();
+
+            return Result<List<TopSellerDto>>.Success(topSellers);
         }
-     catch (Exception ex)
+        catch (Exception ex)
         {
             return Result<List<TopSellerDto>>.InternalError($"Error: {ex.Message}");
-     }
+        }
     }
+
     public async Task<Result<InventoryReportDto>> GetInventoryReportAsync()
     {
         try
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted, new[] { "Category" })
+                .SelectAll(p => p.DeletedAt == null, new[] { "Category" })
                 .ToListAsync();
 
             var report = new InventoryReportDto
@@ -452,7 +445,6 @@ public class ReportService : IReportService
                     {
                         ProductId = p.Id,
                         ProductName = p.Name,
-                       // StockQuantity = p.StockQuantity,
                         CategoryName = p.Category.Name
                     })
                     .ToList(),
@@ -463,9 +455,7 @@ public class ReportService : IReportService
                         ProductId = p.Id,
                         ProductName = p.Name,
                         CategoryName = p.Category.Name,
-                       // StockQuantity = p.StockQuantity,
-                        Price = p.Price,
-                       // TotalValue = p.Price * p.StockQuantity
+                        Price = p.Price
                     })
                     .ToList()
             };
@@ -478,75 +468,12 @@ public class ReportService : IReportService
         }
     }
 
-    //    public async Task<Result<InventoryReportDto>> GetInventoryReportAsync()
-    //    {
-    //     try
-    //        {
-    //     var products = await _unitOfWork.Products
-    //       .SelectAll(p => !p.IsDeleted, new[] { "Category" })
-    //   .ToListAsync();
-
-    //var report = new InventoryReportDto
-    //     {
-    //TotalProducts = products.Count,
-    //     TotalValue = products.Sum(p => p.Price * p.StockQuantity),
-    //                LowStockProducts = products.Count(p => p.IsLowStock),
-    //       OutOfStockProducts = products.Count(p => p.IsOutOfStock),
-    //      ProductsByCategory = products
-    //       .GroupBy(p => new { p.CategoryId, p.Category.Name })
-    //      .Select(g => new CategoryInventoryDto
-    //        {
-    //       CategoryId = g.Key.CategoryId,
-    //   CategoryName = g.Key.Name,
-    // ProductCount = g.Count(),
-    //    TotalValue = g.Sum(p => p.Price * p.StockQuantity),
-    //             LowStockCount = g.Count(p => p.IsLowStock)
-    //                 })
-    //         .OrderByDescending(x => x.TotalValue)
-    //  .ToList()
-    //            };
-
-    //            return Result<InventoryReportDto>.Success(report);
-    //        }
-    //        catch (Exception ex)
-    //        {
-    //       return Result<InventoryReportDto>.InternalError($"Error: {ex.Message}");
-    //        }
-    //    }
-
-    //   public async Task<Result<List<LowStockProductDto>>> GetLowStockProductsAsync(int threshold = 5)
-    //   {
-    //    try
-    //       {
-    //      var products = await _unitOfWork.Products
-    //.SelectAll(p => !p.IsDeleted && p.StockQuantity <= threshold,
-    //        new[] { "Category" })
-    //           .Select(p => new LowStockProductDto
-    //       {
-    // ProductId = p.Id,
-    //ProductName = p.Name,
-    //    CategoryName = p.Category.Name,
-    //         CurrentStock = p.StockQuantity,
-    //       MinStockLevel = p.MinStockLevel,
-    //       Price = p.Price,
-    //          IsOutOfStock = p.IsOutOfStock
-    //     })
-    //      .OrderBy(p => p.CurrentStock)
-    //        .ToListAsync();
-
-    //           return Result<List<LowStockProductDto>>.Success(products);
-    //  }
-    //       catch (Exception ex)
-    //   {
-    //         return Result<List<LowStockProductDto>>.InternalError($"Error: {ex.Message}");
-    //  }
-    //   }
     public async Task<Result<List<LowStockProductDto>>> GetLowStockProductsAsync(int threshold = 5)
     {
         try
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.StockQuantity <= threshold,
+                .SelectAll(p => p.DeletedAt == null && p.StockQuantity <= threshold,
                            new[] { "Category" })
                 .ToListAsync();
 
@@ -560,8 +487,8 @@ public class ReportService : IReportService
                     MinStockLevel = p.MinStockLevel,
                     StockDeficit = Math.Max(p.MinStockLevel - p.StockQuantity, 0),
                     Price = p.Price,
-                    LastMonthSales = 0, // Keyin alohida hisoblanadi
-                    EstimatedDaysRemaining = 0, // Keyin formula bilan
+                    LastMonthSales = 0,
+                    EstimatedDaysRemaining = 0,
                     UrgencyLevel = p.StockQuantity == 0 ? "Critical"
                                  : p.StockQuantity <= p.MinStockLevel / 2 ? "High"
                                  : "Medium"
@@ -576,29 +503,32 @@ public class ReportService : IReportService
             return Result<List<LowStockProductDto>>.InternalError($"Error: {ex.Message}");
         }
     }
+
     public async Task<Result<List<ProductMovementDto>>> GetProductMovementsAsync(
         int productId, DateTime startDate, DateTime endDate)
     {
         try
         {
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
             var orderItems = await _unitOfWork.OrderItems
-                .SelectAll(oi => !oi.IsDeleted &&
-                                 !oi.Order.IsDeleted &&
+                .SelectAll(oi => oi.DeletedAt == null &&
+                                 oi.Order.DeletedAt == null &&
                                  oi.ProductId == productId &&
-                                 DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-                                 DateTime.Parse(oi.Order.OrderDate) <= endDate,
+                                 oi.Order.OrderDate.CompareTo(startStr) >= 0 &&
+                                 oi.Order.OrderDate.CompareTo(endStr) <= 0,
                            new[] { "Order", "Product" })
                 .ToListAsync();
 
             var movements = orderItems.Select(oi => new ProductMovementDto
             {
-                Date = DateTime.Parse(oi.Order.OrderDate),
+                Date = SafeTypeHelper.ToDateTime(oi.Order.OrderDate, DateTime.MinValue),
                 MovementType = "Sale",
-                Quantity = -oi.Quantity, // Sale stockni kamaytiradi
+                Quantity = -oi.Quantity,
                 Reference = $"Order #{oi.Order.OrderNumber}",
                 Reason = "Order sale",
-                PerformedBy = oi.Order.CreatedBy,
-               // PerformedByName = oi.Order.CreatedBy ?? "Unknown"
+                PerformedBy = oi.Order.CreatedBy
             })
             .OrderByDescending(x => x.Date)
             .ToList();
@@ -611,63 +541,39 @@ public class ReportService : IReportService
         }
     }
 
-    // public async Task<Result<List<ProductMovementDto>>> GetProductMovementsAsync(
-    //     int productId, DateTime startDate, DateTime endDate)
-    // {
-    //     try
-    //     {
-    //       var orderItems = await _unitOfWork.OrderItems
-    // .SelectAll(oi => !oi.IsDeleted &&
-    // !oi.Order.IsDeleted &&
-    // oi.ProductId == productId &&
-    //     DateTime.Parse(oi.Order.OrderDate) >= startDate &&
-    //  DateTime.Parse(oi.Order.OrderDate) <= endDate,
-    //     new[] { "Order" })
-    //      .Select(oi => new ProductMovementDto
-    //   {
-    //        Date = DateTime.Parse(oi.Order.OrderDate),
-    //       Type = "Sale",
-    //Quantity = -oi.Quantity,
-    //   UnitPrice = oi.UnitPrice,
-    //   TotalAmount = oi.UnitPrice * oi.Quantity,
-    // Reference = $"Order #{oi.Order.OrderNumber}"
-    //   })
-    //    .ToListAsync();
-
-    //         // TODO: Add other movement types (restocks, returns, etc.)
-
-    //   return Result<List<ProductMovementDto>>.Success(orderItems.OrderByDescending(x => x.Date).ToList());
-    //}
-    //     catch (Exception ex)
-    //     {
-    //   return Result<List<ProductMovementDto>>.InternalError($"Error: {ex.Message}");
-    //     }
-    // }
-
     public async Task<Result<CustomerAnalyticsDto>> GetCustomerAnalyticsAsync(DateTime startDate, DateTime endDate)
     {
-   try
+        try
         {
-            var orders = await _unitOfWork.Orders
-        .SelectAll(o => !o.IsDeleted &&
- DateTime.Parse(o.OrderDate) >= startDate &&
-  DateTime.Parse(o.OrderDate) <= endDate)
-     .ToListAsync();
+            // If missing, default to last 30 days for "activity", but total is total.
+            var activityStartDate = startDate == DateTime.MinValue ? DateTime.UtcNow.AddDays(-30) : startDate;
+            var activityEndDate = endDate == DateTime.MinValue ? DateTime.UtcNow : endDate;
 
-         var customers = await _unitOfWork.Customers
-  .SelectAll(c => !c.IsDeleted)
-        .ToListAsync();
+            var startStr = activityStartDate.ToDbString();
+            var endStr = activityEndDate.ToDbString();
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                           o.OrderDate.CompareTo(startStr) >= 0 &&
+                           o.OrderDate.CompareTo(endStr) <= 0)
+                .ToListAsync();
+
+            var customers = await _unitOfWork.Customers
+                .SelectAll(c => c.DeletedAt == null)
+                .ToListAsync();
 
             var analytics = new CustomerAnalyticsDto
             {
-      TotalCustomers = customers.Count,
-        ActiveCustomers = orders.Select(o => o.CustomerId).Distinct().Count(),
-      NewCustomers = customers.Count(c => DateTime.Parse(c.CreatedAt) >= startDate),
-     //AverageOrdersPerCustomer = orders.Any() ? (double)orders.Count / orders.Select(o => o.CustomerId).Distinct().Count() : 0,
-     //AverageSpendPerCustomer = orders.Any() ? orders.Sum(o => o.FinalPrice) / orders.Select(o => o.CustomerId).Distinct().Count() : 0
+                StartDate = activityStartDate,
+                EndDate = activityEndDate,
+                TotalCustomers = customers.Count,
+                ActiveCustomers = orders.Select(o => o.CustomerId).Distinct().Count(),
+                NewCustomers = customers.Count(c => SafeTypeHelper.ToDateTime(c.CreatedAt, DateTime.MinValue) >= activityStartDate),
+                AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0,
+                InactiveCustomers = customers.Count - orders.Select(o => o.CustomerId).Distinct().Count()
             };
 
-          return Result<CustomerAnalyticsDto>.Success(analytics);
+            return Result<CustomerAnalyticsDto>.Success(analytics);
         }
         catch (Exception ex)
         {
@@ -675,60 +581,63 @@ public class ReportService : IReportService
         }
     }
 
-public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime startDate, DateTime endDate)
+    public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime startDate, DateTime endDate)
     {
         try
         {
-        var orders = await _unitOfWork.Orders
-    .SelectAll(o => !o.IsDeleted &&
-     o.SellerId != null &&
-   DateTime.Parse(o.OrderDate) >= startDate &&
-     DateTime.Parse(o.OrderDate) <= endDate)
-    .ToListAsync();
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
+
+            var orders = await _unitOfWork.Orders
+                .SelectAll(o => o.DeletedAt == null &&
+                                o.SellerId != null &&
+                                o.OrderDate.CompareTo(startStr) >= 0 &&
+                                o.OrderDate.CompareTo(endStr) <= 0)
+                .ToListAsync();
 
             var analytics = new SellerAnalyticsDto
-          {
-         TotalSellers = await _unitOfWork.Sellers.CountAsync(s => !s.IsDeleted),
-              ActiveSellers = orders.Select(o => o.SellerId).Distinct().Count(),
-     //TotalSales = orders.Sum(o => o.FinalPrice),
-     //AverageOrdersPerSeller = orders.Any() ? (double)orders.Count / orders.Select(o => o.SellerId).Distinct().Count() : 0,
-     //AverageSalesPerSeller = orders.Any() ? orders.Sum(o => o.FinalPrice) / orders.Select(o => o.SellerId).Distinct().Count() : 0
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TotalSellers = await _unitOfWork.Sellers.CountAsync(s => s.DeletedAt == null),
+                ActiveSellers = orders.Select(o => o.SellerId).Distinct().Count(),
+                TotalOrders = orders.Count,
+                TotalRevenue = orders.Sum(o => o.FinalPrice),
+                AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0
             };
 
-  return Result<SellerAnalyticsDto>.Success(analytics);
-     }
+            return Result<SellerAnalyticsDto>.Success(analytics);
+        }
         catch (Exception ex)
-     {
+        {
             return Result<SellerAnalyticsDto>.InternalError($"Error: {ex.Message}");
-     }
- }
+        }
+    }
 
     public async Task<Result<CashbackAnalyticsDto>> GetCashbackAnalyticsAsync(DateTime startDate, DateTime endDate)
     {
-   try
-    {
-            //        var transactions = await _unitOfWork.CashbackTransactions
-            //        .SelectAll(c => !c.IsDeleted &&
-            //        DateTime.Parse(c.CreatedAt) >= startDate &&
-            //        DateTime.Parse(c.CreatedAt) <= endDate)
-            //   .ToListAsync();
+        try
+        {
+            var startStr = startDate.ToDbString();
+            var endStr = endDate.ToDbString();
 
-            //            var analytics = new CashbackAnalyticsDto
-            //       {
-            //       TotalEarned = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Earned)
-            //    .Sum(t => t.Amount),
-            //      TotalUsed = Math.Abs(transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Used)
-            //.Sum(t => t.Amount)),
-            // TotalExpired = Math.Abs(transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Expired)
-            //    .Sum(t => t.Amount)),
-            //       AverageEarnedPerTransaction = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Earned)
-            //     .Average(t => t.Amount),
-            //         TransactionCount = transactions.Count
-            //            };
+            var transactions = await _unitOfWork.CashbackTransactions
+                .SelectAll(t => t.DeletedAt == null &&
+                                t.CreatedAt.CompareTo(startStr) >= 0 &&
+                                t.CreatedAt.CompareTo(endStr) <= 0)
+                .ToListAsync();
 
-            //return Result<CashbackAnalyticsDto>.Success(analytics);
-            return null;
-                  }
+            var analytics = new CashbackAnalyticsDto
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                TotalCashbackEarned = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Earned).Sum(t => t.Amount),
+                TotalCashbackUsed = transactions.Where(t => t.Type == Domain.Enums.CashbackTransactionType.Used).Sum(t => t.Amount),
+                TransactionCount = transactions.Count
+            };
+
+            return Result<CashbackAnalyticsDto>.Success(analytics);
+        }
         catch (Exception ex)
         {
             return Result<CashbackAnalyticsDto>.InternalError($"Error: {ex.Message}");
@@ -740,7 +649,7 @@ public async Task<Result<SellerAnalyticsDto>> GetSellerAnalyticsAsync(DateTime s
         try
        {
             //   var orders = await _unitOfWork.Orders
-            //      .SelectAll(o => !o.IsDeleted &&
+            //      .SelectAll(o => o.DeletedAt == null &&
             //  o.DiscountApplied > 0 &&
             //  DateTime.Parse(o.OrderDate) >= startDate &&
             //       DateTime.Parse(o.OrderDate) <= endDate)
@@ -771,7 +680,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //      var endDate = startDate.AddMonths(1).AddDays(-1);
 
             //         var orders = await _unitOfWork.Orders
-            //   .SelectAll(o => !o.IsDeleted &&
+            //   .SelectAll(o => o.DeletedAt == null &&
             //       DateTime.Parse(o.OrderDate) >= startDate &&
             //    DateTime.Parse(o.OrderDate) <= endDate)
             //     .ToListAsync();
@@ -812,7 +721,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //       var endDate = startDate.AddYears(1).AddDays(-1);
 
             //            var orders = await _unitOfWork.Orders
-            //       .SelectAll(o => !o.IsDeleted &&
+            //       .SelectAll(o => o.DeletedAt == null &&
             //   DateTime.Parse(o.OrderDate) >= startDate &&
             //       DateTime.Parse(o.OrderDate) <= endDate)
             //    .ToListAsync();
@@ -852,7 +761,7 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
             //            .Include(o => o.Customer)
             //                .Include(o => o.Seller)
             //  .Include(o => o.OrderItems)
-            //     .Where(o => !o.IsDeleted);
+            //     .Where(o => o.DeletedAt == null);
 
             //            // Apply filters
             //            if (filter.StartDate.HasValue)

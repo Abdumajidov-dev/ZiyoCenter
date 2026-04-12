@@ -102,38 +102,38 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- Users -->
+                        <!-- Customers -->
                         <Button Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="50"
                                 HorizontalContentAlignment="Left"
                                 Padding="20,0"
                                 Foreground="White"
-                                Command="{Binding NavigateToUsersCommand}">
+                                Command="{Binding NavigateToCustomersCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="AccountGroup"
                                                         Width="24"
                                                         Height="24"
                                                         VerticalAlignment="Center"/>
-                                <TextBlock Text="Foydalanuvchilar"
+                                <TextBlock Text="Mijozlar"
                                           Margin="15,0,0,0"
                                           VerticalAlignment="Center"
                                           FontSize="14"/>
                             </StackPanel>
                         </Button>
 
-                        <!-- Support -->
+                        <!-- Notifications -->
                         <Button Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="50"
                                 HorizontalContentAlignment="Left"
                                 Padding="20,0"
                                 Foreground="White"
-                                Command="{Binding NavigateToSupportCommand}">
+                                Command="{Binding NavigateToNotificationsCommand}">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Headset"
+                                <materialDesign:PackIcon Kind="Bell"
                                                         Width="24"
                                                         Height="24"
                                                         VerticalAlignment="Center"/>
-                                <TextBlock Text="Qo'llab-quvvatlash"
+                                <TextBlock Text="Bildirishnomalar"
                                           Margin="15,0,0,0"
                                           VerticalAlignment="Center"
                                           FontSize="14"/>

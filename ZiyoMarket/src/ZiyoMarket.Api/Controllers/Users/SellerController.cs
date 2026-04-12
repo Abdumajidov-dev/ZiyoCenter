@@ -35,18 +35,6 @@ public class SellerController : BaseController
         return Ok(new { success = true, data = result.Data });
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateSeller([FromBody] CreateSellerDto request)
-    {
-        var createdBy = GetCurrentUserId();
-        var result = await _sellerService.CreateSellerAsync(request, createdBy);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return StatusCode(201, new { success = true, message = result.Message, data = result.Data });
-    }
-
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSeller(int id, [FromBody] UpdateSellerDto request)
     {
@@ -94,18 +82,6 @@ public class SellerController : BaseController
     {
         var updatedBy = GetCurrentUserId();
         var result = await _sellerService.ToggleSellerStatusAsync(id, updatedBy);
-
-        if (!result.IsSuccess)
-            return StatusCode(result.StatusCode, new { message = result.Message });
-
-        return Ok(new { success = true, message = result.Message });
-    }
-
-    [HttpPut("{id}/change-role")]
-    public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
-    {
-        var updatedBy = GetCurrentUserId();
-        var result = await _sellerService.ChangeSellerRoleAsync(id, request.NewRole, updatedBy);
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });

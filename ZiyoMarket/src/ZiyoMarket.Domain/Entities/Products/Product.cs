@@ -1,4 +1,4 @@
-﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Domain.Common;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Enums;
 
@@ -75,6 +75,46 @@ public class Product : BaseAuditableEntity
     /// Ishlab chiqaruvchi
     /// </summary>
     public string? Manufacturer { get; set; }
+
+    /// <summary>
+    /// Barcode (штрих код)
+    /// </summary>
+    public string? Barcode { get; set; }
+
+    /// <summary>
+    /// Nashriyot
+    /// </summary>
+    public string? Publisher { get; set; }
+
+    /// <summary>
+    /// Nashr yili
+    /// </summary>
+    public int? PublishYear { get; set; }
+
+    /// <summary>
+    /// Sahifalar soni
+    /// </summary>
+    public int? PageCount { get; set; }
+
+    /// <summary>
+    /// Til
+    /// </summary>
+    public string? Language { get; set; }
+
+    /// <summary>
+    /// Nashr (masalan: 1-nashr)
+    /// </summary>
+    public string? Edition { get; set; }
+
+    /// <summary>
+    /// Qo'shimcha rasmlar ro'yxati
+    /// </summary>
+    public List<string> ImageUrls { get; set; } = new List<string>();
+
+    /// <summary>
+    /// Qo'shimcha kategoriyalar ro'yxati
+    /// </summary>
+    public List<int> CategoryIds { get; set; } = new List<int>();
 
     /// <summary>
     /// Tartiblash uchun

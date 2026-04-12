@@ -25,6 +25,9 @@ public interface IOrderService
 
     // Payment
     Task<Result> ProcessPaymentAsync(int orderId, string paymentMethod, string? reference);
+    Task<Result> SubmitPaymentReceiptAsync(int orderId, string receiptUrl, int customerId);
+    Task<Result> ApprovePaymentAsync(int orderId, int adminId);
+    Task<Result> RejectPaymentAsync(int orderId, string reason, int adminId);
 
     // Statistics
     Task<Result<OrderSummaryDto>> GetOrderSummaryAsync(DateTime dateFrom, DateTime dateTo);

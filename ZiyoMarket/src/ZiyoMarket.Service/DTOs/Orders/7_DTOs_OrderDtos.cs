@@ -100,6 +100,7 @@ public class OrderDetailDto
     public string PaymentMethod { get; set; } = string.Empty;
     public string? PaymentReference { get; set; }
     public DateTime? PaidAt { get; set; }
+    public string? PaymentReceiptUrl { get; set; }
     
     // Delivery
     public string DeliveryType { get; set; } = string.Empty;
@@ -261,6 +262,40 @@ public class OrderFilterRequest : BaseFilterRequest
     public string? DeliveryType { get; set; }
     public decimal? MinAmount { get; set; }
     public decimal? MaxAmount { get; set; }
+}
+
+/// <summary>
+/// To'lov cheki yuborish DTO
+/// </summary>
+public class SubmitPaymentReceiptDto
+{
+    [Required(ErrorMessage = "Chek URL'i majburiy")]
+    [MaxLength(1000)]
+    public string ReceiptUrl { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// To'lov rad etish DTO
+/// </summary>
+public class RejectPaymentDto
+{
+    [Required(ErrorMessage = "Rad etish sababi majburiy")]
+    [MaxLength(500)]
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// To'lov ma'lumotlari DTO (appsettings dan)
+/// </summary>
+public class PaymentInfoDto
+{
+    public string CardNumber { get; set; } = string.Empty;
+    public string CardHolder { get; set; } = string.Empty;
+    public string BankName { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
+    public string MaskedCardNumber => CardNumber.Length >= 16
+        ? $"{CardNumber[..4]} **** **** {CardNumber[^4..]}"
+        : CardNumber;
 }
 
 /// <summary>

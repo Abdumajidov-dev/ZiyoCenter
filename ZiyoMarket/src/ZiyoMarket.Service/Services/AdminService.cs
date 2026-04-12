@@ -24,7 +24,7 @@ public class AdminService : IAdminService
         try
         {
             var admin = await _unitOfWork.Admins
-                .SelectAsync(a => a.Id == adminId && !a.IsDeleted);
+                .SelectAsync(a => a.Id == adminId && a.DeletedAt == null);
 
             if (admin == null)
                 return Result<AdminDetailDto>.NotFound("Admin topilmadi");
@@ -42,7 +42,7 @@ public class AdminService : IAdminService
     {
         try
         {
-            var query = _unitOfWork.Admins.Table.Where(a => !a.IsDeleted);
+            var query = _unitOfWork.Admins.Table.Where(a => a.DeletedAt == null);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -83,7 +83,7 @@ public class AdminService : IAdminService
         try
         {
             var existingUsername = await _unitOfWork.Admins
-                .AnyAsync(a => a.Username == request.Username && !a.IsDeleted);
+                .AnyAsync(a => a.Username == request.Username && a.DeletedAt == null);
 
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
@@ -122,7 +122,7 @@ public class AdminService : IAdminService
                 return Result<AdminDetailDto>.NotFound("Admin topilmadi");
 
             var existingUsername = await _unitOfWork.Admins
-                .AnyAsync(a => a.Username == request.Username && a.Id != id && !a.IsDeleted);
+                .AnyAsync(a => a.Username == request.Username && a.Id != id && a.DeletedAt == null);
 
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest("Bu username allaqachon mavjud");
@@ -231,7 +231,7 @@ public class AdminService : IAdminService
         {
             var term = searchTerm.ToLower();
             var admins = await _unitOfWork.Admins.Table
-                .Where(a => !a.IsDeleted &&
+                .Where(a => a.DeletedAt == null &&
                     (a.FirstName.ToLower().Contains(term) ||
                      a.LastName.ToLower().Contains(term) ||
                      a.Username.ToLower().Contains(term)))
@@ -244,6 +244,50 @@ public class AdminService : IAdminService
         catch (Exception ex)
         {
             return Result<List<AdminListDto>>.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<AdminDetailDto>> PromoteCustomerToAdminAsync(int customerId, string role, int createdBy)
+    {
+        try
+        {
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer == null)
+                return Result<AdminDetailDto>.NotFound("Mijoz topilmadi");
+
+            // Username = phone raqami (+ belgisi olib tashlanadi)
+            var username = customer.Phone.Replace("+", "").Replace(" ", "");
+
+            var existingUsername = await _unitOfWork.Admins
+                .AnyAsync(a => a.Username == username && a.DeletedAt == null);
+
+            if (existingUsername)
+                return Result<AdminDetailDto>.BadRequest($"Bu telefon raqam ({customer.Phone}) allaqachon admin sifatida ro'yxatdan o'tgan");
+
+            var validRole = (role == "SuperAdmin") ? "SuperAdmin" : 
+                            (role == "Sotuvchi") ? "Sotuvchi" : "Admin";
+
+            var admin = new ZiyoMarket.Domain.Entities.Users.Admin
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                Username = username,
+                Phone = customer.Phone,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(username), // default parol = telefon raqami
+                Role = validRole,
+                IsActive = true,
+                CreatedBy = createdBy
+            };
+
+            await _unitOfWork.Admins.InsertAsync(admin);
+            await _unitOfWork.SaveChangesAsync();
+
+            var dto = _mapper.Map<AdminDetailDto>(admin);
+            return Result<AdminDetailDto>.Success(dto, $"Mijoz muvaffaqiyatli {validRole} roliga ko'tarildi. Default parol: {username}");
+        }
+        catch (Exception ex)
+        {
+            return Result<AdminDetailDto>.InternalError($"Xatolik: {ex.Message}");
         }
     }
 }

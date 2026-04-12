@@ -36,6 +36,11 @@ public enum OrderStatus
     Delivered = 6,
 
     /// <summary>
+    /// To'lov cheki yuborildi — admin tasdiqlashini kutmoqda
+    /// </summary>
+    AwaitingConfirmation = 8,
+
+    /// <summary>
     /// Bekor qilindi
     /// </summary>
     Cancelled = 7

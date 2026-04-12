@@ -40,6 +40,15 @@ public class AuthService : IAuthService
     {
         try
         {
+            // Normalize UserType to prevent case mismatch (admin → Admin, seller → Seller)
+            request.UserType = request.UserType?.Trim() switch
+            {
+                { } s when s.Equals("admin", StringComparison.OrdinalIgnoreCase) => "Admin",
+                { } s when s.Equals("seller", StringComparison.OrdinalIgnoreCase) => "Seller",
+                { } s when s.Equals("customer", StringComparison.OrdinalIgnoreCase) => "Customer",
+                _ => request.UserType
+            };
+
             // Find user based on UserType
             object? user = request.UserType switch
             {
@@ -564,6 +573,10 @@ public class AuthService : IAuthService
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
+            // SuperAdmin barcha Admin endpointlariga kirishi uchun "Admin" role claim ham qo'shiladi
+            if (roleClaimValue == "SuperAdmin")
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -620,22 +633,37 @@ public class AuthService : IAuthService
 
     // ============ Helper Methods ============
 
+    /// <summary>
+    /// +998XXXXXXXXX va 998XXXXXXXXX formatlarini bir xil ko'rinishga keltiradi.
+    /// </summary>
+    private static string NormalizePhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return phone;
+        var digits = phone.TrimStart('+');
+        return "+" + digits;
+    }
+
     private async Task<Customer?> FindCustomerByPhoneAsync(string phone)
     {
+        var normalized = NormalizePhone(phone);
         return await _unitOfWork.Customers
-            .SelectAsync(c => c.Phone == phone);
+            .SelectAsync(c => c.Phone == normalized || c.Phone == phone);
     }
 
     private async Task<Seller?> FindSellerByPhoneAsync(string phone)
     {
+        var normalized = NormalizePhone(phone);
         return await _unitOfWork.Sellers
-            .SelectAsync(s => s.Phone == phone);
+            .SelectAsync(s => s.Phone == normalized || s.Phone == phone);
     }
 
     private async Task<Admin?> FindAdminByUsernameOrPhoneAsync(string usernameOrPhone)
     {
+        var normalized = NormalizePhone(usernameOrPhone);
         return await _unitOfWork.Admins
-            .SelectAsync(a => (a.Username == usernameOrPhone || a.Phone == usernameOrPhone));
+            .SelectAsync(a => a.Username == usernameOrPhone
+                           || a.Phone == usernameOrPhone
+                           || a.Phone == normalized);
     }
 
     private string GetPasswordHash(object user, string userType)

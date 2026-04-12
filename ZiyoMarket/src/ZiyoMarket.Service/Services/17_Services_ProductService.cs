@@ -30,18 +30,18 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
         {
             var product = await _unitOfWork.Products
-                .SelectAsync(p => p.Id == productId && !p.IsDeleted, new[] { "Category" });
+                .SelectAsync(p => p.Id == productId && p.DeletedAt == null, new[] { "Category" });
 
             if (product == null)
                 return Result<ProductDetailDto>.NotFound($"Product with ID {productId} not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
 
-            dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == productId && !l.IsDeleted);
+            dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == productId && l.DeletedAt == null);
 
             if (customerId.HasValue)
                 dto.IsLikedByCurrentUser = await _unitOfWork.ProductLikes
-                    .AnyAsync(l => l.ProductId == productId && l.CustomerId == customerId.Value && !l.IsDeleted);
+                    .AnyAsync(l => l.ProductId == productId && l.CustomerId == customerId.Value && l.DeletedAt == null);
 
             return Result<ProductDetailDto>.Success(dto);
         }
@@ -49,30 +49,34 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<ProductDetailDto>> GetProductByQRCodeAsync(string qrCode, int? customerId = null)
         {
             var product = await _unitOfWork.Products
-                .SelectAsync(p => p.QrCode == qrCode && !p.IsDeleted, new[] { "Category" });
+                .SelectAsync(p => p.QrCode == qrCode && p.DeletedAt == null, new[] { "Category" });
 
             if (product == null)
                 return Result<ProductDetailDto>.NotFound($"Product with QR code '{qrCode}' not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
-            dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == product.Id && !l.IsDeleted);
+            dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == product.Id && l.DeletedAt == null);
 
             if (customerId.HasValue)
                 dto.IsLikedByCurrentUser = await _unitOfWork.ProductLikes
-                    .AnyAsync(l => l.ProductId == product.Id && l.CustomerId == customerId.Value && !l.IsDeleted);
+                    .AnyAsync(l => l.ProductId == product.Id && l.CustomerId == customerId.Value && l.DeletedAt == null);
 
             return Result<ProductDetailDto>.Success(dto);
         }
 
         public async Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(ProductFilterRequest request, int? customerId = null)
         {
-            var query = _unitOfWork.Products.SelectAll(p => !p.IsDeleted, new[] { "Category" });
+            var query = _unitOfWork.Products.SelectAll(p => p.DeletedAt == null, new[] { "Category" });
 
-            // Filtering
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var term = request.SearchTerm.ToLower();
-                query = query.Where(p => p.Name.ToLower().Contains(term) || p.Description.ToLower().Contains(term));
+                query = query.Where(p => 
+                    p.Name.ToLower().Contains(term) || 
+                    (p.Description != null && p.Description.ToLower().Contains(term)) ||
+                    (p.Barcode != null && p.Barcode.ToLower().Contains(term)) ||
+                    (p.Manufacturer != null && p.Manufacturer.ToLower().Contains(term)) ||
+                    p.QrCode.ToLower().Contains(term));
             }
 
             if (request.CategoryId.HasValue)
@@ -104,7 +108,7 @@ namespace ZiyoMarket.Service.Services
             if (customerId.HasValue)
             {
                 var likedIds = await _unitOfWork.ProductLikes
-                    .SelectAll(l => l.CustomerId == customerId.Value && !l.IsDeleted)
+                    .SelectAll(l => l.CustomerId == customerId.Value && l.DeletedAt == null)
                     .Select(l => l.ProductId)
                     .ToListAsync();
 
@@ -113,7 +117,7 @@ namespace ZiyoMarket.Service.Services
             }
 
             var likes = await _unitOfWork.ProductLikes
-                .SelectAll(l => !l.IsDeleted)
+                .SelectAll(l => l.DeletedAt == null)
                 .GroupBy(l => l.ProductId)
                 .Select(g => new { g.Key, Count = g.Count() })
                 .ToListAsync();
@@ -128,9 +132,16 @@ namespace ZiyoMarket.Service.Services
 
         public async Task<Result<ProductDetailDto>> CreateProductAsync(CreateProductDto request, int createdBy)
         {
-            var exists = await _unitOfWork.Products.AnyAsync(p => p.QrCode == request.QRCode && !p.IsDeleted);
+            var exists = await _unitOfWork.Products.AnyAsync(p => p.QrCode == request.QRCode && p.DeletedAt == null);
             if (exists)
                 return Result<ProductDetailDto>.Conflict("Product with this QR code already exists");
+
+            if (!string.IsNullOrWhiteSpace(request.Barcode))
+            {
+                var barcodeExists = await _unitOfWork.Products.AnyAsync(p => p.Barcode == request.Barcode && p.DeletedAt == null);
+                if (barcodeExists)
+                    return Result<ProductDetailDto>.Conflict("Product with this Barcode already exists");
+            }
 
             var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId);
             if (category == null || !category.IsActive)
@@ -144,6 +155,8 @@ namespace ZiyoMarket.Service.Services
             await _unitOfWork.Products.InsertAsync(product);
             await _unitOfWork.SaveChangesAsync();
 
+            product.Category = category;
+
             return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product created successfully", 201);
         }
 
@@ -152,6 +165,13 @@ namespace ZiyoMarket.Service.Services
             var product = await _unitOfWork.Products.GetByIdAsync(request.Id);
             if (product == null)
                 return Result<ProductDetailDto>.NotFound("Product not found");
+
+            if (!string.IsNullOrWhiteSpace(request.Barcode) && request.Barcode != product.Barcode)
+            {
+                var barcodeExists = await _unitOfWork.Products.AnyAsync(p => p.Barcode == request.Barcode && p.Id != product.Id && p.DeletedAt == null);
+                if (barcodeExists)
+                    return Result<ProductDetailDto>.Conflict("Product with this Barcode already exists");
+            }
 
             var category = await _unitOfWork.Categories.GetByIdAsync(request.CategoryId);
             if (category == null || !category.IsActive)
@@ -163,11 +183,32 @@ namespace ZiyoMarket.Service.Services
             product.CategoryId = request.CategoryId;
             product.ImageUrl = request.ImageUrl;
             product.MinStockLevel = request.MinStockLevel;
+            product.Barcode = request.Barcode;
+
+            // Xususiyatlarni yangilash
+            product.Publisher = request.Publisher;
+            product.PublishYear = request.PublishYear;
+            product.PageCount = request.PageCount;
+            product.Language = request.Language;
+            product.Edition = request.Edition;
+            product.Manufacturer = request.Manufacturer;
+
+            if (request.ImageUrls != null)
+            {
+                product.ImageUrls = request.ImageUrls;
+            }
+
+            if (request.CategoryIds != null)
+            {
+                product.CategoryIds = request.CategoryIds;
+            }
             product.UpdatedBy = updatedBy;
             product.MarkAsUpdated();
 
             await _unitOfWork.Products.Update(product, product.Id);
             await _unitOfWork.SaveChangesAsync();
+
+            product.Category = category;
 
             return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product updated successfully");
         }
@@ -228,7 +269,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<LowStockProductDto>>> GetLowStockProductsAsync()
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.StockQuantity <= p.MinStockLevel && p.StockQuantity > 0)
+                .SelectAll(p => p.DeletedAt == null && p.StockQuantity <= p.MinStockLevel && p.StockQuantity > 0)
                 .OrderBy(p => p.StockQuantity)
                 .ToListAsync();
 
@@ -244,7 +285,7 @@ namespace ZiyoMarket.Service.Services
                 return Result.NotFound("Product not found");
 
             var existing = await _unitOfWork.ProductLikes
-                .SelectAsync(l => l.ProductId == productId && l.CustomerId == customerId && !l.IsDeleted);
+                .SelectAsync(l => l.ProductId == productId && l.CustomerId == customerId && l.DeletedAt == null);
 
             if (existing != null)
             {
@@ -270,7 +311,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<ProductListDto>>> GetLikedProductsAsync(int customerId)
         {
             var likedIds = await _unitOfWork.ProductLikes
-                .SelectAll(l => l.CustomerId == customerId && !l.IsDeleted)
+                .SelectAll(l => l.CustomerId == customerId && l.DeletedAt == null)
                 .Select(l => l.ProductId)
                 .ToListAsync();
 
@@ -278,7 +319,7 @@ namespace ZiyoMarket.Service.Services
                 return Result<List<ProductListDto>>.Success(new List<ProductListDto>());
 
             var products = await _unitOfWork.Products
-                .SelectAll(p => likedIds.Contains(p.Id) && !p.IsDeleted, new[] { "Category" })
+                .SelectAll(p => likedIds.Contains(p.Id) && p.DeletedAt == null, new[] { "Category" })
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
@@ -294,7 +335,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<ProductListDto>>> GetFeaturedProductsAsync(int count = 10)
         {
             var likeCounts = await _unitOfWork.ProductLikes
-                .SelectAll(l => !l.IsDeleted)
+                .SelectAll(l => l.DeletedAt == null)
                 .GroupBy(l => l.ProductId)
                 .Select(g => new { ProductId = g.Key, Count = g.Count() })
                 .OrderByDescending(x => x.Count)
@@ -304,7 +345,7 @@ namespace ZiyoMarket.Service.Services
             var ids = likeCounts.Select(x => x.ProductId).ToList();
 
             var products = await _unitOfWork.Products
-                .SelectAll(p => ids.Contains(p.Id) && !p.IsDeleted && p.IsActive, new[] { "Category" })
+                .SelectAll(p => ids.Contains(p.Id) && p.DeletedAt == null && p.IsActive, new[] { "Category" })
                 .ToListAsync();
 
             var dtos = _mapper.Map<List<ProductListDto>>(products);
@@ -318,7 +359,7 @@ namespace ZiyoMarket.Service.Services
         public async Task<Result<List<ProductListDto>>> GetNewArrivalsAsync(int count = 10)
         {
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.IsActive, new[] { "Category" })
+                .SelectAll(p => p.DeletedAt == null && p.IsActive, new[] { "Category" })
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
                 .ToListAsync();
@@ -333,7 +374,7 @@ namespace ZiyoMarket.Service.Services
             {
                 var query = _unitOfWork.Products.Table
                             .Include(p => p.Category)
-                            .Where(p => !p.IsDeleted && p.IsActive);
+                            .Where(p => p.DeletedAt == null && p.IsActive);
 
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -341,8 +382,10 @@ namespace ZiyoMarket.Service.Services
                     var lowerSearch = searchTerm.ToLower();
                     query = query.Where(p =>
                         p.Name.ToLower().Contains(lowerSearch) ||
-                        p.Description.ToLower().Contains(lowerSearch) ||
-                        p.QrCode.ToLower().Contains(lowerSearch));
+                        (p.Description != null && p.Description.ToLower().Contains(lowerSearch)) ||
+                        p.QrCode.ToLower().Contains(lowerSearch) ||
+                        (p.Barcode != null && p.Barcode.ToLower().Contains(lowerSearch)) ||
+                        (p.Manufacturer != null && p.Manufacturer.ToLower().Contains(lowerSearch)));
                 }
 
                 if (categoryId.HasValue)
@@ -355,7 +398,7 @@ namespace ZiyoMarket.Service.Services
 
                 var dtos = _mapper.Map<List<ProductListDto>>(products);
 
-                // Like ma'lumotlarini qo‘shish
+                // Like ma'lumotlarini qoï¿½shish
                 if (customerId.HasValue && dtos.Any())
                 {
                     var productIds = products.Select(p => p.Id).ToList();
@@ -363,7 +406,7 @@ namespace ZiyoMarket.Service.Services
                     var likedIds = await _unitOfWork.ProductLikes
                         .SelectAll(l => l.CustomerId == customerId.Value &&
                                     productIds.Contains(l.ProductId) &&
-                                    !l.IsDeleted)
+                                    l.DeletedAt == null)
                         .Select(l => l.ProductId)
                         .ToListAsync();
 
@@ -389,7 +432,7 @@ namespace ZiyoMarket.Service.Services
             {
                 var query = _unitOfWork.Products.Table
                             .Include(p => p.Category)
-                            .Where(p => !p.IsDeleted && p.IsActive);
+                            .Where(p => p.DeletedAt == null && p.IsActive);
 
 
                 var dtos = _mapper.Map<List<ProductListDto>>(query);
@@ -402,7 +445,7 @@ namespace ZiyoMarket.Service.Services
                     var likedIds = await _unitOfWork.ProductLikes
                         .SelectAll(l => l.CustomerId == customerId.Value &&
                                     productIds.Contains(l.ProductId) &&
-                                    !l.IsDeleted)
+                                    l.DeletedAt == null)
                         .Select(l => l.ProductId)
                         .ToListAsync();
 

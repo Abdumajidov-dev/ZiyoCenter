@@ -140,6 +140,54 @@ public class OrderController : BaseController
         return Ok(new { success = true, message = result.Message });
     }
 
+    /// <summary>
+    /// Mijoz to'lov chekini yuboradi (rasm yoki PDF URL)
+    /// </summary>
+    [HttpPost("{id}/submit-receipt")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> SubmitPaymentReceipt(int id, [FromBody] SubmitPaymentReceiptDto request)
+    {
+        var customerId = GetCurrentUserId();
+        var result = await _orderService.SubmitPaymentReceiptAsync(id, request.ReceiptUrl, customerId);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
+    /// Admin to'lovni tasdiqlaydi → buyurtma Confirmed holatiga o'tadi
+    /// </summary>
+    [HttpPost("{id}/approve-payment")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ApprovePayment(int id)
+    {
+        var adminId = GetCurrentUserId();
+        var result = await _orderService.ApprovePaymentAsync(id, adminId);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
+    /// Admin to'lovni rad etadi → buyurtma Pending holatiga qaytadi
+    /// </summary>
+    [HttpPost("{id}/reject-payment")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> RejectPayment(int id, [FromBody] RejectPaymentDto request)
+    {
+        var adminId = GetCurrentUserId();
+        var result = await _orderService.RejectPaymentAsync(id, request.Reason, adminId);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
     [HttpPost("seed")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMockOrders([FromQuery] int count = 10, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)

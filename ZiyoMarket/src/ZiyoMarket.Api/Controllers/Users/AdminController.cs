@@ -102,4 +102,19 @@ public class AdminController : BaseController
         var result = await _adminService.SearchAdminsAsync(searchTerm);
         return Ok(new { success = true, data = result.Data });
     }
+
+    /// <summary>
+    /// Mijozni admin roliga ko'tarish
+    /// </summary>
+    [HttpPost("promote-customer/{customerId}")]
+    public async Task<IActionResult> PromoteCustomerToAdmin(int customerId, [FromQuery] string role = "Admin")
+    {
+        var createdBy = GetCurrentUserId();
+        var result = await _adminService.PromoteCustomerToAdminAsync(customerId, role, createdBy);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return StatusCode(201, new { success = true, message = result.Message, data = result.Data });
+    }
 }

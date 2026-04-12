@@ -18,4 +18,7 @@ public interface IAdminService
 
     // Search
     Task<Result<List<AdminListDto>>> SearchAdminsAsync(string searchTerm);
+
+    // Promote
+    Task<Result<AdminDetailDto>> PromoteCustomerToAdminAsync(int customerId, string role, int createdBy);
 }

@@ -76,11 +76,14 @@ All business logic resides in service classes implementing interfaces:
 
 **Service Registration:** All services are scoped and registered in `Api/Extensions/ServiceExtension.cs`
 
-### 3. Soft Delete Pattern
+### 3. Entity Base Classes
 
-All entities inherit from `BaseEntity` which implements soft delete:
+Two base classes live in `Domain/Common/`:
 
-- Entities have `DeletedAt`, `CreatedAt`, `UpdatedAt` fields (stored as strings in "yyyy-MM-dd HH:mm:ss" format)
+- **`BaseEntity`** — provides `Id`, `CreatedAt`, `UpdatedAt`, `DeletedAt` (all timestamps stored as `"yyyy-MM-dd HH:mm:ss"` strings), `IsDeleted` computed property, and `Delete()`/`Restore()`/`MarkAsUpdated()` methods.
+- **`BaseAuditableEntity : BaseEntity`** — adds `CreatedBy`, `UpdatedBy`, `DeletedBy` (user IDs). Most important domain entities (`Product`, `Order`, `Customer`, `Seller`, `Admin`, `Category`, etc.) use this class. Use `BaseAuditableEntity` when tracking who created/modified the record; use `BaseEntity` for supporting entities that don't need user tracking (e.g., `OrderItem`, `CartItem`).
+
+**Soft Delete:**
 - Global query filter in `ZiyoMarketDbContext` automatically excludes soft-deleted records
 - Use repository `SoftDelete(entity)` or `SoftDeleteRange(entities)` for soft delete
 - Use repository `Delete(entity)` or `DeleteAsync(id)` for hard delete (use cautiously)
@@ -94,6 +97,7 @@ Controllers inherit from `BaseController` and follow RESTful conventions:
 - Return `ActionResult<T>` for type-safe responses
 - Use standard HTTP status codes (200, 201, 400, 404, 401, 403)
 - Controllers are thin - delegate all logic to services
+- Most controllers live in `Controllers/<Domain>/` subdirectories, but `AuthController` and `SeedDataController` are at the `Controllers/` root level
 
 **BaseController Helper Methods:**
 ```csharp
@@ -109,8 +113,21 @@ The API uses snake_case for all JSON responses (not PascalCase or camelCase):
 
 - C# property `FirstName` → JSON `first_name`
 - C# property `TotalAmount` → JSON `total_amount`
-- Custom `SnakeCaseNamingPolicy` configured in `Program.cs`
-- This is transparent to developers - just use C# naming conventions in code
+- Custom `SnakeCaseNamingPolicy` and `SnakeCaseSchemaFilter` configured in `Program.cs` (both in `Api/Helpers/`)
+- **Important:** `PropertyNameCaseInsensitive = false` — request body properties must use exact snake_case, no case flexibility
+- Swagger UI also renders property names in snake_case (via `SnakeCaseSchemaFilter`)
+
+## File Naming Conventions
+
+Some Service layer files use a numeric prefix that reflects historical creation order. **Do not create new files with this pattern; instead edit the existing numbered file in place:**
+
+- `Service/Interfaces/11_Interfaces_IAuthService.cs` — auth service interface
+- `Service/Interfaces/12_Interfaces_IProductService.cs` — product service interface
+- `Service/Interfaces/13_Interfaces_IOrderCashbackCartServices.cs` — order/cashback/cart interfaces
+- `Service/Validators/14_Validators_FluentValidators.cs` — **all** FluentValidation validators
+- `Service/Services/17_Services_ProductService.cs` — product service implementation
+
+When adding new validators, add them to `14_Validators_FluentValidators.cs`. Do not create separate validator files.
 
 ## Common Development Commands
 
@@ -149,59 +166,43 @@ dotnet ef database update --project ../ZiyoMarket.Data
 
 # Remove last migration (if not applied)
 dotnet ef migrations remove --project ../ZiyoMarket.Data
-
-# View migration SQL
-dotnet ef migrations script --project ../ZiyoMarket.Data
 ```
 
-**Note:** On Windows, use `cd src\ZiyoMarket.Api` and `..\ZiyoMarket.Data` with backslashes.
+**Note:** On Windows, use backslashes: `cd src\ZiyoMarket.Api` and `..\ZiyoMarket.Data`.
 
 ### Database Setup
 
 ```bash
-# Create database in PostgreSQL
 psql -U postgres
 CREATE DATABASE "ZiyoDb";
 \q
 
-# Apply migrations
 cd src/ZiyoMarket.Api
 dotnet ef database update --project ../ZiyoMarket.Data
-
-# Seed test data (optional - use Swagger seed endpoints)
-# POST /api/seeddata/seed-all
 ```
 
 ### Deployment
 
-For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on:
-- Setting up Railway projects
-- Configuring PostgreSQL database
-- Environment variables and secrets
-- Build configuration and troubleshooting
+For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Configuration
 
 ### Connection Strings
 
-Located in `src/ZiyoMarket.Api/appsettings.json`:
+Located in `src/ZiyoMarket.Api/appsettings.json`.
 
-- **Local Development:** `Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;`
-- **Production:** Currently configured for Railway.app PostgreSQL
-
-**WARNING:** The current `appsettings.json` has a Railway.app production connection string committed to source control. For local development, override it using user secrets so you don't accidentally use the production database:
+**WARNING:** The current `appsettings.json` has a Railway.app production connection string committed to source control. For local development, override it using user secrets:
 
 ```bash
 dotnet user-secrets init --project src/ZiyoMarket.Api
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;" --project src/ZiyoMarket.Api
 ```
 
-
 ### JWT Settings
 
 JWT configuration in `appsettings.json`:
 - **Access Token:** 1440 minutes (24 hours)
-- **Refresh Token:** 7 days
+- No refresh token endpoint — users must re-login when the token expires
 - Secret key should be changed for production
 
 ## Key Domain Concepts
@@ -215,6 +216,15 @@ Three distinct user types with different capabilities:
 3. **Admin** - System administrators with full access
 
 **JWT Claims:** Token includes `UserId`, `Email`, `UserType` claims for authorization
+
+### Product Entity Extended Fields
+
+The `Product` entity (which targets a bookstore context) has fields beyond typical e-commerce products:
+- **Book metadata:** `Publisher`, `PublishYear`, `PageCount`, `Language`, `Edition`
+- **Multiple images:** `ImageUrls` (List<string>) in addition to the primary `ImageUrl`
+- **Multiple categories:** `CategoryIds` (List<int>) in addition to the primary `CategoryId`
+- **Other:** `Barcode`, `Manufacturer`, `Weight`, `Dimensions`, `DisplayOrder`, `SearchText`
+- Business methods on the entity handle stock changes and auto-update `Status` (Active/OutOfStock)
 
 ### Cashback System
 
@@ -242,7 +252,7 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 ### When Adding New Entities
 
 1. Create entity in appropriate `Domain/Entities/` subdirectory (Users, Products, Orders, etc.)
-2. Inherit from `BaseEntity` to get soft delete and audit fields
+2. Inherit from `BaseAuditableEntity` if you need to track who created/modified the record; inherit from `BaseEntity` for simpler supporting entities
 3. Add `DbSet<NewEntity>` to `ZiyoMarketDbContext.cs`
 4. Create entity configuration class in `Data/Configurations/` if needed (for complex mappings)
 5. Create migration: `dotnet ef migrations add AddNewEntity --project ../ZiyoMarket.Data`
@@ -253,16 +263,7 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 10. Create service implementation in `Service/Services/NewEntityService.cs`
 11. Add repository property to `IUnitOfWork` interface and `UnitOfWork` class
 12. Register service in `Api/Extensions/ServiceExtension.cs`
-13. Create controller in `Api/Controllers/` inheriting from `BaseController`
-
-### When Adding New Controllers
-
-1. Inherit from `BaseController`
-2. Use constructor injection for services
-3. Add `[Authorize]` for protected endpoints
-4. Return appropriate HTTP status codes
-5. Use DTOs, never expose domain entities directly
-6. Add XML comments for Swagger documentation
+13. Create controller in the appropriate `Api/Controllers/<Domain>/` subdirectory inheriting from `BaseController`
 
 ### Authentication Flow
 
@@ -284,25 +285,16 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 
 **Authorized Requests:** Include `Authorization: Bearer {AccessToken}` header
 
-**Note:** There is no refresh token endpoint. Access tokens are valid for 24 hours (1440 minutes). Users must re-login when the token expires.
-
 **Logout** is stateless — JWT is removed client-side. Server-side logout only logs the action.
 
 **Password reset / verification codes** are currently printed to the console (`Console.WriteLine`) only — SMS/Email integration is not yet implemented (marked as TODO in `AuthService`). When integrating a real SMS provider, update `RequestPasswordResetAsync` and `SendVerificationCodeAsync` in `AuthService.cs`.
 
 ### Seed Data for Testing
 
-The `SeedDataController` provides endpoints to populate test data for development:
+The `SeedDataController` provides endpoints to populate test data for development (no authentication required):
 
-**Usage in Swagger:**
-1. Start the API (`dotnet run` in `src/ZiyoMarket.Api`)
-2. Navigate to `https://localhost:5001/swagger`
-3. No authentication needed for seed endpoints
-4. Execute POST requests to seed specific data types
-
-**Available Seed Endpoints:**
-- POST `/api/seeddata/seed-all` - Seeds all data types at once (recommended for initial setup)
-- Individual seed endpoints for specific entity types (check SeedDataController for complete list)
+- `POST /api/seeddata/seed-all` — seeds all data types at once (recommended for initial setup)
+- Individual endpoints for specific entity types (check `Controllers/SeedDataController.cs` for the full list)
 
 ## API Structure
 
@@ -312,19 +304,20 @@ The `SeedDataController` provides endpoints to populate test data for developmen
 
 ### Main Controllers
 
-- **AuthController** - Registration, login, logout, password reset, verification, role management
-- **ProductController** - Product CRUD, search, QR code lookup, stock management
-- **CategoryController** - Hierarchical category management
-- **CartController** - Shopping cart operations
-- **OrderController** - Order CRUD, status updates, order processing
-- **CashbackController** - Cashback history, balance, expiring cashback
-- **DeliveryController** - Delivery partners, tracking
-- **SupportController** - Customer support chats
-- **NotificationController** - Push notifications
-- **ContentController** - CMS (blogs, news, FAQs)
-- **ReportController** - Sales reports, analytics
-- **SellerController** - Seller management (Admin)
-- **AdminController** - Admin user management
+- **ProductController** — Product CRUD, search, QR code lookup, stock management
+- **CategoryController** — Hierarchical category management
+- **CartController** — Shopping cart operations
+- **OrderController** — Order CRUD, status updates, order processing
+- **CashbackController** — Cashback history, balance, expiring cashback
+- **DeliveryController** — Delivery partners, tracking
+- **SupportController** — Customer support chats
+- **NotificationController** / **NotificationApiController** — Push notifications (two controllers in `Controllers/Notifications/`)
+- **ContentController** — CMS (blogs, news, FAQs)
+- **ReportController** — Sales reports, analytics
+- **SellerController** — Seller management (Admin only)
+- **AdminController** — Admin user management (**SuperAdmin role required**)
+- **CustomerController** — Customer management (Admin/SuperAdmin only): CRUD, search, toggle-status, `GET/{id}/orders`
+- **ImageUploadController** — `POST /api/image_upload?type=product|category` — uploads to `wwwroot/uploads/{type}/{year}/{month}/`, max 5MB, allowed: jpg/jpeg/png/gif/webp; returns `{ file_path, full_url }`
 
 ## Common Patterns in This Codebase
 
@@ -344,12 +337,20 @@ Use typed exceptions from `Service/Exceptions/` instead of throwing generic exce
 
 ### Result Pattern
 
-`Service/Results/` provides `Result` and `Result<T>` for operations that need to signal success/failure without throwing, and `PaginationResponse<T>` for paginated data:
+There are two `Result` implementations — use the **Service layer** one in services:
+
+- **`ZiyoMarket.Service.Results.Result<T>`** — used in services. Has `.Data` property for the returned value, `.StatusCode`, and factory methods: `Success(data)`, `Failure(error)`, `NotFound(msg)`, `Unauthorized(msg)`, `Forbidden(msg)`, `Conflict(msg)`.
+- **`ZiyoMarket.Domain.Common.Result<T>`** — simpler version with `.Value` property; rarely needed in service/controller code.
 
 ```csharp
-// In service
+// In service (use Service layer Result)
 return Result<ProductDto>.Success(dto);
 return Result<ProductDto>.NotFound("Product not found");
+
+// Access data in controller
+var result = await _service.GetByIdAsync(id);
+if (!result.IsSuccess) return NotFound(result.Message);
+return Ok(result.Data);   // .Data, not .Value
 
 // PaginationResponse
 return new PaginationResponse<ProductDto>(items, totalCount, page, pageSize);
@@ -357,7 +358,11 @@ return new PaginationResponse<ProductDto>(items, totalCount, page, pageSize);
 
 ### FluentValidation
 
-Validators live in `Service/Validators/`. Existing validators: `LoginRequestValidator`, `RegisterCustomerValidator`, `CreateProductValidator`, `UpdateProductValidator`, `CreateOrderValidator`, `UpdateStockValidator`, `ApplyDiscountValidator`. Add new validators in the same file following the same pattern.
+All validators are in **one file**: `Service/Validators/14_Validators_FluentValidators.cs`. Add new validators to that same file — do not create separate validator files. Existing validators: `LoginRequestValidator`, `RegisterCustomerValidator`, `CreateProductValidator`, `UpdateProductValidator`, `CreateOrderValidator`, `UpdateStockValidator`, `ApplyDiscountValidator`.
+
+### TimeHelper
+
+Use `TimeHelper.GetCurrentServerTime()` (in `Service/Helpers/TimeHelper.cs`) when you need the local server timestamp. It returns `DateTime.UtcNow + 5 hours` (Tashkent/UTC+5). Use this consistently in business logic instead of `DateTime.UtcNow` directly.
 
 ### Error Handling
 
@@ -390,8 +395,6 @@ var (items, totalCount) = await _unitOfWork.Products.GetPagedAsync(
     filter: p => p.Status == ProductStatus.Active,  // Optional filter
     orderBy: q => q.OrderByDescending(p => p.CreatedAt)  // Optional sorting
 );
-// items: IEnumerable<Product> - the page of results
-// totalCount: int - total number of items matching the filter
 ```
 
 ### Eager Loading Relationships
@@ -409,31 +412,23 @@ var order = await _unitOfWork.Orders.GetByIdAsync(
 
 All repositories inherit from `Repository<T>` and provide these methods:
 
-**Create:**
-- `InsertAsync(entity)` / `AddAsync(entity)` - Add single entity
-- `AddRangeAsync(entities)` - Add multiple entities
+**Create:** `InsertAsync(entity)` / `AddAsync(entity)`, `AddRangeAsync(entities)`
 
-**Read:**
-- `GetByIdAsync(id, includes)` - Get by ID with optional eager loading
-- `GetAllAsync()` - Get all entities
-- `FindAsync(predicate)` - Find entities matching condition
-- `FirstOrDefaultAsync(predicate)` - Get first match or null
-- `SelectAsync(expression, includes)` - Select single with includes
-- `SelectAllAsync(expression, includes)` - Select multiple with includes
-- `ExistsAsync(predicate)` / `AnyAsync(expression)` - Check existence
-- `CountAsync(predicate)` - Count entities
+**Read:** `GetByIdAsync(id, includes)`, `GetAllAsync()`, `FindAsync(predicate)`, `FirstOrDefaultAsync(predicate)`, `SelectAsync(expression, includes)`, `SelectAllAsync(expression, includes)`, `ExistsAsync(predicate)` / `AnyAsync(expression)`, `CountAsync(predicate)`
 
-**Update:**
-- `Update(entity, id)` - Update by ID
-- `UpdateAsync(entity)` - Update entity
-- `UpdateRange(entities)` - Update multiple entities
+**Update:** `Update(entity, id)`, `UpdateAsync(entity)`, `UpdateRange(entities)`
 
-**Delete:**
-- `DeleteAsync(id)` - Hard delete by ID
-- `Delete(entity)` - Hard delete entity
-- `DeleteRange(entities)` - Hard delete multiple entities
-- `SoftDelete(entity)` - Soft delete (sets DeletedAt)
-- `SoftDeleteRange(entities)` - Soft delete multiple entities
+**Delete:** `DeleteAsync(id)`, `Delete(entity)`, `DeleteRange(entities)`, `SoftDelete(entity)`, `SoftDeleteRange(entities)`
+
+### Available Repository Properties in UnitOfWork
+
+- `Customers`, `Sellers`, `Admins` — User management
+- `Products`, `Categories`, `ProductLikes`, `CartItems` — Product catalog
+- `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` — Order processing
+- `DeliveryPartners`, `OrderDeliveries` — Delivery management
+- `Notifications` — Push notifications
+- `SupportChats`, `SupportMessages` — Customer support
+- `Contents`, `SystemSettings`, `DailySalesSummaries` — System configuration
 
 ## Testing
 
@@ -451,42 +446,15 @@ Login via: `POST /api/auth/login` with `{"phone_or_email": "Bek", "password": "2
 
 ## Logging
 
-Serilog is configured to log to:
-- Console output
-- File: `Logs/ziyomarket-log.txt` (daily rolling)
+Serilog logs to console output and `Logs/ziyomarket-log.txt` (daily rolling).
 
-Add logging in services/controllers via constructor injection: `ILogger<ClassName>`
+Add logging via constructor injection: `ILogger<ClassName>`
 
 ## Desktop Admin Panel
 
-The solution includes a separate desktop admin panel project (`ZiyoMarket.AdminPanel`) for Windows desktop administration:
+WPF desktop application in `src/ZiyoMarket.AdminPanel/` that consumes the ZiyoMarket API via HTTP client.
 
-- Built with WPF (Windows Presentation Foundation)
-- Consumes the ZiyoMarket API via HTTP client
-- Provides admin dashboard, reports, and management interfaces
-- Located in `src/ZiyoMarket.AdminPanel/`
-
-**Run Admin Panel:**
 ```bash
 cd src/ZiyoMarket.AdminPanel
 dotnet run
 ```
-
-## Important Development Notes
-
-### API Response Format
-
-All API responses use snake_case JSON formatting. When testing with tools like Postman or Swagger:
-- Request body properties should use snake_case: `{"first_name": "John"}`
-- Response properties will be in snake_case: `{"user_id": 1, "created_at": "..."}`
-
-### Available Repository Properties in UnitOfWork
-
-When working with services, these repositories are available through `_unitOfWork`:
-- `Customers`, `Sellers`, `Admins` - User management
-- `Products`, `Categories`, `ProductLikes`, `CartItems` - Product catalog
-- `Orders`, `OrderItems`, `OrderDiscounts`, `DiscountReasons`, `CashbackTransactions` - Order processing
-- `DeliveryPartners`, `OrderDeliveries` - Delivery management
-- `Notifications` - Push notifications
-- `SupportChats`, `SupportMessages` - Customer support
-- `Contents`, `SystemSettings`, `DailySalesSummaries` - System configuration

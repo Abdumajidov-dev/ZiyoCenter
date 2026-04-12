@@ -77,6 +77,11 @@ public class Order : BaseAuditableEntity
     /// </summary>
     public string? PaidAt { get; set; }
 
+    /// <summary>
+    /// To'lov cheki fayl URL'i (rasm yoki PDF)
+    /// </summary>
+    public string? PaymentReceiptUrl { get; set; }
+
     // ==================== DELIVERY ====================
 
     /// <summary>

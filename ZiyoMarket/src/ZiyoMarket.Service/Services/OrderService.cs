@@ -19,12 +19,14 @@ public class OrderService : IOrderService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ICashbackService _cashbackService;
+    private readonly INotificationService _notificationService;
 
-    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, ICashbackService cashbackService)
+    public OrderService(IUnitOfWork unitOfWork, IMapper mapper, ICashbackService cashbackService, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _cashbackService = cashbackService;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<OrderDetailDto>> GetOrderByIdAsync(int orderId, int userId, string userType)
@@ -32,7 +34,7 @@ public class OrderService : IOrderService
         try
         {
             var order = await _unitOfWork.Orders
-                .SelectAsync(o => o.Id == orderId && !o.IsDeleted,
+                .SelectAsync(o => o.Id == orderId && o.DeletedAt == null,
                     new[] { "Customer", "Seller", "OrderItems", "OrderItems.Product" });
 
             if (order == null)
@@ -62,7 +64,7 @@ public class OrderService : IOrderService
             var query = _unitOfWork.Orders.Table
                 .Include(o => o.Customer)
                 .Include(o => o.Seller)
-                .Where(o => !o.IsDeleted);
+                .Where(o => o.DeletedAt == null);
 
             // Filter by user type
             if (userType == "Customer")
@@ -115,7 +117,7 @@ public class OrderService : IOrderService
             if (request.CreateFromCart)
             {
                 var cartItems = await _unitOfWork.CartItems
-                    .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted, new[] { "Product" })
+                    .SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null, new[] { "Product" })
                     .ToListAsync();
 
                 if (!cartItems.Any())
@@ -214,7 +216,7 @@ public class OrderService : IOrderService
             if (request.CreateFromCart)
             {
                 var cartItems = await _unitOfWork.CartItems
-                    .SelectAll(c => c.CustomerId == customerId && !c.IsDeleted)
+                    .SelectAll(c => c.CustomerId == customerId && c.DeletedAt == null)
                     .ToListAsync();
 
                 foreach (var item in cartItems)
@@ -323,7 +325,7 @@ public class OrderService : IOrderService
         try
         {
             var order = await _unitOfWork.Orders
-                .SelectAsync(o => o.Id == orderId && !o.IsDeleted, new[] { "OrderItems" });
+                .SelectAsync(o => o.Id == orderId && o.DeletedAt == null, new[] { "OrderItems" });
 
             if (order == null)
                 return Result.NotFound("Order not found");
@@ -422,7 +424,7 @@ public class OrderService : IOrderService
         try
         {
             var order = await _unitOfWork.Orders
-                .SelectAsync(o => o.Id == request.OrderId && !o.IsDeleted, new[] { "OrderItems" });
+                .SelectAsync(o => o.Id == request.OrderId && o.DeletedAt == null, new[] { "OrderItems" });
 
             if (order == null)
                 return Result.NotFound("Order not found");
@@ -470,7 +472,7 @@ public class OrderService : IOrderService
         try
         {
             var discount = await _unitOfWork.OrderDiscounts
-                .SelectAsync(d => d.Id == orderDiscountId && !d.IsDeleted, new[] { "Order" });
+                .SelectAsync(d => d.Id == orderDiscountId && d.DeletedAt == null, new[] { "Order" });
 
             if (discount == null)
                 return Result.NotFound("Discount not found");
@@ -518,12 +520,99 @@ public class OrderService : IOrderService
         }
     }
 
+    public async Task<Result> SubmitPaymentReceiptAsync(int orderId, string receiptUrl, int customerId)
+    {
+        try
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+                return Result.NotFound("Buyurtma topilmadi");
+
+            if (order.CustomerId != customerId)
+                return Result.Forbidden("Ruxsat yo'q");
+
+            if (order.Status != OrderStatus.Pending)
+                return Result.Failure("Faqat 'Kutilmoqda' holatdagi buyurtmaga chek yuboriladi");
+
+            order.PaymentReceiptUrl = receiptUrl;
+            order.Status = OrderStatus.AwaitingConfirmation;
+            order.MarkAsUpdated();
+
+            await _unitOfWork.Orders.Update(order, orderId);
+            await _unitOfWork.SaveChangesAsync();
+
+            // Adminlarga bildirishnoma yuborish
+            await _notificationService.NotifyAdminsAboutPaymentReceiptAsync(orderId, customerId, order.FinalPrice);
+
+            return Result.Success("Chek muvaffaqiyatli yuborildi. Admin tasdiqlashini kuting.");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
+    public async Task<Result> ApprovePaymentAsync(int orderId, int adminId)
+    {
+        try
+        {
+            var order = await _unitOfWork.Orders
+                .SelectAsync(o => o.Id == orderId, new[] { "Customer" });
+            if (order == null)
+                return Result.NotFound("Buyurtma topilmadi");
+
+            if (order.Status != OrderStatus.AwaitingConfirmation)
+                return Result.Failure("Faqat 'Tasdiqlash kutilmoqda' holatdagi buyurtma tasdiqlanadi");
+
+            order.Status = OrderStatus.Confirmed;
+            order.UpdatedBy = adminId;
+            order.MarkAsUpdated();
+
+            await _unitOfWork.Orders.Update(order, orderId);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success("To'lov tasdiqlandi. Buyurtma 'Tasdiqlandi' holatiga o'tdi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
+    public async Task<Result> RejectPaymentAsync(int orderId, string reason, int adminId)
+    {
+        try
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+                return Result.NotFound("Buyurtma topilmadi");
+
+            if (order.Status != OrderStatus.AwaitingConfirmation)
+                return Result.Failure("Faqat 'Tasdiqlash kutilmoqda' holatdagi buyurtma rad etiladi");
+
+            order.Status = OrderStatus.Pending;
+            order.PaymentReceiptUrl = null;
+            order.AdminNotes = $"[To'lov rad etildi]: {reason}";
+            order.UpdatedBy = adminId;
+            order.MarkAsUpdated();
+
+            await _unitOfWork.Orders.Update(order, orderId);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success("To'lov rad etildi. Buyurtma 'Kutilmoqda' holatiga qaytdi.");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Xatolik: {ex.Message}");
+        }
+    }
+
     public async Task<Result<OrderSummaryDto>> GetOrderSummaryAsync(DateTime dateFrom, DateTime dateTo)
     {
         try
         {
             var orders = await _unitOfWork.Orders
-                .SelectAll(o => !o.IsDeleted &&
+                .SelectAll(o => o.DeletedAt == null &&
                     DateTime.Parse(o.OrderDate) >= dateFrom &&
                     DateTime.Parse(o.OrderDate) <= dateTo)
                 .ToListAsync();
@@ -553,7 +642,7 @@ public class OrderService : IOrderService
         try
         {
             var orders = await _unitOfWork.Orders
-                .SelectAll(o => o.CustomerId == customerId && !o.IsDeleted,
+                .SelectAll(o => o.CustomerId == customerId && o.DeletedAt == null,
                     new[] { "Customer", "Seller" })
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
@@ -572,7 +661,7 @@ public class OrderService : IOrderService
         try
         {
             var orders = await _unitOfWork.Orders
-                .SelectAll(o => o.SellerId == sellerId && !o.IsDeleted,
+                .SelectAll(o => o.SellerId == sellerId && o.DeletedAt == null,
                     new[] { "Customer", "Seller" })
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
@@ -590,7 +679,7 @@ public class OrderService : IOrderService
     {
         try
         {
-            var query = _unitOfWork.Orders.Table.Where(o => !o.IsDeleted);
+            var query = _unitOfWork.Orders.Table.Where(o => o.DeletedAt == null);
 
             if (startDate.HasValue)
                 query = query.Where(o => DateTime.Parse(o.OrderDate) >= startDate.Value);
@@ -623,11 +712,11 @@ public class OrderService : IOrderService
         {
             var random = new Random();
             var customers = await _unitOfWork.Customers
-                .SelectAll(c => !c.IsDeleted && c.IsActive)
+                .SelectAll(c => c.DeletedAt == null && c.IsActive)
                 .ToListAsync();
 
             var products = await _unitOfWork.Products
-                .SelectAll(p => !p.IsDeleted && p.IsActive && p.StockQuantity > 0)
+                .SelectAll(p => p.DeletedAt == null && p.IsActive && p.StockQuantity > 0)
                 .ToListAsync();
 
             if (!customers.Any() || !products.Any())

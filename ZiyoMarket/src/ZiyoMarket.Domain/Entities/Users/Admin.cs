@@ -1,4 +1,4 @@
-﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Domain.Common;
 using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Support;
 
@@ -101,7 +101,7 @@ public class Admin : BaseAuditableEntity
     /// </summary>
     public void ChangeRole(string newRole)
     {
-        var allowedRoles = new[] { "Admin", "SuperAdmin" };
+        var allowedRoles = new[] { "Admin", "SuperAdmin", "Sotuvchi" };
 
         if (!allowedRoles.Contains(newRole))
             throw new ArgumentException($"Noto'g'ri rol: {newRole}");

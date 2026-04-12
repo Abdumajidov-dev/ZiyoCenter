@@ -40,5 +40,10 @@ public enum NotificationType
     /// </summary>
     Promotion = 7,
     SupportMessage = 8,
-    NewOrder = 9
+    NewOrder = 9,
+
+    /// <summary>
+    /// Mijoz to'lov chekini yukladi — admin tasdiqlashi kerak
+    /// </summary>
+    PaymentReceiptUploaded = 10
 }

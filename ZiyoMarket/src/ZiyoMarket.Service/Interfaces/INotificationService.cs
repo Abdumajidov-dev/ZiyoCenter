@@ -18,6 +18,7 @@ public interface INotificationService
     Task<Result> NotifyOrderStatusChangedAsync(int orderId, string newStatus);
     Task<Result> NotifyCashbackEarnedAsync(int customerId, decimal amount, int orderId);
     Task<Result> NotifyAdminAboutNewOrderAsync(int orderId);
+    Task NotifyAdminsAboutPaymentReceiptAsync(int orderId, int customerId, decimal finalPrice);
 
     // Bulk operations
     Task<Result> DeleteAllNotificationsAsync(int deletedBy, DateTime? startDate = null, DateTime? endDate = null);
