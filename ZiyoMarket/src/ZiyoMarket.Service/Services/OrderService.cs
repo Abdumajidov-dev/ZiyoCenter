@@ -123,12 +123,17 @@ public class OrderService : IOrderService
                 if (!cartItems.Any())
                     return Result<OrderDetailDto>.BadRequest("Cart is empty");
 
-                orderItems = cartItems.Select(c => new OrderItem
+                orderItems = cartItems.Select(c =>
                 {
-                    ProductId = c.ProductId,
-                    ProductName = c.Product.Name,
-                    Quantity = c.Quantity,
-                    UnitPrice = c.Product.Price,
+                    var requestItem = request.Items?.FirstOrDefault(i => i.ProductId == c.ProductId);
+                    var quantity = requestItem != null && requestItem.Quantity > 0 ? requestItem.Quantity : c.Quantity;
+                    return new OrderItem
+                    {
+                        ProductId = c.ProductId,
+                        ProductName = c.Product.Name,
+                        Quantity = quantity,
+                        UnitPrice = c.Product.Price,
+                    };
                 }).ToList();
             }
             else
