@@ -15,8 +15,7 @@ public class LoginRequestDto
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
     
-    [Required(ErrorMessage = "User type is required")]
-    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
+    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin — optional, defaults to Customer
 }
 
 /// <summary>
@@ -139,7 +138,6 @@ public class VerifyCodeDto
     public string Phone { get; set; } = string.Empty;
     
     [Required(ErrorMessage = "Verification code is required")]
-    [StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
     public string Code { get; set; } = string.Empty;
 }
 
@@ -221,8 +219,7 @@ public class RegisterUserDto
     [Compare("Password", ErrorMessage = "Passwords do not match")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "User type is required")]
-    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin
+    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin — optional, defaults to Customer
 
     // Optional fields
     [MaxLength(500)]
@@ -274,6 +271,14 @@ public class CreateDevAdminDto
 
     [Compare("Password", ErrorMessage = "Passwords do not match")]
     public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// OTP settings — configurable from appsettings.json
+/// </summary>
+public class OtpSettings
+{
+    public string DefaultCode { get; set; } = "00000";
 }
 
 /// <summary>

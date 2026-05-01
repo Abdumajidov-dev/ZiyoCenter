@@ -119,13 +119,15 @@ The API uses snake_case for all JSON responses (not PascalCase or camelCase):
 
 ## File Naming Conventions
 
-Some Service layer files use a numeric prefix that reflects historical creation order. **Do not create new files with this pattern; instead edit the existing numbered file in place:**
+Some legacy Service layer files use a numeric prefix. Do not create new files with this pattern:
 
-- `Service/Interfaces/11_Interfaces_IAuthService.cs` — auth service interface
-- `Service/Interfaces/12_Interfaces_IProductService.cs` — product service interface
-- `Service/Interfaces/13_Interfaces_IOrderCashbackCartServices.cs` — order/cashback/cart interfaces
-- `Service/Validators/14_Validators_FluentValidators.cs` — **all** FluentValidation validators
-- `Service/Services/17_Services_ProductService.cs` — product service implementation
+- `Service/Interfaces/11_Interfaces_IAuthService.cs` — auth service interface (edit in-place)
+- `Service/Interfaces/12_Interfaces_IProductService.cs` — product service interface (edit in-place)
+- `Service/Interfaces/13_Interfaces_IOrderCashbackCartServices.cs` — **empty stub**, do not use; Order/Cart/Cashback interfaces are in their own unnumbered files (`IOrderService.cs`, `ICartService.cs`, `ICashbackService.cs`)
+- `Service/Validators/14_Validators_FluentValidators.cs` — **all** FluentValidation validators (edit in-place)
+- `Service/Services/17_Services_ProductService.cs` — product service implementation (edit in-place)
+
+**New interfaces and services:** Use normal naming (`IFooService.cs`, `FooService.cs`) — the numbered pattern is legacy.
 
 When adding new validators, add them to `14_Validators_FluentValidators.cs`. Do not create separate validator files.
 

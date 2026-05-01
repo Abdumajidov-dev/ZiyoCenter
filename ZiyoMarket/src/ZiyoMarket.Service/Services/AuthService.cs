@@ -23,15 +23,18 @@ public class AuthService : IAuthService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
+    private readonly OtpSettings _otpSettings;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        IOptions<JwtSettings> jwtSettings)
+        IOptions<JwtSettings> jwtSettings,
+        IOptions<OtpSettings> otpSettings)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
+        _otpSettings = otpSettings.Value;
     }
 
     // ============ Login ============
@@ -40,23 +43,43 @@ public class AuthService : IAuthService
     {
         try
         {
-            // Normalize UserType to prevent case mismatch (admin → Admin, seller → Seller)
-            request.UserType = request.UserType?.Trim() switch
+            // Normalize UserType
+            var rawType = request.UserType?.Trim();
+            request.UserType = rawType switch
             {
                 { } s when s.Equals("admin", StringComparison.OrdinalIgnoreCase) => "Admin",
                 { } s when s.Equals("seller", StringComparison.OrdinalIgnoreCase) => "Seller",
                 { } s when s.Equals("customer", StringComparison.OrdinalIgnoreCase) => "Customer",
-                _ => request.UserType
+                _ => null // null = auto-detect
             };
 
-            // Find user based on UserType
-            object? user = request.UserType switch
+            // Find user — auto-detect by phone if UserType not given
+            object? user = null;
+            if (request.UserType != null)
             {
-                "Customer" => await FindCustomerByPhoneAsync(request.Phone),
-                "Seller" => await FindSellerByPhoneAsync(request.Phone),
-                "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
-                _ => null
-            };
+                user = request.UserType switch
+                {
+                    "Customer" => await FindCustomerByPhoneAsync(request.Phone),
+                    "Seller" => await FindSellerByPhoneAsync(request.Phone),
+                    "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
+                    _ => null
+                };
+            }
+            else
+            {
+                var foundCustomer = await FindCustomerByPhoneAsync(request.Phone);
+                if (foundCustomer != null) { user = foundCustomer; request.UserType = "Customer"; }
+                else
+                {
+                    var foundSeller = await FindSellerByPhoneAsync(request.Phone);
+                    if (foundSeller != null) { user = foundSeller; request.UserType = "Seller"; }
+                    else
+                    {
+                        var foundAdmin = await FindAdminByUsernameOrPhoneAsync(request.Phone);
+                        if (foundAdmin != null) { user = foundAdmin; request.UserType = "Admin"; }
+                    }
+                }
+            }
 
             if (user == null)
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
@@ -106,6 +129,16 @@ public class AuthService : IAuthService
     {
         try
         {
+            // Normalize UserType — null/empty defaults to Customer
+            request.UserType = request.UserType?.Trim() switch
+            {
+                null or "" => "Customer",
+                { } s when s.Equals("admin", StringComparison.OrdinalIgnoreCase) => "Admin",
+                { } s when s.Equals("seller", StringComparison.OrdinalIgnoreCase) => "Seller",
+                { } s when s.Equals("customer", StringComparison.OrdinalIgnoreCase) => "Customer",
+                _ => "Customer"
+            };
+
             // Validate UserType
             if (request.UserType != "Customer" && request.UserType != "Seller" && request.UserType != "Admin")
                 return Result<LoginResponseDto>.BadRequest("Invalid user type. Must be Customer, Seller, or Admin");
@@ -533,11 +566,9 @@ public class AuthService : IAuthService
     {
         try
         {
-            // TODO: Verify code from cache/database
-
             await Task.CompletedTask;
 
-            if (code.Length != 6)
+            if (code != _otpSettings.DefaultCode)
                 return Result.BadRequest("Invalid verification code");
 
             return Result.Success("Code verified");
@@ -790,8 +821,7 @@ public class AuthService : IAuthService
 
     private string GenerateVerificationCode()
     {
-        var random = new Random();
-        return random.Next(100000, 999999).ToString();
+        return _otpSettings.DefaultCode;
     }
 
     // ============ Change User Role (Admin Only) ============

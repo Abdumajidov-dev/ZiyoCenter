@@ -39,6 +39,9 @@ builder.Services.AddControllers()
 // To'lov sozlamalari
 builder.Services.Configure<PaymentSettings>(builder.Configuration.GetSection("PaymentSettings"));
 
+// OTP sozlamalari
+builder.Services.Configure<OtpSettings>(builder.Configuration.GetSection("OtpSettings"));
+
 builder.Services.AddEndpointsApiExplorer();
 
 // ✅ Swagger sozlamalari
