@@ -84,11 +84,6 @@ public class AuthService : IAuthService
             if (user == null)
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
-            // Verify password
-            string passwordHash = GetPasswordHash(user, request.UserType);
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
-                return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
-
             // Check if user is active
             if (!IsUserActive(user, request.UserType))
                 return Result<LoginResponseDto>.Forbidden("Account is inactive");
