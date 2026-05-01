@@ -15,7 +15,7 @@ public class LoginRequestDto
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     public string Password { get; set; } = string.Empty;
     
-    public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin — optional, defaults to Customer
+    public string? UserType { get; set; } // Customer, Seller, Admin — optional, null = auto-detect by phone
 }
 
 /// <summary>
