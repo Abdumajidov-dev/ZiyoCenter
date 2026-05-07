@@ -63,6 +63,8 @@ public static class ServiceExtension
 
         services.AddScoped<ISupportService, SupportService>();
 
+        services.AddHttpContextAccessor();
+
         return services;
     }
 }

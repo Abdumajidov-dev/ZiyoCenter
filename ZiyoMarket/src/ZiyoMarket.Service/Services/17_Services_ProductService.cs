@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -18,11 +19,34 @@ namespace ZiyoMarket.Service.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ProductService(IUnitOfWork unitOfWork, IMapper mapper)
+        public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        private string? ToAbsoluteUrl(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return null;
+            if (path.StartsWith("http://") || path.StartsWith("https://")) return path;
+            var request = _httpContextAccessor.HttpContext?.Request;
+            if (request == null) return path;
+            var trimmed = path.TrimStart('/');
+            return $"{request.Scheme}://{request.Host}/{trimmed}";
+        }
+
+        private void ApplyAbsoluteUrls(ProductDetailDto dto)
+        {
+            dto.ImageUrl = ToAbsoluteUrl(dto.ImageUrl);
+            dto.ImageUrls = dto.ImageUrls.Select(u => ToAbsoluteUrl(u) ?? u).ToList();
+        }
+
+        private void ApplyAbsoluteUrl(ProductListDto dto)
+        {
+            dto.ImageUrl = ToAbsoluteUrl(dto.ImageUrl);
         }
 
         // ===================== CRUD =====================
@@ -36,6 +60,7 @@ namespace ZiyoMarket.Service.Services
                 return Result<ProductDetailDto>.NotFound($"Product with ID {productId} not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
+            ApplyAbsoluteUrls(dto);
 
             dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == productId && l.DeletedAt == null);
 
@@ -55,6 +80,7 @@ namespace ZiyoMarket.Service.Services
                 return Result<ProductDetailDto>.NotFound($"Product with QR code '{qrCode}' not found");
 
             var dto = _mapper.Map<ProductDetailDto>(product);
+            ApplyAbsoluteUrls(dto);
             dto.LikesCount = await _unitOfWork.ProductLikes.CountAsync(l => l.ProductId == product.Id && l.DeletedAt == null);
 
             if (customerId.HasValue)
@@ -104,6 +130,7 @@ namespace ZiyoMarket.Service.Services
                 .ToListAsync();
 
             var resultDtos = _mapper.Map<List<ProductListDto>>(products);
+            foreach (var d in resultDtos) ApplyAbsoluteUrl(d);
 
             if (customerId.HasValue)
             {
@@ -157,7 +184,9 @@ namespace ZiyoMarket.Service.Services
 
             product.Category = category;
 
-            return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product created successfully", 201);
+            var createdDto = _mapper.Map<ProductDetailDto>(product);
+            ApplyAbsoluteUrls(createdDto);
+            return Result<ProductDetailDto>.Success(createdDto, "Product created successfully", 201);
         }
 
         public async Task<Result<ProductDetailDto>> UpdateProductAsync(UpdateProductDto request, int updatedBy)
@@ -210,7 +239,9 @@ namespace ZiyoMarket.Service.Services
 
             product.Category = category;
 
-            return Result<ProductDetailDto>.Success(_mapper.Map<ProductDetailDto>(product), "Product updated successfully");
+            var updatedDto = _mapper.Map<ProductDetailDto>(product);
+            ApplyAbsoluteUrls(updatedDto);
+            return Result<ProductDetailDto>.Success(updatedDto, "Product updated successfully");
         }
 
         public async Task<Result> DeleteProductAsync(int productId, int deletedBy)
