@@ -39,6 +39,8 @@ public class Seller : BaseAuditableEntity
     /// </summary>
     public bool IsActive { get; set; } = true;
 
+    public string? FcmToken { get; set; }
+
     // Navigation Properties
 
     /// <summary>

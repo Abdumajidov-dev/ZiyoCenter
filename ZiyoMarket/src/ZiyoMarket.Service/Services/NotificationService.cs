@@ -14,11 +14,13 @@ public class NotificationService : INotificationService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IFcmService _fcm;
 
-    public NotificationService(IUnitOfWork unitOfWork, IMapper mapper)
+    public NotificationService(IUnitOfWork unitOfWork, IMapper mapper, IFcmService fcm)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _fcm = fcm;
     }
 
     public async Task<Result> SendNotificationAsync(CreateNotificationDto request)
@@ -42,7 +44,7 @@ public class NotificationService : INotificationService
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
 
-            // TODO: Send push notification if needed
+            await SendPushByUserTypeAsync(request.UserId, request.UserType, request.Title, request.Message);
 
             return Result.Success("Notification sent successfully");
         }
@@ -224,6 +226,11 @@ public class NotificationService : INotificationService
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
 
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer?.FcmToken != null)
+                await _fcm.SendToTokenAsync(customer.FcmToken, notification.Title, notification.Message,
+                    new Dictionary<string, string> { ["type"] = "OrderCreated", ["order_id"] = orderId.ToString() });
+
             return Result.Success("Order creation notification sent");
         }
         catch (Exception ex)
@@ -256,6 +263,11 @@ public class NotificationService : INotificationService
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
 
+            var customer = await _unitOfWork.Customers.GetByIdAsync(order.CustomerId);
+            if (customer?.FcmToken != null)
+                await _fcm.SendToTokenAsync(customer.FcmToken, notification.Title, notification.Message,
+                    new Dictionary<string, string> { ["type"] = "OrderStatusChanged", ["order_id"] = orderId.ToString() });
+
             return Result.Success("Order status change notification sent");
         }
         catch (Exception ex)
@@ -283,6 +295,11 @@ public class NotificationService : INotificationService
 
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer?.FcmToken != null)
+                await _fcm.SendToTokenAsync(customer.FcmToken, notification.Title, notification.Message,
+                    new Dictionary<string, string> { ["type"] = "CashbackEarned", ["amount"] = amount.ToString() });
 
             return Result.Success("Cashback earned notification sent");
         }
@@ -324,6 +341,13 @@ public class NotificationService : INotificationService
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Topic orqali barcha admin qurilmalarga bir yo'la yuborish
+            await _fcm.SendToTopicAsync("admins",
+                "Yangi buyurtma",
+                $"Yangi #{order.OrderNumber} raqamli buyurtma qabul qilindi",
+                new Dictionary<string, string> { ["type"] = "NewOrder", ["order_id"] = orderId.ToString() });
+
             return Result.Success("Admin notifications sent");
         }
         catch (Exception ex)
@@ -376,6 +400,11 @@ public class NotificationService : INotificationService
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            await _fcm.SendToTopicAsync("admins",
+                "To'lov cheki keldi",
+                $"{customerName} buyurtmasi uchun to'lov cheki yuborildi. {finalPrice:N0} so'm",
+                new Dictionary<string, string> { ["type"] = "PaymentReceiptUploaded", ["order_id"] = orderId.ToString() });
         }
         catch
         {
@@ -488,8 +517,11 @@ public class NotificationService : INotificationService
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            await _fcm.SendToTopicAsync("admins", "Yangi support chat", "Yangi mijoz support chatni boshladi",
+                new Dictionary<string, string> { ["type"] = "SupportMessage", ["chat_id"] = chatId.ToString() });
         }
-        catch (Exception ex)
+        catch
         {
             // Log error
         }
@@ -514,8 +546,13 @@ public class NotificationService : INotificationService
 
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer?.FcmToken != null)
+                await _fcm.SendToTokenAsync(customer.FcmToken, "Chat yopildi", "Sizning support chatgiz yopildi",
+                    new Dictionary<string, string> { ["type"] = "SupportMessage", ["chat_id"] = chatId.ToString() });
         }
-        catch (Exception ex)
+        catch
         {
             // Log error
         }
@@ -592,10 +629,38 @@ public class NotificationService : INotificationService
 
             await _unitOfWork.Notifications.InsertAsync(notification);
             await _unitOfWork.SaveChangesAsync();
+
+            var customer = await _unitOfWork.Customers.GetByIdAsync(customerId);
+            if (customer?.FcmToken != null)
+                await _fcm.SendToTokenAsync(customer.FcmToken, "Yangi javob", "Support jamoasidan yangi javob keldi",
+                    new Dictionary<string, string> { ["type"] = "SupportMessage", ["chat_id"] = chatId.ToString() });
         }
-        catch (Exception ex)
+        catch
         {
             // Log error
+        }
+    }
+
+    // ============ Helper ============
+
+    private async Task SendPushByUserTypeAsync(int userId, string userType, string title, string body)
+    {
+        try
+        {
+            string? token = userType switch
+            {
+                "Customer" => (await _unitOfWork.Customers.GetByIdAsync(userId))?.FcmToken,
+                "Seller"   => (await _unitOfWork.Sellers.GetByIdAsync(userId))?.FcmToken,
+                "Admin"    => (await _unitOfWork.Admins.GetByIdAsync(userId))?.FcmToken,
+                _          => null
+            };
+
+            if (!string.IsNullOrEmpty(token))
+                await _fcm.SendToTokenAsync(token, title, body);
+        }
+        catch
+        {
+            // Push xatoligi DB ga saqlangan notificationni bekor qilmasin
         }
     }
 }

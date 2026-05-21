@@ -276,7 +276,38 @@ public class CreateDevAdminDto
 /// </summary>
 public class OtpSettings
 {
-    public string DefaultCode { get; set; } = "00000";
+    public string DefaultCode { get; set; } = "0000";
+}
+
+/// <summary>
+/// FCM token yangilash uchun DTO
+/// </summary>
+public class UpdateFcmTokenDto
+{
+    [Required]
+    public string FcmToken { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Firebase Cloud Messaging settings
+/// </summary>
+public class FcmSettings
+{
+    public bool Enabled { get; set; } = false;
+    /// <summary>Firebase service account JSON content (Railway env var: FcmSettings__CredentialsJson)</summary>
+    public string CredentialsJson { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Eskiz SMS gateway settings
+/// </summary>
+public class EskizSettings
+{
+    public bool Enabled { get; set; } = false;
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Token { get; set; } = string.Empty;
+    public string SenderName { get; set; } = "4546";
 }
 
 /// <summary>

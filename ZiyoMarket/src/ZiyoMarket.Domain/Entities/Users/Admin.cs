@@ -59,6 +59,8 @@ public class Admin : BaseAuditableEntity
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
 
+    public string? FcmToken { get; set; }
+
     // Navigation Properties
 
     /// <summary>

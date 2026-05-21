@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ZiyoMarket.Data.UnitOfWorks;
+using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.Interfaces;
 
@@ -13,10 +15,12 @@ namespace ZiyoMarket.Api.Controllers;
 public class AuthController : BaseController
 {
     private readonly IAuthService _authService;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IUnitOfWork unitOfWork)
     {
         _authService = authService;
+        _unitOfWork = unitOfWork;
     }
 
     /// <summary>
@@ -285,18 +289,52 @@ public class AuthController : BaseController
     /// <summary>
     /// Validate token
     /// </summary>
-    /// <param name="token">JWT token</param>
-    /// <returns>Validation result</returns>
     [HttpPost("validate-token")]
     [AllowAnonymous]
     public async Task<IActionResult> ValidateToken([FromBody] string token)
     {
         var result = await _authService.ValidateTokenAsync(token);
+        return Ok(new { success = true, isValid = result.Data });
+    }
 
-        return Ok(new
+    /// <summary>
+    /// FCM token saqlash — Flutter login bo'lgandan keyin chaqiradi
+    /// </summary>
+    [HttpPut("fcm-token")]
+    [Authorize]
+    public async Task<IActionResult> UpdateFcmToken([FromBody] UpdateFcmTokenDto request)
+    {
+        var userId = GetCurrentUserId();
+        var userType = GetCurrentUserType();
+
+        switch (userType)
         {
-            success = true,
-            isValid = result.Data
-        });
+            case "Customer":
+                var customer = await _unitOfWork.Customers.GetByIdAsync(userId);
+                if (customer == null) return NotFound();
+                customer.FcmToken = request.FcmToken;
+                await _unitOfWork.Customers.UpdateAsync(customer);
+                break;
+
+            case "Seller":
+                var seller = await _unitOfWork.Sellers.GetByIdAsync(userId);
+                if (seller == null) return NotFound();
+                seller.FcmToken = request.FcmToken;
+                await _unitOfWork.Sellers.UpdateAsync(seller);
+                break;
+
+            case "Admin":
+                var admin = await _unitOfWork.Admins.GetByIdAsync(userId);
+                if (admin == null) return NotFound();
+                admin.FcmToken = request.FcmToken;
+                await _unitOfWork.Admins.UpdateAsync(admin);
+                break;
+
+            default:
+                return BadRequest("Unknown user type");
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return Ok(new { success = true, message = "FCM token saved" });
     }
 }

@@ -11,6 +11,8 @@ using ZiyoMarket.Api.Settings;
 using ZiyoMarket.Data.Context;
 using ZiyoMarket.Data.Seed;
 using ZiyoMarket.Service.DTOs.Auth;
+using ZiyoMarket.Service.Interfaces;
+using ZiyoMarket.Service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +43,12 @@ builder.Services.Configure<PaymentSettings>(builder.Configuration.GetSection("Pa
 
 // OTP sozlamalari
 builder.Services.Configure<OtpSettings>(builder.Configuration.GetSection("OtpSettings"));
+
+// Eskiz SMS sozlamalari
+builder.Services.Configure<EskizSettings>(builder.Configuration.GetSection("EskizSettings"));
+
+// Firebase FCM sozlamalari
+builder.Services.Configure<FcmSettings>(builder.Configuration.GetSection("FcmSettings"));
 
 builder.Services.AddEndpointsApiExplorer();
 

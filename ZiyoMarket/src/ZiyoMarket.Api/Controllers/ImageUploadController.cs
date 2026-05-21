@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace ZiyoMarket.Api.Controllers;
 
@@ -16,6 +19,8 @@ public class ImageUploadController : ControllerBase
 
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
     private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
+    private const int WebpQuality = 82; // 80-85 — hajm va sifat muvozanati
+    private const int MaxDimension = 1920; // Banner uchun yetarli
 
     public ImageUploadController(IWebHostEnvironment env, ILogger<ImageUploadController> logger)
     {
@@ -46,21 +51,30 @@ public class ImageUploadController : ControllerBase
         {
             var year = DateTime.UtcNow.Year.ToString();
             var month = DateTime.UtcNow.Month.ToString("00");
-            
-            // wwwroot/uploads/{type}/{year}/{month}/ papkasiga saqlash
+
             var uploadsFolder = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", type, year, month);
             Directory.CreateDirectory(uploadsFolder);
 
-            var fileName = $"{Guid.NewGuid()}{ext}";
+            // Har doim .webp sifatida saqlanadi
+            var fileName = $"{Guid.NewGuid()}.webp";
             var filePath = Path.Combine(uploadsFolder, fileName);
 
-            await using var stream = new FileStream(filePath, FileMode.Create);
-            await file.CopyToAsync(stream);
+            using var image = await Image.LoadAsync(file.OpenReadStream());
 
-            // Relative path qaytarish
+            // 1920px dan katta bo'lsa kichraytirish (aspect ratio saqlanadi)
+            if (image.Width > MaxDimension || image.Height > MaxDimension)
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(MaxDimension, MaxDimension),
+                    Mode = ResizeMode.Max
+                }));
+
+            var encoder = new WebpEncoder { Quality = WebpQuality };
+            await image.SaveAsync(filePath, encoder);
+
             var relativePath = $"uploads/{type}/{year}/{month}/{fileName}";
 
-            _logger.LogInformation("Rasm yuklandi: {Path}", relativePath);
+            _logger.LogInformation("Rasm WebP ga konvertatsiya qilindi: {Path}", relativePath);
 
             return Ok(new
             {

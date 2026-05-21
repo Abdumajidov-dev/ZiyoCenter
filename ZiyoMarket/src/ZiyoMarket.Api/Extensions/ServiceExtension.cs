@@ -25,6 +25,12 @@ public static class ServiceExtension
         // Transaction management and coordinated repository access
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+        // ========== SMS Gateway ==========
+        services.AddSingleton<IEskizSmsService, EskizSmsService>();
+
+        // ========== Firebase Push Notifications ==========
+        services.AddSingleton<IFcmService, FcmService>();
+
         // ========== Authentication & Authorization ==========
         services.AddScoped<IAuthService, AuthService>();
 
@@ -63,6 +69,8 @@ public static class ServiceExtension
 
         services.AddScoped<ISupportService, SupportService>();
 
+        services.AddMemoryCache();
+        services.AddHttpClient();
         services.AddHttpContextAccessor();
 
         return services;

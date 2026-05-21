@@ -24,17 +24,20 @@ public class AuthService : IAuthService
     private readonly IMapper _mapper;
     private readonly JwtSettings _jwtSettings;
     private readonly OtpSettings _otpSettings;
+    private readonly IEskizSmsService _smsService;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IOptions<JwtSettings> jwtSettings,
-        IOptions<OtpSettings> otpSettings)
+        IOptions<OtpSettings> otpSettings,
+        IEskizSmsService smsService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
         _otpSettings = otpSettings.Value;
+        _smsService = smsService;
     }
 
     // ============ Login ============
@@ -452,14 +455,8 @@ public class AuthService : IAuthService
                 return Result.Success("If account exists, verification code has been sent");
             }
 
-            // Generate and send verification code
-            var code = GenerateVerificationCode();
-
-            // TODO: Send code via SMS
-            // For now, just log it (in production, integrate with SMS/Email service)
-            Console.WriteLine($"Verification code for {request.Phone}: {code}");
-
-            // In production: Store code in cache/database with expiration
+            var phone = GetUserPhone(user, request.UserType ?? "Customer");
+            await _smsService.SendOtpAsync(phone);
 
             return Result.Success("Verification code sent");
         }
@@ -543,12 +540,7 @@ public class AuthService : IAuthService
     {
         try
         {
-            var code = GenerateVerificationCode();
-
-            // TODO: Send via SMS
-            Console.WriteLine($"Verification code for {phone}: {code}");
-
-            await Task.CompletedTask;
+            await _smsService.SendOtpAsync(phone);
             return Result.Success("Verification code sent");
         }
         catch (Exception ex)
@@ -561,9 +553,8 @@ public class AuthService : IAuthService
     {
         try
         {
-            await Task.CompletedTask;
-
-            if (code != _otpSettings.DefaultCode)
+            var valid = await _smsService.VerifyOtpAsync(phone, code);
+            if (!valid)
                 return Result.BadRequest("Invalid verification code");
 
             return Result.Success("Code verified");
@@ -814,10 +805,6 @@ public class AuthService : IAuthService
         }
     }
 
-    private string GenerateVerificationCode()
-    {
-        return _otpSettings.DefaultCode;
-    }
 
     // ============ Change User Role (Admin Only) ============
 

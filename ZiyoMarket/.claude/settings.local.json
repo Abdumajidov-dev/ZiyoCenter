@@ -23,7 +23,12 @@
       "Bash(git push:*)",
       "Bash(dotnet tool:*)",
       "Bash(dotnet ef:*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(curl *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoCenter\\\\ZiyoMarket\\\\src\" -Recurse -Include \"Customer.cs\", \"Seller.cs\", \"Admin.cs\", \"NotificationService.cs\", \"INotificationService.cs\", \"ZiyoMarketDbContext.cs\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoCenter\\\\ZiyoMarket\\\\src\\\\ZiyoMarket.Api\\\\Controllers\" -Recurse -Filter \"*.cs\")",
+      "Bash(Select-Object Name, FullName)"
     ],
     "deny": [],
     "ask": []
