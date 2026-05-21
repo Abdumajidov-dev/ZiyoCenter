@@ -50,8 +50,8 @@ builder.Services.Configure<EskizSettings>(builder.Configuration.GetSection("Eski
 // Firebase FCM sozlamalari
 builder.Services.Configure<FcmSettings>(builder.Configuration.GetSection("FcmSettings"));
 
-// Cloudinary sozlamalari
-builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+// S3-compatible storage sozlamalari (Backblaze B2 / AWS S3)
+builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
 
 builder.Services.AddEndpointsApiExplorer();
 

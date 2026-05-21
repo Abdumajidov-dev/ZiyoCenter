@@ -1,5 +1,5 @@
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
+using Amazon.S3;
+using Amazon.S3.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -15,7 +15,7 @@ namespace ZiyoMarket.Api.Controllers;
 [Authorize]
 public class ImageUploadController : ControllerBase
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly S3Settings _s3;
     private readonly ILogger<ImageUploadController> _logger;
 
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
@@ -23,11 +23,9 @@ public class ImageUploadController : ControllerBase
     private const int WebpQuality = 82;
     private const int MaxDimension = 1920;
 
-    public ImageUploadController(IOptions<CloudinarySettings> cloudinarySettings, ILogger<ImageUploadController> logger)
+    public ImageUploadController(IOptions<S3Settings> s3Settings, ILogger<ImageUploadController> logger)
     {
-        var s = cloudinarySettings.Value;
-        var account = new Account(s.CloudName, s.ApiKey, s.ApiSecret);
-        _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
+        _s3 = s3Settings.Value;
         _logger = logger;
     }
 
@@ -49,7 +47,7 @@ public class ImageUploadController : ControllerBase
 
         try
         {
-            // ImageSharp bilan WebP ga o'tkazish va resize
+            // WebP ga o'tkazish va resize
             using var image = await Image.LoadAsync(file.OpenReadStream());
 
             if (image.Width > MaxDimension || image.Height > MaxDimension)
@@ -63,34 +61,35 @@ public class ImageUploadController : ControllerBase
             await image.SaveAsync(webpStream, new WebpEncoder { Quality = WebpQuality });
             webpStream.Position = 0;
 
-            // Cloudinary ga yuklash
-            var folder = $"ziyo-market/{type}";
-            var publicId = $"{folder}/{Guid.NewGuid()}";
+            // S3 ga yuklash
+            var year = DateTime.UtcNow.Year;
+            var month = DateTime.UtcNow.Month.ToString("00");
+            var fileName = $"{Guid.NewGuid()}.webp";
+            var key = $"{type}/{year}/{month}/{fileName}";
 
-            var uploadParams = new ImageUploadParams
+            using var s3Client = BuildS3Client();
+
+            var putRequest = new PutObjectRequest
             {
-                File = new FileDescription("image.webp", webpStream),
-                PublicId = publicId,
-                Overwrite = false,
-                Format = "webp"
+                BucketName = _s3.BucketName,
+                Key = key,
+                InputStream = webpStream,
+                ContentType = "image/webp",
+                CannedACL = S3CannedACL.PublicRead
             };
 
-            var result = await _cloudinary.UploadAsync(uploadParams);
+            await s3Client.PutObjectAsync(putRequest);
 
-            if (result.Error != null)
-            {
-                _logger.LogError("Cloudinary error: {Error}", result.Error.Message);
-                return StatusCode(500, new { message = "Rasm yuklashda xatolik yuz berdi" });
-            }
+            var fullUrl = $"{_s3.PublicUrl.TrimEnd('/')}/{key}";
 
-            _logger.LogInformation("Cloudinary ga yuklandi: {Url}", result.SecureUrl);
+            _logger.LogInformation("S3 ga yuklandi: {Url}", fullUrl);
 
             return Ok(new
             {
                 success = true,
                 message = "Rasm muvaffaqiyatli yuklandi",
-                file_path = result.PublicId,
-                full_url = result.SecureUrl.ToString()
+                file_path = key,
+                full_url = fullUrl
             });
         }
         catch (Exception ex)
@@ -98,5 +97,15 @@ public class ImageUploadController : ControllerBase
             _logger.LogError(ex, "Rasm yuklashda xatolik");
             return StatusCode(500, new { message = "Rasm yuklashda xatolik yuz berdi" });
         }
+    }
+
+    private AmazonS3Client BuildS3Client()
+    {
+        var config = new AmazonS3Config { ForcePathStyle = true };
+
+        if (!string.IsNullOrWhiteSpace(_s3.ServiceUrl))
+            config.ServiceURL = _s3.ServiceUrl;
+
+        return new AmazonS3Client(_s3.AccessKey, _s3.SecretKey, config);
     }
 }

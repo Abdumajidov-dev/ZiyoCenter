@@ -280,13 +280,17 @@ public class OtpSettings
 }
 
 /// <summary>
-/// Cloudinary settings
+/// S3-compatible storage settings (Backblaze B2, AWS S3, Cloudflare R2)
 /// </summary>
-public class CloudinarySettings
+public class S3Settings
 {
-    public string CloudName { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-    public string ApiSecret { get; set; } = string.Empty;
+    /// <summary>Backblaze: https://s3.us-east-005.backblazeb2.com | AWS: bo'sh qoldiring</summary>
+    public string ServiceUrl { get; set; } = string.Empty;
+    public string AccessKey { get; set; } = string.Empty;
+    public string SecretKey { get; set; } = string.Empty;
+    public string BucketName { get; set; } = string.Empty;
+    /// <summary>Backblaze: https://f005.backblazeb2.com/file/{BucketName} | AWS: https://{BucketName}.s3.amazonaws.com</summary>
+    public string PublicUrl { get; set; } = string.Empty;
 }
 
 /// <summary>
