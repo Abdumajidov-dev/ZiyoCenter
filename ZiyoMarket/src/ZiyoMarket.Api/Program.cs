@@ -50,6 +50,9 @@ builder.Services.Configure<EskizSettings>(builder.Configuration.GetSection("Eski
 // Firebase FCM sozlamalari
 builder.Services.Configure<FcmSettings>(builder.Configuration.GetSection("FcmSettings"));
 
+// Cloudinary sozlamalari
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
 builder.Services.AddEndpointsApiExplorer();
 
 // ✅ Swagger sozlamalari
@@ -161,19 +164,16 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
-// UPLOAD_PATH env var → Railway Volume mount path
-// Local: wwwroot/uploads  |  Railway: /data/uploads
-var uploadPath = Environment.GetEnvironmentVariable("UPLOAD_PATH")
-    ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-Directory.CreateDirectory(uploadPath);
-
-// /uploads/... URL orqali rasm fayllarini serve qilish
-app.UseStaticFiles(new StaticFileOptions
+// Static files (Cloudinary ishlatilganda bu faqat local uchun)
+var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+if (Directory.Exists(wwwrootPath))
 {
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadPath),
-    RequestPath = "/uploads"
-});
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(wwwrootPath),
+        RequestPath = ""
+    });
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

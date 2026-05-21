@@ -1,41 +1,36 @@
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using ZiyoMarket.Service.DTOs.Auth;
 
 namespace ZiyoMarket.Api.Controllers;
 
-/// <summary>
-/// Rasm yuklash controller
-/// </summary>
 [ApiController]
 [Route("api/image_upload")]
 [Authorize]
 public class ImageUploadController : ControllerBase
 {
-    private readonly IWebHostEnvironment _env;
+    private readonly Cloudinary _cloudinary;
     private readonly ILogger<ImageUploadController> _logger;
 
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-    private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
+    private const long MaxFileSizeBytes = 5 * 1024 * 1024;
     private const int WebpQuality = 82;
     private const int MaxDimension = 1920;
 
-    // Railway: UPLOAD_PATH=/data/uploads  |  Local: wwwroot/uploads
-    private static readonly string UploadRoot =
-        Environment.GetEnvironmentVariable("UPLOAD_PATH")
-        ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-    public ImageUploadController(IWebHostEnvironment env, ILogger<ImageUploadController> logger)
+    public ImageUploadController(IOptions<CloudinarySettings> cloudinarySettings, ILogger<ImageUploadController> logger)
     {
-        _env = env;
+        var s = cloudinarySettings.Value;
+        var account = new Account(s.CloudName, s.ApiKey, s.ApiSecret);
+        _cloudinary = new Cloudinary(account) { Api = { Secure = true } };
         _logger = logger;
     }
 
-    /// <summary>
-    /// Rasm yuklash (mahsulot yoki kategoriya)
-    /// </summary>
     [HttpPost]
     [AllowAnonymous]
     public async Task<IActionResult> UploadImage(
@@ -54,39 +49,48 @@ public class ImageUploadController : ControllerBase
 
         try
         {
-            var year = DateTime.UtcNow.Year.ToString();
-            var month = DateTime.UtcNow.Month.ToString("00");
-
-            var uploadsFolder = Path.Combine(UploadRoot, type, year, month);
-            Directory.CreateDirectory(uploadsFolder);
-
-            // Har doim .webp sifatida saqlanadi
-            var fileName = $"{Guid.NewGuid()}.webp";
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
+            // ImageSharp bilan WebP ga o'tkazish va resize
             using var image = await Image.LoadAsync(file.OpenReadStream());
 
-            // 1920px dan katta bo'lsa kichraytirish (aspect ratio saqlanadi)
             if (image.Width > MaxDimension || image.Height > MaxDimension)
                 image.Mutate(x => x.Resize(new ResizeOptions
                 {
-                    Size = new Size(MaxDimension, MaxDimension),
+                    Size = new SixLabors.ImageSharp.Size(MaxDimension, MaxDimension),
                     Mode = ResizeMode.Max
                 }));
 
-            var encoder = new WebpEncoder { Quality = WebpQuality };
-            await image.SaveAsync(filePath, encoder);
+            using var webpStream = new MemoryStream();
+            await image.SaveAsync(webpStream, new WebpEncoder { Quality = WebpQuality });
+            webpStream.Position = 0;
 
-            var relativePath = $"uploads/{type}/{year}/{month}/{fileName}"; // URL path: /uploads/...
+            // Cloudinary ga yuklash
+            var folder = $"ziyo-market/{type}";
+            var publicId = $"{folder}/{Guid.NewGuid()}";
 
-            _logger.LogInformation("Rasm WebP ga konvertatsiya qilindi: {Path}", relativePath);
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription("image.webp", webpStream),
+                PublicId = publicId,
+                Overwrite = false,
+                Format = "webp"
+            };
+
+            var result = await _cloudinary.UploadAsync(uploadParams);
+
+            if (result.Error != null)
+            {
+                _logger.LogError("Cloudinary error: {Error}", result.Error.Message);
+                return StatusCode(500, new { message = "Rasm yuklashda xatolik yuz berdi" });
+            }
+
+            _logger.LogInformation("Cloudinary ga yuklandi: {Url}", result.SecureUrl);
 
             return Ok(new
             {
                 success = true,
                 message = "Rasm muvaffaqiyatli yuklandi",
-                file_path = relativePath,
-                full_url = $"{Request.Scheme}://{Request.Host}/{relativePath}"
+                file_path = result.PublicId,
+                full_url = result.SecureUrl.ToString()
             });
         }
         catch (Exception ex)
