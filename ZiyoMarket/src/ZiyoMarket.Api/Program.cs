@@ -161,13 +161,18 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
-// Ensure wwwroot/uploads exists and configure static files
-var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-Directory.CreateDirectory(Path.Combine(wwwrootPath, "uploads"));
+// UPLOAD_PATH env var → Railway Volume mount path
+// Local: wwwroot/uploads  |  Railway: /data/uploads
+var uploadPath = Environment.GetEnvironmentVariable("UPLOAD_PATH")
+    ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+Directory.CreateDirectory(uploadPath);
+
+// /uploads/... URL orqali rasm fayllarini serve qilish
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(wwwrootPath),
-    RequestPath = ""
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadPath),
+    RequestPath = "/uploads"
 });
 
 app.UseAuthentication();
