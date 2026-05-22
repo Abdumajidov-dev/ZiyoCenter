@@ -95,7 +95,7 @@ public class ImageUploadController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Rasm yuklashda xatolik");
-            return StatusCode(500, new { message = "Rasm yuklashda xatolik yuz berdi" });
+            return StatusCode(500, new { message = "Rasm yuklashda xatolik yuz berdi", detail = ex.Message });
         }
     }
 

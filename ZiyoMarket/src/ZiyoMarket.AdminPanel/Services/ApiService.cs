@@ -14,7 +14,7 @@ public class ApiService : IApiService
     public ApiService(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("https://ziyocenter.onrender.com/api/");
+        _httpClient.BaseAddress = new Uri("https://ziyocenter-production.up.railway.app/api/");
     }
 
     public void SetAuthToken(string token)
