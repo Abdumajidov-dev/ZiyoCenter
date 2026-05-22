@@ -273,6 +273,7 @@ appsettings.Development.json
 appsettings.Local.json
 *.env
 .env.*
+firebase-credentials.json
 
 # OS files
 .DS_Store

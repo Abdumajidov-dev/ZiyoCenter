@@ -21,18 +21,26 @@ public class FcmService : IFcmService
         _settings = settings.Value;
         _logger = logger;
 
-        if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.CredentialsJson))
+        if (_settings.Enabled)
         {
             try
             {
-                if (FirebaseApp.DefaultInstance == null)
+                var credJson = _settings.CredentialsJson;
+
+                if (string.IsNullOrWhiteSpace(credJson) && !string.IsNullOrWhiteSpace(_settings.CredentialsFilePath))
+                    credJson = File.ReadAllText(_settings.CredentialsFilePath);
+
+                if (!string.IsNullOrWhiteSpace(credJson))
                 {
-                    FirebaseApp.Create(new AppOptions
+                    if (FirebaseApp.DefaultInstance == null)
                     {
-                        Credential = GoogleCredential.FromJson(_settings.CredentialsJson)
-                    });
+                        FirebaseApp.Create(new AppOptions
+                        {
+                            Credential = GoogleCredential.FromJson(credJson)
+                        });
+                    }
+                    _messaging = FirebaseMessaging.DefaultInstance;
                 }
-                _messaging = FirebaseMessaging.DefaultInstance;
             }
             catch (Exception ex)
             {

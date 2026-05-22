@@ -308,8 +308,8 @@ public class UpdateFcmTokenDto
 public class FcmSettings
 {
     public bool Enabled { get; set; } = false;
-    /// <summary>Firebase service account JSON content (Railway env var: FcmSettings__CredentialsJson)</summary>
     public string CredentialsJson { get; set; } = string.Empty;
+    public string CredentialsFilePath { get; set; } = string.Empty;
 }
 
 /// <summary>
