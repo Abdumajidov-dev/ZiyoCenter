@@ -28,7 +28,10 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoCenter\\\\ZiyoMarket\\\\src\" -Recurse -Include \"Customer.cs\", \"Seller.cs\", \"Admin.cs\", \"NotificationService.cs\", \"INotificationService.cs\", \"ZiyoMarketDbContext.cs\")",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoCenter\\\\ZiyoMarket\\\\src\\\\ZiyoMarket.Api\\\\Controllers\" -Recurse -Filter \"*.cs\")",
-      "Bash(Select-Object Name, FullName)"
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\avazb\" -Recurse -Include \"*.jpg\",\"*.png\",\"*.jpeg\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 3 FullName)",
+      "Bash(python3 -c ' *)"
     ],
     "deny": [],
     "ask": []
