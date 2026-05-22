@@ -162,14 +162,15 @@ public class NotificationService : INotificationService
                     n.DeletedAt == null)
                 .ToListAsync();
 
+            var now = DateTime.UtcNow;
             foreach (var notification in notifications)
             {
                 notification.IsRead = true;
-                notification.ReadAt = DateTime.UtcNow;
+                notification.ReadAt = now;
                 notification.MarkAsUpdated();
-                await _unitOfWork.Notifications.Update(notification, notification.Id);
             }
 
+            _unitOfWork.Notifications.UpdateRange(notifications);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success($"{notifications.Count} notifications marked as read");
         }
@@ -427,11 +428,9 @@ public class NotificationService : INotificationService
             var notifications = await query.ToListAsync();
 
             foreach (var notification in notifications)
-            {
                 notification.Delete();
-                await _unitOfWork.Notifications.Update(notification, notification.Id);
-            }
 
+            _unitOfWork.Notifications.UpdateRange(notifications);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success($"{notifications.Count} notifications deleted");
         }

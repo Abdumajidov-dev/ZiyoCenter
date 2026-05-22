@@ -45,8 +45,8 @@ if (!result.IsSuccess)
       return Ok(new { success = true, count = result.Data });
     }
 
-    [HttpPost("{id}/read")]
- public async Task<IActionResult> MarkAsRead(int id)
+    [HttpPut("{id}/read")]
+    public async Task<IActionResult> MarkAsRead(int id)
     {
         var userId = GetCurrentUserId();
         var result = await _notificationService.MarkAsReadAsync(id, userId);
@@ -57,7 +57,7 @@ if (!result.IsSuccess)
   return Ok(new { success = true, message = result.Message });
     }
 
-  [HttpPost("read-all")]
+    [HttpPut("read-all")]
     public async Task<IActionResult> MarkAllAsRead()
     {
    var userId = GetCurrentUserId();
