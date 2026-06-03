@@ -102,7 +102,7 @@ public class ProductController : BaseController
     [HttpGet("search")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SearchProducts([FromQuery] string searchTerm, [FromQuery] int? categoryId = null)
+    public async Task<IActionResult> SearchProducts([FromQuery(Name = "search_term")] string searchTerm, [FromQuery(Name = "category_id")] int? categoryId = null)
     {
         var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
         var result = await _productService.SearchProductsAsync(searchTerm, categoryId, customerId);

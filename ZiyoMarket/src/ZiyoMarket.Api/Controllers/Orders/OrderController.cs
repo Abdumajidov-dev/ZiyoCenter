@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Service.DTOs.Orders;
 using ZiyoMarket.Service.Interfaces;
 
@@ -12,10 +14,35 @@ namespace ZiyoMarket.Api.Controllers.Orders;
 public class OrderController : BaseController
 {
     private readonly IOrderService _orderService;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public OrderController(IOrderService orderService)
+    public OrderController(IOrderService orderService, IUnitOfWork unitOfWork)
     {
         _orderService = orderService;
+        _unitOfWork = unitOfWork;
+    }
+
+    [HttpGet("discount-reasons")]
+    [Authorize(Roles = "Admin,Seller")]
+    public async Task<IActionResult> GetDiscountReasons()
+    {
+        var reasons = await _unitOfWork.DiscountReasons
+            .SelectAll(r => r.IsActive)
+            .OrderBy(r => r.DisplayOrder)
+            .Select(r => new DiscountReasonDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Description = r.Description,
+                IsActive = r.IsActive,
+                MaxDiscountPercentage = r.MaxDiscountPercentage,
+                MaxDiscountAmount = r.MaxDiscountAmount,
+                IsSellerOnly = r.IsSellerOnly,
+                DisplayOrder = r.DisplayOrder
+            })
+            .ToListAsync();
+
+        return Ok(new { success = true, data = reasons });
     }
 
     [HttpGet("{id}")]

@@ -248,6 +248,10 @@ public class DiscountReasonDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsActive { get; set; }
+    public decimal? MaxDiscountPercentage { get; set; }
+    public decimal? MaxDiscountAmount { get; set; }
+    public bool IsSellerOnly { get; set; }
+    public int DisplayOrder { get; set; }
 }
 
 /// <summary>

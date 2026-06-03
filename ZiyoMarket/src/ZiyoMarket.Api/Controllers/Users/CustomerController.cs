@@ -7,7 +7,7 @@ namespace ZiyoMarket.Api.Controllers.Users;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize(Roles = "Admin,SuperAdmin,Seller")]
 public class CustomerController : BaseController
 {
     private readonly ICustomerService _customerService;
@@ -78,6 +78,7 @@ public class CustomerController : BaseController
     /// Mijozni yangilash
     /// </summary>
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> UpdateCustomer(int id, [FromBody] UpdateCustomerDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -93,6 +94,7 @@ public class CustomerController : BaseController
     /// Mijozni o'chirish (soft delete)
     /// </summary>
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -108,6 +110,7 @@ public class CustomerController : BaseController
     /// Mijoz faolligini o'zgartirish
     /// </summary>
     [HttpPost("{id}/toggle-status")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IActionResult> ToggleStatus(int id)
     {
         var updatedBy = GetCurrentUserId();
@@ -123,7 +126,7 @@ public class CustomerController : BaseController
     /// Mijozlarni qidirish
     /// </summary>
     [HttpGet("search")]
-    public async Task<IActionResult> SearchCustomers([FromQuery] string searchTerm)
+    public async Task<IActionResult> SearchCustomers([FromQuery(Name = "search_term")] string searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return BadRequest(new { message = "Qidiruv matni bo'sh bo'lishi mumkin emas" });

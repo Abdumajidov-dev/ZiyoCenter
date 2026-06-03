@@ -31,7 +31,8 @@
       "Bash(Select-Object Name, FullName)",
       "Bash(Get-ChildItem \"C:\\\\Users\\\\avazb\" -Recurse -Include \"*.jpg\",\"*.png\",\"*.jpeg\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object -First 3 FullName)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(git reset *)"
     ],
     "deny": [],
     "ask": []
