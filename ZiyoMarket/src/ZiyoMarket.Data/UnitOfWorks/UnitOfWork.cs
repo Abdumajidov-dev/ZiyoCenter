@@ -8,6 +8,7 @@ using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
+using ZiyoMarket.Domain.Entities.Finance;
 using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Entities.Users;
 
@@ -52,6 +53,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<SystemSetting> SystemSettings { get; private set; }
     public IRepository<DailySalesSummary> DailySalesSummaries { get; private set; }
     public IRepository<PaymentCard> PaymentCards { get; private set; }
+    public IRepository<Expense> Expenses { get; private set; }
 
     public UnitOfWork(ZiyoMarketDbContext context)
     {
@@ -79,6 +81,7 @@ public class UnitOfWork : IUnitOfWork
         SystemSettings = new Repository<SystemSetting>(_context);
         DailySalesSummaries = new Repository<DailySalesSummary>(_context);
         PaymentCards = new Repository<PaymentCard>(_context);
+        Expenses = new Repository<Expense>(_context);
     }
 
     public async Task<int> SaveChangesAsync()

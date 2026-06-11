@@ -6,6 +6,7 @@ using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
+using ZiyoMarket.Domain.Entities.Finance;
 using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Entities.Users;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,7 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<SystemSetting> SystemSettings { get; set; }
     public DbSet<DailySalesSummary> DailySalesSummaries { get; set; }
     public DbSet<PaymentCard> PaymentCards { get; set; }
+    public DbSet<Expense> Expenses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

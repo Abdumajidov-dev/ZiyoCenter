@@ -5,6 +5,7 @@ using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Entities.Support;
+using ZiyoMarket.Domain.Entities.Finance;
 using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Entities.Users;
 
@@ -46,6 +47,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<SystemSetting> SystemSettings { get; }
     IRepository<DailySalesSummary> DailySalesSummaries { get; }
     IRepository<PaymentCard> PaymentCards { get; }
+    IRepository<Expense> Expenses { get; }
 
     // Transaction Management
     Task<int> SaveChangesAsync();

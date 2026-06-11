@@ -52,6 +52,7 @@ public static class ServiceExtension
         // ========== Financial Services ==========
         services.AddScoped<ICashbackService, CashbackService>();
         services.AddScoped<IPaymentCardService, PaymentCardService>();
+        services.AddScoped<IExpenseService, ExpenseService>();
 
         // ========== Delivery Services ==========
         services.AddScoped<IDeliveryService, DeliveryService>();

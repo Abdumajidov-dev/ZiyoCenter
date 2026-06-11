@@ -35,7 +35,21 @@
       "Bash(git reset *)",
       "Read(//c/Users/avazb/source/repos/Abdumajidov-dev/ZiyoNurAdminPanel.Ui/ZiyoNurAdminPanel.Ui/**)",
       "Bash(Get-ChildItem -Force)",
-      "PowerShell(dotnet build *)"
+      "PowerShell(dotnet build *)",
+      "Skill(run)",
+      "PowerShell(Start-Process \"dotnet\" -ArgumentList \"run --project `\"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui.csproj`\"\" -WindowStyle Normal; Start-Sleep -Seconds 8)",
+      "PowerShell(Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\); $path = \"$env:TEMP\\\\adminpanel_screenshot.png\"; $bmp.Save\\($path\\); $g.Dispose\\(\\); $bmp.Dispose\\(\\); Write-Output $path)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Add-Type -AssemblyName System.Windows.Forms; Add-Type -AssemblyName System.Drawing; $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $bmp = New-Object System.Drawing.Bitmap\\($screen.Width, $screen.Height\\); $g = [System.Drawing.Graphics]::FromImage\\($bmp\\); $g.CopyFromScreen\\($screen.Location, [System.Drawing.Point]::Empty, $screen.Size\\); $path = \"$env:TEMP\\\\admin_login.png\"; $bmp.Save\\($path\\); $g.Dispose\\(\\); $bmp.Dispose\\(\\); $path)",
+      "PowerShell($pinfo = New-Object System.Diagnostics.ProcessStartInfo; $pinfo.FileName = \"dotnet\"; $pinfo.Arguments = \"run --no-build --project `\"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui.csproj`\"\"; $pinfo.UseShellExecute = $true; $pinfo.WindowStyle = \"Normal\"; $p = [System.Diagnostics.Process]::Start\\($pinfo\\); Write-Output \"PID: $\\($p.Id\\)\")",
+      "PowerShell(Get-ChildItem *)",
+      "Bash(Start-Process *)",
+      "PowerShell(Start-Process \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui\\\\bin\\\\Release\\\\net8.0-windows\\\\ZiyoNurAdminPanel.Ui.exe\")",
+      "PowerShell(Start-Sleep -Seconds 3; Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::PrimaryScreen | Select-Object Bounds)",
+      "PowerShell($p = Start-Process \"C:\\\\Users\\\\avazb\\\\source\\\\repos\\\\Abdumajidov-dev\\\\ZiyoNurAdminPanel.Ui\\\\ZiyoNurAdminPanel.Ui\\\\bin\\\\Release\\\\net8.0-windows\\\\ZiyoNurAdminPanel.Ui.exe\" -PassThru; Start-Sleep -Seconds 4; $p.Refresh\\(\\); Write-Output \"PID: $\\($p.Id\\) | Title: $\\($p.MainWindowTitle\\) | Exited: $\\($p.HasExited\\)\")",
+      "PowerShell($token = \"6092014729:AAFtJGOB5W-JJuRH82WnO-kO9WMshdoCKCg\"; $chatId = \"-1003914472094\"; $body = '{\"chat_id\":\"' + $chatId + '\",\"text\":\"Test xabar - Admin Panel\"}'; $r = Invoke-WebRequest -Uri \"https://api.telegram.org/bot$token/sendMessage\" -Method POST -Body $body -ContentType \"application/json\" -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\)\"; Write-Output $r.Content)",
+      "PowerShell($token = \"6092014729:AAFtJGOB5W-JJuRH82WnO-kO9WMshdoCKCg\"; $r = Invoke-WebRequest -Uri \"https://api.telegram.org/bot$token/getMe\" -UseBasicParsing; Write-Output $r.Content)",
+      "PowerShell($token = \"6092014729:AAFtJGOB5W-JJuRH82WnO-kO9WMshdoCKCg\"; $chatId = \"-1003914472094\"; $body = '{\"chat_id\":\"' + $chatId + '\",\"text\":\"✅ Test xabar - Admin Panel ulandi!\",\"parse_mode\":\"HTML\"}'; $r = Invoke-WebRequest -Uri \"https://api.telegram.org/bot$token/sendMessage\" -Method POST -Body $body -ContentType \"application/json\" -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\)\"; Write-Output $r.Content)"
     ],
     "deny": [],
     "ask": []
