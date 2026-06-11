@@ -32,7 +32,10 @@
       "Bash(Get-ChildItem \"C:\\\\Users\\\\avazb\" -Recurse -Include \"*.jpg\",\"*.png\",\"*.jpeg\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object -First 3 FullName)",
       "Bash(python3 -c ' *)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "Read(//c/Users/avazb/source/repos/Abdumajidov-dev/ZiyoNurAdminPanel.Ui/ZiyoNurAdminPanel.Ui/**)",
+      "Bash(Get-ChildItem -Force)",
+      "PowerShell(dotnet build *)"
     ],
     "deny": [],
     "ask": []

@@ -45,6 +45,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<Content> Contents { get; }
     IRepository<SystemSetting> SystemSettings { get; }
     IRepository<DailySalesSummary> DailySalesSummaries { get; }
+    IRepository<PaymentCard> PaymentCards { get; }
 
     // Transaction Management
     Task<int> SaveChangesAsync();

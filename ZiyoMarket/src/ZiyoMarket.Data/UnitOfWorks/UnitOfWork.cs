@@ -51,6 +51,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Content> Contents { get; private set; }
     public IRepository<SystemSetting> SystemSettings { get; private set; }
     public IRepository<DailySalesSummary> DailySalesSummaries { get; private set; }
+    public IRepository<PaymentCard> PaymentCards { get; private set; }
 
     public UnitOfWork(ZiyoMarketDbContext context)
     {
@@ -77,6 +78,7 @@ public class UnitOfWork : IUnitOfWork
         Contents = new Repository<Content>(_context);
         SystemSettings = new Repository<SystemSetting>(_context);
         DailySalesSummaries = new Repository<DailySalesSummary>(_context);
+        PaymentCards = new Repository<PaymentCard>(_context);
     }
 
     public async Task<int> SaveChangesAsync()

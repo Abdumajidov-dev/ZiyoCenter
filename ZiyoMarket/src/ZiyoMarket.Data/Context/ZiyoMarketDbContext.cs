@@ -40,6 +40,7 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<Content> Contents { get; set; }
     public DbSet<SystemSetting> SystemSettings { get; set; }
     public DbSet<DailySalesSummary> DailySalesSummaries { get; set; }
+    public DbSet<PaymentCard> PaymentCards { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
