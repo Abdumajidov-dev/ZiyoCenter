@@ -77,16 +77,11 @@ public class PaymentCardService : IPaymentCardService
             if (card is null)
                 return Result<PaymentCardResultDto>.NotFound($"Karta topilmadi (id={id})");
 
-            // Deactivate all cards first
             var allCards = await _unitOfWork.PaymentCards.GetAllAsync();
-            foreach (var c in allCards.Where(c => c.IsActive))
-            {
+            foreach (var c in allCards.Where(c => c.IsActive && c.Id != id))
                 c.IsActive = false;
-                _unitOfWork.PaymentCards.Update(c, c.Id);
-            }
 
             card.IsActive = true;
-            _unitOfWork.PaymentCards.Update(card, card.Id);
             await _unitOfWork.SaveChangesAsync();
 
             return Result<PaymentCardResultDto>.Success(ToDto(card));
