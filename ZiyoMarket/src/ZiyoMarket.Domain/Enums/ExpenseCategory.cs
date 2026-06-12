@@ -9,5 +9,6 @@ public enum ExpenseCategory
     Marketing = 4,
     Logistics = 5,
     Equipment = 6,
+    Consumption = 8,
     Other = 7
 }

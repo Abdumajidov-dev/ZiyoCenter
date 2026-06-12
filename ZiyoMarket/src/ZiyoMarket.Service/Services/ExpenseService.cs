@@ -192,6 +192,7 @@ public class ExpenseService : IExpenseService
         ExpenseCategory.Marketing => "Marketing",
         ExpenseCategory.Logistics => "Logistika",
         ExpenseCategory.Equipment => "Jihozlar",
+        ExpenseCategory.Consumption => "Istemol",
         ExpenseCategory.Other => "Boshqa",
         _ => "Umumiy"
     };
