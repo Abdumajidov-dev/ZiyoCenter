@@ -391,4 +391,21 @@ public class ProductController : BaseController
             data = result.Data
         });
     }
+
+    /// <summary>
+    /// Kategoriya bo'yicha barcha mahsulot narxini foizga oshirish
+    /// </summary>
+    [HttpPost("bulk-price-increase")]
+    [Authorize]
+    public async Task<IActionResult> BulkPriceIncrease([FromBody] BulkPriceIncreaseDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _productService.BulkIncreasePriceAsync(dto.CategoryId, dto.Percentage, GetCurrentUserId());
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { success = false, message = result.Message });
+
+        return Ok(new { success = true, data = result.Data, message = $"{result.Data!.UpdatedCount} ta mahsulot narxi {dto.Percentage}% ga oshirildi" });
+    }
 }

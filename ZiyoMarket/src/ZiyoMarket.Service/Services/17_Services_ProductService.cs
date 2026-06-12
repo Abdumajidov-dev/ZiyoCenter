@@ -494,5 +494,45 @@ namespace ZiyoMarket.Service.Services
             }
         }
 
+        public async Task<Result<BulkPriceIncreaseResultDto>> BulkIncreasePriceAsync(int categoryId, decimal percentage, int updatedBy)
+        {
+            try
+            {
+                if (percentage <= 0 || percentage > 1000)
+                    return Result<BulkPriceIncreaseResultDto>.Failure("Foiz 0 dan katta va 1000 dan kichik bo'lishi kerak");
+
+                var category = await _unitOfWork.Categories.GetByIdAsync(categoryId);
+                if (category is null)
+                    return Result<BulkPriceIncreaseResultDto>.NotFound("Kategoriya topilmadi");
+
+                var products = await _unitOfWork.Products.FindAsync(p => p.CategoryId == categoryId);
+                var list = products.ToList();
+
+                if (list.Count == 0)
+                    return Result<BulkPriceIncreaseResultDto>.Failure("Bu kategoriyada mahsulotlar topilmadi");
+
+                var multiplier = 1 + percentage / 100m;
+                foreach (var product in list)
+                {
+                    var newPrice = Math.Round(product.Price * multiplier, 0);
+                    product.ChangePrice(newPrice);
+                    product.UpdatedBy = updatedBy;
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<BulkPriceIncreaseResultDto>.Success(new BulkPriceIncreaseResultDto
+                {
+                    UpdatedCount = list.Count,
+                    CategoryName = category.Name,
+                    Percentage = percentage
+                });
+            }
+            catch (Exception ex)
+            {
+                return Result<BulkPriceIncreaseResultDto>.InternalError($"Narxlarni oshirishda xatolik: {ex.Message}");
+            }
+        }
+
     }
 }

@@ -324,3 +324,20 @@ public class ReorderCategoryDto
     /// </summary>
     public int? ParentId { get; set; }
 }
+
+public class BulkPriceIncreaseDto
+{
+    [Required]
+    public int CategoryId { get; set; }
+
+    [Required]
+    [Range(0.01, 1000, ErrorMessage = "Foiz 0 dan katta bo'lishi kerak")]
+    public decimal Percentage { get; set; }
+}
+
+public class BulkPriceIncreaseResultDto
+{
+    public int UpdatedCount { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public decimal Percentage { get; set; }
+}

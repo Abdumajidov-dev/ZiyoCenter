@@ -49,5 +49,9 @@ namespace ZiyoMarket.Service.Interfaces
         Task<Result> ToggleLikeAsync(int productId, int customerId);
 
         Task<Result<List<ProductListDto>>> GetLikedProductsAsync(int customerId);
+
+        // ============ Bulk Price Management ============
+
+        Task<Result<BulkPriceIncreaseResultDto>> BulkIncreasePriceAsync(int categoryId, decimal percentage, int updatedBy);
     }
 }
