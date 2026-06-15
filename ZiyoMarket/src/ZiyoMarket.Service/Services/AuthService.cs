@@ -56,35 +56,42 @@ public class AuthService : IAuthService
                 _ => null // null = auto-detect
             };
 
-            // Find user — auto-detect by phone if UserType not given
+            // Find user — auto-detect by phone/email/username if UserType not given
             object? user = null;
+            var identifier = request.PhoneOrEmail?.Trim() ?? string.Empty;
             if (request.UserType != null)
             {
                 user = request.UserType switch
                 {
-                    "Customer" => await FindCustomerByPhoneAsync(request.Phone),
-                    "Seller" => await FindSellerByPhoneAsync(request.Phone),
-                    "Admin" => await FindAdminByUsernameOrPhoneAsync(request.Phone),
+                    "Customer" => await FindCustomerByPhoneAsync(identifier),
+                    "Seller" => await FindSellerByPhoneAsync(identifier),
+                    "Admin" => await FindAdminByUsernameOrPhoneAsync(identifier),
                     _ => null
                 };
             }
             else
             {
-                var foundCustomer = await FindCustomerByPhoneAsync(request.Phone);
+                var foundCustomer = await FindCustomerByPhoneAsync(identifier);
                 if (foundCustomer != null) { user = foundCustomer; request.UserType = "Customer"; }
                 else
                 {
-                    var foundSeller = await FindSellerByPhoneAsync(request.Phone);
+                    var foundSeller = await FindSellerByPhoneAsync(identifier);
                     if (foundSeller != null) { user = foundSeller; request.UserType = "Seller"; }
                     else
                     {
-                        var foundAdmin = await FindAdminByUsernameOrPhoneAsync(request.Phone);
+                        var foundAdmin = await FindAdminByUsernameOrPhoneAsync(identifier);
                         if (foundAdmin != null) { user = foundAdmin; request.UserType = "Admin"; }
                     }
                 }
             }
 
             if (user == null)
+                return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
+
+            // Verify password
+            var passwordHash = GetPasswordHash(user, request.UserType!);
+            if (string.IsNullOrEmpty(request.Password) ||
+                !BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
             // Check if user is active

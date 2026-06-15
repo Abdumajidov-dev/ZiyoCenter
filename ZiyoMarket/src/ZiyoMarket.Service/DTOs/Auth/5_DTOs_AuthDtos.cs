@@ -9,11 +9,12 @@ namespace ZiyoMarket.Service.DTOs.Auth;
 public class LoginRequestDto
 {
     [Required(ErrorMessage = "Phone or Username is required")]
-    public string Phone { get; set; } = string.Empty;
-    
-    public string? Password { get; set; }
+    public string PhoneOrEmail { get; set; } = string.Empty;
 
-    public string? UserType { get; set; } // Customer, Seller, Admin — optional, null = auto-detect by phone
+    [Required(ErrorMessage = "Password is required")]
+    public string Password { get; set; } = string.Empty;
+
+    public string? UserType { get; set; } // Customer, Seller, Admin — optional, null = auto-detect
 }
 
 /// <summary>
