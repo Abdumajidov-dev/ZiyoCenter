@@ -15,15 +15,6 @@ public class LoginRequestValidator : AbstractValidator<LoginRequestDto>
         RuleFor(x => x.PhoneOrEmail)
             .NotEmpty().WithMessage("Phone or Username is required")
             .MaximumLength(255).WithMessage("Must not exceed 255 characters");
-        
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required")
-            .MinimumLength(6).WithMessage("Password must be at least 6 characters");
-        
-        RuleFor(x => x.UserType)
-            .NotEmpty().WithMessage("User type is required")
-            .Must(x => new[] { "Customer", "Seller", "Admin" }.Contains(x))
-            .WithMessage("Invalid user type");
     }
 }
 

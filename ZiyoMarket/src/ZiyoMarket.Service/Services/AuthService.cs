@@ -88,11 +88,14 @@ public class AuthService : IAuthService
             if (user == null)
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
-            // Verify password
-            var passwordHash = GetPasswordHash(user, request.UserType!);
-            if (string.IsNullOrEmpty(request.Password) ||
-                !BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
-                return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
+            // Password verification — only for Seller and Admin
+            if (request.UserType == "Seller" || request.UserType == "Admin")
+            {
+                var passwordHash = GetPasswordHash(user, request.UserType!);
+                if (string.IsNullOrEmpty(request.Password) ||
+                    !BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
+                    return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
+            }
 
             // Check if user is active
             if (!IsUserActive(user, request.UserType))

@@ -11,8 +11,7 @@ public class LoginRequestDto
     [Required(ErrorMessage = "Phone or Username is required")]
     public string PhoneOrEmail { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password is required")]
-    public string Password { get; set; } = string.Empty;
+    public string? Password { get; set; }
 
     public string? UserType { get; set; } // Customer, Seller, Admin — optional, null = auto-detect
 }
