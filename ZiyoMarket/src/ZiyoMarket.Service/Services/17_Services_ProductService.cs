@@ -28,10 +28,27 @@ namespace ZiyoMarket.Service.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
+        private static readonly string[] _brokenUrlPrefixes =
+        {
+            "uploads/", "/uploads/", "wwwroot/"
+        };
+
         private string? ToAbsoluteUrl(string? path)
         {
             if (string.IsNullOrWhiteSpace(path)) return null;
-            if (path.StartsWith("http://") || path.StartsWith("https://")) return path;
+
+            if (path.StartsWith("http://") || path.StartsWith("https://"))
+            {
+                // Eski Railway lokal fayl URL lari — fayl yo'q, null qaytarish yaxshiroq
+                if (path.Contains("/uploads/") || path.Contains("wwwroot"))
+                    return null;
+                return path;
+            }
+
+            // Relative lokal yo'llar ham singan
+            if (_brokenUrlPrefixes.Any(p => path.StartsWith(p)))
+                return null;
+
             var request = _httpContextAccessor.HttpContext?.Request;
             if (request == null) return path;
             var trimmed = path.TrimStart('/');
