@@ -8,12 +8,15 @@ namespace ZiyoMarket.Service.DTOs.Auth;
 /// </summary>
 public class LoginRequestDto
 {
-    [Required(ErrorMessage = "Phone or Username is required")]
-    public string PhoneOrEmail { get; set; } = string.Empty;
+    public string? PhoneOrEmail { get; set; }
+
+    public string? Phone { get; set; }
 
     public string? Password { get; set; }
 
     public string? UserType { get; set; } // Customer, Seller, Admin — optional, null = auto-detect
+
+    public string ResolvedIdentifier => (PhoneOrEmail ?? Phone ?? string.Empty).Trim();
 }
 
 /// <summary>

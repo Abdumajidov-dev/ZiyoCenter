@@ -58,7 +58,7 @@ public class AuthService : IAuthService
 
             // Find user — auto-detect by phone/email/username if UserType not given
             object? user = null;
-            var identifier = request.PhoneOrEmail?.Trim() ?? string.Empty;
+            var identifier = request.ResolvedIdentifier;
             if (request.UserType != null)
             {
                 user = request.UserType switch
