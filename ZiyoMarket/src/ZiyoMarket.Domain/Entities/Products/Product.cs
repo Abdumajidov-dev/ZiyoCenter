@@ -27,9 +27,19 @@ public class Product : BaseAuditableEntity
     public string QrCode { get; set; } = string.Empty;
 
     /// <summary>
-    /// Narx
+    /// Narx (sotilish narxi)
     /// </summary>
     public decimal Price { get; set; }
+
+    /// <summary>
+    /// Olingan narx (tannarx)
+    /// </summary>
+    public decimal? CostPrice { get; set; }
+
+    /// <summary>
+    /// Aksiya summasi (chegirma)
+    /// </summary>
+    public decimal? DiscountAmount { get; set; }
 
     /// <summary>
     /// Zaxira miqdori

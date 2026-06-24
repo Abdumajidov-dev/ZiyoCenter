@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ZiyoMarket.Data.Context;
@@ -12,9 +13,11 @@ using ZiyoMarket.Data.Context;
 namespace ZiyoMarket.Data.Migrations
 {
     [DbContext(typeof(ZiyoMarketDbContext))]
-    partial class ZiyoMarketDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260612181236_AddProductCostPriceAndDiscount")]
+    partial class AddProductCostPriceAndDiscount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

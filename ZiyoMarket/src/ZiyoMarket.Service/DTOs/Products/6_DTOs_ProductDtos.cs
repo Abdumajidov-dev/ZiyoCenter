@@ -16,6 +16,8 @@ public class ProductListDto
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public decimal Price { get; set; }
+    public decimal? CostPrice { get; set; }
+    public decimal? DiscountAmount { get; set; }
     public string FormattedPrice => $"{Price:N0} so'm";
     public int StockQuantity { get; set; }
     public string Status { get; set; } = string.Empty;
@@ -41,6 +43,8 @@ public class ProductDetailDto
     public string CategoryName { get; set; } = string.Empty;
     public string CategoryPath { get; set; } = string.Empty;
     public decimal Price { get; set; }
+    public decimal? CostPrice { get; set; }
+    public decimal? DiscountAmount { get; set; }
     public string FormattedPrice => $"{Price:N0} so'm";
     public int StockQuantity { get; set; }
     public int MinStockLevel { get; set; }
@@ -90,25 +94,31 @@ public class CreateProductDto
     [Required(ErrorMessage = "Price is required")]
     [Range(0.01, 999999999.99, ErrorMessage = "Price must be between 0.01 and 999999999.99")]
     public decimal Price { get; set; }
-    
+
+    [Range(0, 999999999.99)]
+    public decimal? CostPrice { get; set; }
+
+    [Range(0, 999999999.99)]
+    public decimal? DiscountAmount { get; set; }
+
     [Range(0, int.MaxValue, ErrorMessage = "Stock quantity cannot be negative")]
     public int StockQuantity { get; set; } = 0;
-    
+
     [Range(0, int.MaxValue, ErrorMessage = "Min stock level cannot be negative")]
     public int MinStockLevel { get; set; } = 5;
-    
+
     [MaxLength(500)]
     public string? ImageUrl { get; set; }
-    
+
     [Range(0, double.MaxValue, ErrorMessage = "Weight cannot be negative")]
     public decimal? Weight { get; set; }
-    
+
     [MaxLength(100)]
     public string? Dimensions { get; set; }
-    
+
     [MaxLength(100)]
     public string? SKU { get; set; }
-    
+
     [MaxLength(100)]
     public string? Barcode { get; set; }
 
@@ -118,7 +128,7 @@ public class CreateProductDto
     public int? PageCount { get; set; }
     public string? Language { get; set; }
     public string? Edition { get; set; }
-    
+
     public List<string> ImageUrls { get; set; } = new();
     public List<int> CategoryIds { get; set; } = new();
 }
@@ -146,22 +156,28 @@ public class UpdateProductDto
     [Required(ErrorMessage = "Price is required")]
     [Range(0.01, 999999999.99, ErrorMessage = "Price must be between 0.01 and 999999999.99")]
     public decimal Price { get; set; }
-    
+
+    [Range(0, 999999999.99)]
+    public decimal? CostPrice { get; set; }
+
+    [Range(0, 999999999.99)]
+    public decimal? DiscountAmount { get; set; }
+
     [Range(0, int.MaxValue, ErrorMessage = "Min stock level cannot be negative")]
     public int MinStockLevel { get; set; }
-    
+
     [MaxLength(500)]
     public string? ImageUrl { get; set; }
-    
+
     [Range(0, double.MaxValue, ErrorMessage = "Weight cannot be negative")]
     public decimal? Weight { get; set; }
-    
+
     [MaxLength(100)]
     public string? Dimensions { get; set; }
 
     [MaxLength(100)]
     public string? Barcode { get; set; }
-    
+
     public string? SKU { get; set; }
     public string? Manufacturer { get; set; }
     public string? Publisher { get; set; }

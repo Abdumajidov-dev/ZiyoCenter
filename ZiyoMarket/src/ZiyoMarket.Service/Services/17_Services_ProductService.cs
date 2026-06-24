@@ -209,6 +209,8 @@ namespace ZiyoMarket.Service.Services
             product.Name = request.Name;
             product.Description = request.Description;
             product.Price = request.Price;
+            product.CostPrice = request.CostPrice;
+            product.DiscountAmount = request.DiscountAmount;
             product.CategoryId = request.CategoryId;
             product.ImageUrl = request.ImageUrl;
             product.MinStockLevel = request.MinStockLevel;
