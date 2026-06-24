@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using ZiyoMarket.Data.IRepositories;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Products;
 using ZiyoMarket.Domain.Enums;
+using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.Interfaces;
 using ZiyoMarket.Service.Results;
@@ -20,12 +22,14 @@ namespace ZiyoMarket.Service.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly string _mediaBaseUrl;
 
-        public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public ProductService(IUnitOfWork unitOfWork, IMapper mapper, IHttpContextAccessor httpContextAccessor, IOptions<S3Settings> s3Settings)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _mediaBaseUrl = s3Settings.Value.PublicUrl.TrimEnd('/');
         }
 
         private static readonly string[] _brokenUrlPrefixes =
@@ -39,20 +43,16 @@ namespace ZiyoMarket.Service.Services
 
             if (path.StartsWith("http://") || path.StartsWith("https://"))
             {
-                // Eski Railway lokal fayl URL lari — fayl yo'q, null qaytarish yaxshiroq
                 if (path.Contains("/uploads/") || path.Contains("wwwroot"))
                     return null;
                 return path;
             }
 
-            // Relative lokal yo'llar ham singan
             if (_brokenUrlPrefixes.Any(p => path.StartsWith(p)))
                 return null;
 
-            var request = _httpContextAccessor.HttpContext?.Request;
-            if (request == null) return path;
             var trimmed = path.TrimStart('/');
-            return $"{request.Scheme}://{request.Host}/{trimmed}";
+            return $"{_mediaBaseUrl}/{trimmed}";
         }
 
         private void ApplyAbsoluteUrls(ProductDetailDto dto)
