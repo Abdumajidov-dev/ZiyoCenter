@@ -281,6 +281,17 @@ public class OrderService : IOrderService
                 return Result<OrderDetailDto>.BadRequest("No valid items");
 
             var totalPrice = orderItems.Sum(i => i.TotalPrice);
+            var priceAfterDiscount = totalPrice - request.DiscountAmount;
+
+            // Validate cashback
+            if (request.CashbackToUse > 0)
+            {
+                if (request.CashbackToUse > customer.CashbackBalance)
+                    return Result<OrderDetailDto>.BadRequest("Insufficient cashback");
+
+                if (request.CashbackToUse > priceAfterDiscount)
+                    return Result<OrderDetailDto>.BadRequest("Cashback exceeds order total");
+            }
 
             var order = new Order
             {
@@ -291,9 +302,10 @@ public class OrderService : IOrderService
                 Status = OrderStatus.Confirmed,
                 TotalPrice = totalPrice,
                 DiscountApplied = request.DiscountAmount,
-                FinalPrice = totalPrice - request.DiscountAmount,
-                PaymentMethod = PaymentMethod.Cash,
-                DeliveryType = DeliveryType.Pickup,
+                CashbackUsed = request.CashbackToUse,
+                FinalPrice = priceAfterDiscount - request.CashbackToUse,
+                PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),
+                DeliveryType = Enum.Parse<DeliveryType>(request.DeliveryType),
                 SellerNotes = request.SellerNotes,
                 CreatedBy = sellerId
             };
@@ -310,6 +322,12 @@ public class OrderService : IOrderService
                 var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
                 product.DecreaseStock(item.Quantity);
                 await _unitOfWork.Products.Update(product, product.Id);
+            }
+
+            // Use cashback
+            if (request.CashbackToUse > 0)
+            {
+                await _cashbackService.UseCashbackAsync(request.CustomerId, order.Id, request.CashbackToUse);
             }
 
             await _unitOfWork.SaveChangesAsync();

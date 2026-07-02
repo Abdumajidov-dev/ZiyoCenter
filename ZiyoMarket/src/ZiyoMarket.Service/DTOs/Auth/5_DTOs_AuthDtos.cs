@@ -137,7 +137,30 @@ public class VerifyCodeDto
 {
     [Required(ErrorMessage = "Phone or username is required")]
     public string Phone { get; set; } = string.Empty;
-    
+
+    [Required(ErrorMessage = "Verification code is required")]
+    public string Code { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Send OTP request DTO (mobile client field naming: phone_number)
+/// </summary>
+public class SendOtpRequestDto
+{
+    [Required(ErrorMessage = "Phone number is required")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+    public string? Purpose { get; set; }
+}
+
+/// <summary>
+/// Verify OTP request DTO (mobile client field naming: phone_number)
+/// </summary>
+public class VerifyOtpRequestDto
+{
+    [Required(ErrorMessage = "Phone number is required")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Verification code is required")]
     public string Code { get; set; } = string.Empty;
 }

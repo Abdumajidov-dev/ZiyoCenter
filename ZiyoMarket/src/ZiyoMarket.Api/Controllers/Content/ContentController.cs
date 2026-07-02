@@ -16,6 +16,21 @@ public class ContentController : BaseController
         _contentService = contentService;
     }
 
+    /// <summary>
+    /// Active banners for the mobile home screen (absolute route: /api/banner)
+    /// </summary>
+    [HttpGet("/api/banner")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetBanners()
+    {
+        var result = await _contentService.GetActiveBannersAsync();
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, data = result.Data });
+    }
+
     [HttpGet("{id}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetContentById(int id)

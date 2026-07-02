@@ -4,6 +4,8 @@ using ZiyoMarket.Domain.Entities.Users;
 using ZiyoMarket.Domain.Entities.Orders;
 using ZiyoMarket.Domain.Entities.Notifications;
 using ZiyoMarket.Domain.Entities.Delivery;
+using ZiyoMarket.Domain.Entities.Content;
+using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.DTOs.Auth;
 using ZiyoMarket.Service.DTOs.Orders;
@@ -232,5 +234,61 @@ public class DeliveryProfile : Profile
             .ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
             .ForMember(dest => dest.DeliveryPartnerName, opt => opt.Ignore())
             .ForMember(dest => dest.IsDelayed, opt => opt.MapFrom(src => src.IsDelayed));
+    }
+}
+
+/// <summary>
+/// Content mapping profile (CMS: banners, videos, articles, announcements)
+/// </summary>
+public class ContentProfile : Profile
+{
+    public ContentProfile()
+    {
+        CreateMap<Content, ContentDetailDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ContentType.ToString()))
+            .ForMember(dest => dest.Content, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ContentType == ContentType.Video ? null : src.ContentUrl))
+            .ForMember(dest => dest.VideoUrl, opt => opt.MapFrom(src => src.ContentType == ContentType.Video ? src.ContentUrl : null))
+            .ForMember(dest => dest.ExternalUrl, opt => opt.MapFrom(src => src.ContentData))
+            .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.PublishedAt, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
+            .ForMember(dest => dest.DurationSeconds, opt => opt.MapFrom(src => src.VideoDuration))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)))
+            .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt == null ? (DateTime?)null : DateTime.Parse(src.UpdatedAt)))
+            .ForMember(dest => dest.CreatedByName, opt => opt.Ignore());
+
+        CreateMap<Content, ContentListDto>()
+            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ContentType.ToString()))
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ContentUrl))
+            .ForMember(dest => dest.IsPublished, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.PublishedAt, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.ValidFrom))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.ValidUntil))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsValidNow))
+            .ForMember(dest => dest.IsExpired, opt => opt.MapFrom(src => src.IsExpired))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Parse(src.CreatedAt)));
+
+        // Banner-serving DTO (mobile home screen)
+        CreateMap<Content, BannerDto>()
+            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.ContentUrl))
+            .ForMember(dest => dest.ExternalUrl, opt => opt.MapFrom(src => src.ContentData))
+            .ForMember(dest => dest.SortOrder, opt => opt.MapFrom(src => src.DisplayOrder))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsValidNow));
+
+        CreateMap<SaveContentDto, Content>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.ContentType, opt => opt.MapFrom(src => Enum.Parse<ContentType>(src.Type)))
+            // ExternalUrl is stored in ContentData (no separate JSON structure needed for a single field)
+            .ForMember(dest => dest.ContentUrl, opt => opt.MapFrom(src => src.ImageUrl ?? src.VideoUrl))
+            .ForMember(dest => dest.ContentData, opt => opt.MapFrom(src => src.ExternalUrl))
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsPublished))
+            .ForMember(dest => dest.DisplayOrder, opt => opt.MapFrom(src => src.SortOrder))
+            .ForMember(dest => dest.ValidFrom, opt => opt.MapFrom(src => src.StartDate ?? DateTime.UtcNow))
+            .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate))
+            .ForMember(dest => dest.VideoDuration, opt => opt.MapFrom(src => src.DurationSeconds));
     }
 }

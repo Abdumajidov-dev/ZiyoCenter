@@ -243,6 +243,36 @@ public class AuthController : BaseController
     }
 
     /// <summary>
+    /// Send OTP (mobile client alias for verification/send, uses phone_number field)
+    /// </summary>
+    [HttpPost("send-otp")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequestDto request)
+    {
+        var result = await _authService.SendVerificationCodeAsync(request.PhoneNumber);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { success = false, message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
+    /// Verify OTP (mobile client alias for verification/verify, uses phone_number field)
+    /// </summary>
+    [HttpPost("verify-otp")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
+    {
+        var result = await _authService.VerifyCodeAsync(request.PhoneNumber, request.Code);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { success = false, message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
     /// Verify code
     /// </summary>
     /// <param name="request">Phone and verification code</param>
