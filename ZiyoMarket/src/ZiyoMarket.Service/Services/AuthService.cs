@@ -183,7 +183,9 @@ public class AuthService : IAuthService
                         FirstName = request.FirstName,
                         LastName = request.LastName,
                         Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        PasswordHash = string.IsNullOrEmpty(request.Password)
+                            ? string.Empty
+                            : BCrypt.Net.BCrypt.HashPassword(request.Password),
                         Address = request.Address,
                         CashbackBalance = 0,
                         IsActive = true
@@ -200,7 +202,7 @@ public class AuthService : IAuthService
                         FirstName = request.FirstName,
                         LastName = request.LastName,
                         Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password!),
                         Role = "Seller",
                         IsActive = true
                     };
@@ -217,7 +219,7 @@ public class AuthService : IAuthService
                         LastName = request.LastName,
                         Username = request.Username!,
                         Phone = request.Phone,
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password!),
                         Role = "Admin",
                         IsActive = true
                     };

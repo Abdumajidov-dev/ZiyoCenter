@@ -34,6 +34,7 @@ public partial class App : Application
         services.AddTransient<IOrderService, OrderService>();
         services.AddTransient<ICustomerService, CustomerService>();
         services.AddTransient<INotificationsAdminService, NotificationsAdminService>();
+        services.AddTransient<IBannerService, BannerService>();
 
         // ViewModels
         services.AddTransient<LoginViewModel>();
@@ -42,6 +43,7 @@ public partial class App : Application
         services.AddTransient<OrdersViewModel>();
         services.AddTransient<CustomersViewModel>();
         services.AddTransient<NotificationsViewModel>();
+        services.AddTransient<BannersViewModel>();
 
         // Views
         services.AddTransient<LoginWindow>();
@@ -50,6 +52,7 @@ public partial class App : Application
         services.AddTransient<OrdersView>();
         services.AddTransient<CustomersView>();
         services.AddTransient<NotificationsView>();
+        services.AddTransient<BannersView>();
     }
 
     public static T? GetService<T>() where T : class

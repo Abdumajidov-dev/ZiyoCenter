@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ZiyoMarket.Service.DTOs.Auth;
@@ -222,7 +223,7 @@ public class RegisterAdminDto
 /// <summary>
 /// Universal register DTO for all user types
 /// </summary>
-public class RegisterUserDto
+public class RegisterUserDto : IValidatableObject
 {
     [Required(ErrorMessage = "First name is required")]
     [MaxLength(100)]
@@ -236,12 +237,10 @@ public class RegisterUserDto
     [Phone(ErrorMessage = "Invalid phone number")]
     public string Phone { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password is required")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
-    public string Password { get; set; } = string.Empty;
+    // Password shart emas — faqat Seller/Admin uchun majburiy (Customer parolsiz ro'yxatdan o'tishi mumkin)
+    public string? Password { get; set; }
 
-    [Compare("Password", ErrorMessage = "Passwords do not match")]
-    public string ConfirmPassword { get; set; } = string.Empty;
+    public string? ConfirmPassword { get; set; }
 
     public string UserType { get; set; } = "Customer"; // Customer, Seller, Admin — optional, defaults to Customer
 
@@ -251,6 +250,32 @@ public class RegisterUserDto
 
     [MaxLength(100)]
     public string? Username { get; set; } // Required only for Admin
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        var isPrivileged = UserType.Equals("Seller", StringComparison.OrdinalIgnoreCase)
+            || UserType.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+        if (isPrivileged)
+        {
+            if (string.IsNullOrWhiteSpace(Password) || Password.Length < 6)
+                yield return new ValidationResult(
+                    "Password is required and must be at least 6 characters for Seller/Admin registration",
+                    new[] { nameof(Password) });
+
+            if (Password != ConfirmPassword)
+                yield return new ValidationResult(
+                    "Passwords do not match",
+                    new[] { nameof(ConfirmPassword) });
+        }
+        else if (!string.IsNullOrEmpty(Password) && Password != ConfirmPassword)
+        {
+            // Customer parol bergan bo'lsa, tasdiqlash mos kelishi kerak
+            yield return new ValidationResult(
+                "Passwords do not match",
+                new[] { nameof(ConfirmPassword) });
+        }
+    }
 }
 
 /// <summary>

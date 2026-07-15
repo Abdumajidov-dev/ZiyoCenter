@@ -140,6 +140,25 @@
                             </StackPanel>
                         </Button>
 
+                        <!-- Banners -->
+                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="50"
+                                HorizontalContentAlignment="Left"
+                                Padding="20,0"
+                                Foreground="White"
+                                Command="{Binding NavigateToBannersCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ImageMultipleOutline"
+                                                        Width="24"
+                                                        Height="24"
+                                                        VerticalAlignment="Center"/>
+                                <TextBlock Text="Bannerlar"
+                                          Margin="15,0,0,0"
+                                          VerticalAlignment="Center"
+                                          FontSize="14"/>
+                            </StackPanel>
+                        </Button>
+
                         <Separator Background="White"
                                   Opacity="0.2"
                                   Margin="20,10"/>

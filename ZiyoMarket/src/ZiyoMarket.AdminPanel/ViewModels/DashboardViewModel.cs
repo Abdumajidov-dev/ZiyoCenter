@@ -49,6 +49,13 @@ public partial class DashboardViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void NavigateToBanners()
+    {
+        CurrentPage = "Bannerlar";
+        CurrentView = App.GetService<Views.BannersView>();
+    }
+
+    [RelayCommand]
     private void NavigateToSettings()
     {
         CurrentPage = "Sozlamalar";
