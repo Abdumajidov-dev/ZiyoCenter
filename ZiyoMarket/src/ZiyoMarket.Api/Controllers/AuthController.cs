@@ -317,6 +317,28 @@ public class AuthController : BaseController
     }
 
     /// <summary>
+    /// Delete (soft) the currently authenticated user's own account
+    /// </summary>
+    [HttpDelete("me")]
+    [Authorize]
+    public async Task<IActionResult> DeleteCurrentUser()
+    {
+        var userId = GetCurrentUserId();
+        var userType = GetCurrentUserType();
+
+        var result = await _authService.DeleteCurrentUserAsync(userId, userType);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new
+        {
+            success = true,
+            message = result.Message
+        });
+    }
+
+    /// <summary>
     /// Validate token
     /// </summary>
     [HttpPost("validate-token")]

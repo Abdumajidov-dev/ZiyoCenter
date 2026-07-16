@@ -78,7 +78,8 @@
       "Bash(flutter analyze *)",
       "Bash(powershell -Command \"Stop-Process -Id 26384 -Force\")",
       "Bash(start ms-settings:developers *)",
-      "Bash(powershell -Command \"Stop-Process -Name dotnet -Force -ErrorAction SilentlyContinue\")"
+      "Bash(powershell -Command \"Stop-Process -Name dotnet -Force -ErrorAction SilentlyContinue\")",
+      "Bash(dotnet run *)"
     ],
     "deny": [],
     "ask": []

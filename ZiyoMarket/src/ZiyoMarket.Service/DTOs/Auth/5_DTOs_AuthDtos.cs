@@ -327,7 +327,7 @@ public class CreateDevAdminDto
 /// </summary>
 public class OtpSettings
 {
-    public string DefaultCode { get; set; } = "0000";
+    public string DefaultCode { get; set; } = "1111";
 }
 
 /// <summary>

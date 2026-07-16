@@ -446,6 +446,55 @@ public class AuthService : IAuthService
         }
     }
 
+    // ============ Delete Own Account ============
+
+    public async Task<Result> DeleteCurrentUserAsync(int userId, string userType)
+    {
+        try
+        {
+            switch (userType)
+            {
+                case "Customer":
+                    var customer = await _unitOfWork.Customers.GetByIdAsync(userId);
+                    if (customer == null)
+                        return Result.NotFound("User not found");
+                    customer.DeletedBy = userId;
+                    customer.Delete();
+                    _unitOfWork.Customers.Update(customer, userId);
+                    break;
+
+                case "Seller":
+                    var seller = await _unitOfWork.Sellers.GetByIdAsync(userId);
+                    if (seller == null)
+                        return Result.NotFound("User not found");
+                    seller.DeletedBy = userId;
+                    seller.Delete();
+                    _unitOfWork.Sellers.Update(seller, userId);
+                    break;
+
+                case "Admin":
+                    var admin = await _unitOfWork.Admins.GetByIdAsync(userId);
+                    if (admin == null)
+                        return Result.NotFound("User not found");
+                    admin.DeletedBy = userId;
+                    admin.Delete();
+                    _unitOfWork.Admins.Update(admin, userId);
+                    break;
+
+                default:
+                    return Result.BadRequest("Invalid user type");
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success("Account deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            return Result.InternalError($"Account deletion failed: {ex.Message}");
+        }
+    }
+
     // ============ Password Reset ============
 
     public async Task<Result> RequestPasswordResetAsync(ResetPasswordRequestDto request)

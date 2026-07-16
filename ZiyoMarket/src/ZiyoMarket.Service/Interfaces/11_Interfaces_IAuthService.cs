@@ -91,4 +91,9 @@ public interface IAuthService
     /// Get current user profile
     /// </summary>
     Task<Result<UserProfileDto>> GetCurrentUserProfileAsync(int userId, string userType);
+
+    /// <summary>
+    /// Soft-delete the currently authenticated user's own account
+    /// </summary>
+    Task<Result> DeleteCurrentUserAsync(int userId, string userType);
 }
