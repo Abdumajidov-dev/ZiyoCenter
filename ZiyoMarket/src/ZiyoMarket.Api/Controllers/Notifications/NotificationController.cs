@@ -85,6 +85,21 @@ public class NotificationController : BaseController
         return Ok(new { success = true, message = result.Message });
     }
 
+    /// <summary>
+    /// Bir nechta bildirishnomani bitta so'rovda yuborish (Admin).
+    /// </summary>
+    [HttpPost("send-bulk")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SendBulkNotification([FromBody] List<CreateNotificationDto> requests)
+    {
+        var result = await _notificationService.SendBulkNotificationAsync(requests);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
     [HttpDelete("bulk")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteAllNotifications([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)

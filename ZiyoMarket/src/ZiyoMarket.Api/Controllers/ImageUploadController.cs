@@ -1,4 +1,4 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +19,13 @@ public class ImageUploadController : ControllerBase
     private readonly ILogger<ImageUploadController> _logger;
 
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+
+    /// <summary>
+    /// Ruxsat etilgan yuklash turlari. <c>type</c> to'g'ridan-to'g'ri S3 kalitiga
+    /// qo'shilgani uchun u ochiq qiymat bo'lishi mumkin emas: aks holda
+    /// <c>?type=../../</c> kabi qiymat papkadan chiqib ketishga imkon beradi.
+    /// </summary>
+    private static readonly string[] AllowedTypes = { "product", "category", "receipt", "banner", "avatar" };
     private const long MaxFileSizeBytes = 5 * 1024 * 1024;
     private const int WebpQuality = 82;
     private const int MaxDimension = 1920;
@@ -44,6 +51,10 @@ public class ImageUploadController : ControllerBase
         var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!AllowedExtensions.Contains(ext))
             return BadRequest(new { message = $"Ruxsat etilgan formatlar: {string.Join(", ", AllowedExtensions)}" });
+
+        type = type.ToLowerInvariant();
+        if (!AllowedTypes.Contains(type))
+            return BadRequest(new { message = $"Ruxsat etilgan turlar: {string.Join(", ", AllowedTypes)}" });
 
         try
         {
