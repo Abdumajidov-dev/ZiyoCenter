@@ -386,3 +386,25 @@ public class JwtSettings
     public int AccessTokenExpirationMinutes { get; set; } = 1440; // 24 hours
     public bool ValidateLifetime { get; set; } = true; // Development da false, production da true
 }
+
+/// <summary>
+/// Foydalanuvchi o'z profilini tahrirlashi uchun DTO.
+/// </summary>
+/// <remarks>
+/// <see cref="UpdateCustomerDto"/> dan ataylab alohida: unda <c>Id</c>,
+/// <c>Phone</c> va faqat administratorga tegishli maydonlar bor. Bu yerda
+/// foydalanuvchi o'zgartirishi mumkin bo'lgan uchta maydongina qoldirilgan.
+/// </remarks>
+public class UpdateOwnProfileDto
+{
+    [Required(ErrorMessage = "First name is required")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Last name is required")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? Address { get; set; }
+}

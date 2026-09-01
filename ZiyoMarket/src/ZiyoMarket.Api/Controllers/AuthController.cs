@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Users;
@@ -314,6 +314,45 @@ public class AuthController : BaseController
             success = true,
             data = result.Data
         });
+    }
+
+    /// <summary>
+    /// O'z profilini yangilash (Customer).
+    /// </summary>
+    /// <remarks>
+    /// Ilgari mijozning ma'lumotini faqat Admin yoki Seller
+    /// (<c>PUT /api/customer/{id}</c>) o'zgartira olardi. Natijada mijoz
+    /// manzilini hech qayerda saqlay olmasdi va har buyurtmada uni
+    /// qaytadan yozishga majbur bo'lardi.
+    ///
+    /// Telefon raqam bu yerdan o'zgartirilmaydi: u login identifikatori,
+    /// almashtirish uchun tasdiqlash kodi kerak.
+    /// </remarks>
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateCurrentProfile([FromBody] UpdateOwnProfileDto request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userId = GetCurrentUserId();
+        if (GetCurrentUserType() != "Customer")
+            return StatusCode(403, new { message = "Only customers can edit their own profile here" });
+
+        var customer = await _unitOfWork.Customers.GetByIdAsync(userId);
+        if (customer == null)
+            return NotFound(new { message = "Customer not found" });
+
+        customer.FirstName = request.FirstName.Trim();
+        customer.LastName = request.LastName.Trim();
+        customer.Address = request.Address?.Trim();
+        customer.MarkAsUpdated();
+
+        await _unitOfWork.Customers.UpdateAsync(customer);
+        await _unitOfWork.SaveChangesAsync();
+
+        var result = await _authService.GetCurrentUserProfileAsync(userId, "Customer");
+        return Ok(new { success = true, message = "Profile updated", data = result.Data });
     }
 
     /// <summary>
