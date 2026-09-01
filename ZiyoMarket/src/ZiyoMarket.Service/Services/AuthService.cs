@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -25,19 +26,22 @@ public class AuthService : IAuthService
     private readonly JwtSettings _jwtSettings;
     private readonly OtpSettings _otpSettings;
     private readonly IEskizSmsService _smsService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IOptions<JwtSettings> jwtSettings,
         IOptions<OtpSettings> otpSettings,
-        IEskizSmsService smsService)
+        IEskizSmsService smsService,
+        ILogger<AuthService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _jwtSettings = jwtSettings.Value;
         _otpSettings = otpSettings.Value;
         _smsService = smsService;
+        _logger = logger;
     }
 
     // ============ Login ============
@@ -92,8 +96,7 @@ public class AuthService : IAuthService
             if (request.UserType == "Seller" || request.UserType == "Admin")
             {
                 var passwordHash = GetPasswordHash(user, request.UserType!);
-                if (string.IsNullOrEmpty(request.Password) ||
-                    !BCrypt.Net.BCrypt.Verify(request.Password, passwordHash))
+                if (!VerifyPassword(request.Password, passwordHash))
                     return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
             }
 
@@ -127,7 +130,10 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            return Result<LoginResponseDto>.InternalError($"Login failed: {ex.Message}");
+            // Istisno matni tashqariga chiqarilmaydi: u ichki tuzilma haqida
+            // ma'lumot bergani uchun hujum yuzasini kengaytiradi.
+            _logger.LogError(ex, "Login failed for {UserType}", request.UserType);
+            return Result<LoginResponseDto>.InternalError("Login failed. Please try again.");
         }
     }
 
@@ -742,6 +748,31 @@ public class AuthService : IAuthService
             .SelectAsync(a => a.Username == usernameOrPhone
                            || a.Phone == usernameOrPhone
                            || a.Phone == normalized);
+    }
+
+    /// <summary>
+    /// Parolni xavfsiz tekshiradi.
+    /// </summary>
+    /// <remarks>
+    /// BCrypt buzuq yoki bo'sh hash uchun istisno tashlaydi. Ilgari bu istisno
+    /// yuqoriga chiqib, login 500 bilan tugardi — natijada PasswordHash'i
+    /// buzilgan admin umuman kira olmasdi va admin panelda xatoning sababi
+    /// ko'rinmasdi. Endi bunday holat oddiy "noto'g'ri ma'lumot" deb qaraladi.
+    /// </remarks>
+    private bool VerifyPassword(string? password, string? passwordHash)
+    {
+        if (string.IsNullOrEmpty(password) || string.IsNullOrWhiteSpace(passwordHash))
+            return false;
+
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+        }
+        catch (BCrypt.Net.SaltParseException ex)
+        {
+            _logger.LogError(ex, "Password hash is malformed - user cannot log in until it is reset");
+            return false;
+        }
     }
 
     private string GetPasswordHash(object user, string userType)
