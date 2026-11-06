@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.Interfaces;
@@ -84,6 +85,25 @@ public class DeliveryController : BaseController
         return Ok(new { success = true, message = result.Message });
     }
 
+    /// <summary>
+    /// Hamkorni faollashtirish/o'chirish. Admin panel shu endpointni chaqirardi, lekin u yo'q edi.
+    /// </summary>
+    [HttpPut("partners/{id}/toggle-status")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleDeliveryPartnerStatus(int id)
+    {
+        var partner = await _deliveryService.GetDeliveryPartnerByIdAsync(id);
+        if (!partner.IsSuccess)
+            return StatusCode(partner.StatusCode, new { message = partner.Message });
+
+        var result = await _deliveryService.SetPartnerActiveStatusAsync(id, !partner.Data!.IsActive);
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        var updated = await _deliveryService.GetDeliveryPartnerByIdAsync(id);
+        return Ok(new { success = true, message = result.Message, data = updated.Data });
+    }
+
     [HttpGet("orders/{orderId}")]
     [Authorize]
     public async Task<IActionResult> GetOrderDelivery(int orderId)
@@ -148,6 +168,7 @@ public class DeliveryController : BaseController
     }
 
     [HttpPost("partners/seed")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMockDeliveryPartners([FromQuery] int count = 3)
     {

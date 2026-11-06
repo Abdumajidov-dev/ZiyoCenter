@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.Interfaces;
@@ -77,6 +78,21 @@ public class SellerController : BaseController
         return Ok(new { success = true, data = result.Data });
     }
 
+    /// <summary>
+    /// Sotuvchi rolini o'zgartirish (Seller / Manager). Servis bor edi, lekin endpoint yo'q edi —
+    /// admin paneldagi "Rolni o'zgartirish" tugmasi 404 olardi.
+    /// </summary>
+    [HttpPut("{id}/change-role")]
+    public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
+    {
+        var result = await _sellerService.ChangeSellerRoleAsync(id, request.NewRole, GetCurrentUserId());
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
     [HttpPost("{id}/toggle-status")]
     public async Task<IActionResult> ToggleStatus(int id)
     {
@@ -102,6 +118,7 @@ public class SellerController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     public async Task<IActionResult> SeedMockSellers([FromQuery] int count = 10)
     {
         var createdBy = GetCurrentUserId();
