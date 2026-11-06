@@ -10,12 +10,9 @@ namespace ZiyoMarket.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "Barcode",
-                table: "Products",
-                type: "character varying(100)",
-                maxLength: 100,
-                nullable: true);
+            // Production bazada ustun qo'lda qo'shilgan bo'lishi mumkin, shuning uchun IF NOT EXISTS
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"Barcode\" character varying(100);");
         }
 
         /// <inheritdoc />

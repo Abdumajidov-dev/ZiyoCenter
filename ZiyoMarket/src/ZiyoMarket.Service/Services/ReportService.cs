@@ -52,7 +52,7 @@ public class ReportService : IReportService
             stats.TotalCustomers = stats.CustomerCount;
             stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
             stats.TotalProducts = stats.ProductCount;
-            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.IsLowStock);
+            stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.StockQuantity <= p.MinStockLevel); // IsLowStock SQL'ga aylanmaydi
 
             return Result<DashboardStatsDto>.Success(stats);
         }
