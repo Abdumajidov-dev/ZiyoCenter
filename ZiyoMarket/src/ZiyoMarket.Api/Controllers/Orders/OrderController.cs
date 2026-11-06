@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ZiyoMarket.Data.UnitOfWorks;
@@ -216,6 +217,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMockOrders([FromQuery] int count = 10, [FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
     {

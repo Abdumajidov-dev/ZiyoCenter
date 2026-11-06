@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Notifications;
 using ZiyoMarket.Service.Interfaces;
@@ -114,6 +115,7 @@ public class NotificationController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     public async Task<IActionResult> SeedMockNotifications([FromQuery] int count = 10)
     {
         var userId = GetCurrentUserId();

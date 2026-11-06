@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Content;
 using ZiyoMarket.Service.Interfaces;
@@ -149,6 +150,7 @@ public class ContentController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMockContent([FromQuery] int count = 10)
     {

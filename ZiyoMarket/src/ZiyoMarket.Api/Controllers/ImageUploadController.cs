@@ -36,8 +36,9 @@ public class ImageUploadController : ControllerBase
         _logger = logger;
     }
 
+    // [AllowAnonymous] olib tashlandi: har kim S3 bucket'ga fayl yuklay olardi.
+    // Admin panel ham, mobil ilova (to'lov cheki) ham token bilan chaqiradi.
     [HttpPost]
-    [AllowAnonymous]
     public async Task<IActionResult> UploadImage(
         IFormFile file,
         [FromQuery] string type = "product")
