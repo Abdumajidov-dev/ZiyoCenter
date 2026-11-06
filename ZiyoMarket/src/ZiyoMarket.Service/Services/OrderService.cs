@@ -214,7 +214,13 @@ public class OrderService : IOrderService
             // Use cashback
             if (request.CashbackToUse > 0)
             {
-                await _cashbackService.UseCashbackAsync(customerId, order.Id, request.CashbackToUse);
+                // Natija tekshirilmas edi: keshbek yechilmasa ham buyurtma shu chegirma bilan qolardi
+                var used = await _cashbackService.UseCashbackAsync(customerId, order.Id, request.CashbackToUse);
+                if (!used.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return Result<OrderDetailDto>.BadRequest(used.Message);
+                }
             }
 
             // Clear cart
@@ -281,6 +287,14 @@ public class OrderService : IOrderService
                 return Result<OrderDetailDto>.BadRequest("No valid items");
 
             var totalPrice = orderItems.Sum(i => i.TotalPrice);
+
+            // discount_amount umuman tekshirilmas edi — sotuvchi buyurtmani bepul yoki manfiy narxda yarata olardi
+            var discountError = request.DiscountAmount == 0
+                ? null
+                : ValidateSellerDiscount(seller, request.DiscountAmount, 0, 0, totalPrice);
+            if (discountError != null)
+                return Result<OrderDetailDto>.BadRequest(discountError);
+
             var priceAfterDiscount = totalPrice - request.DiscountAmount;
 
             // Validate cashback
@@ -327,7 +341,12 @@ public class OrderService : IOrderService
             // Use cashback
             if (request.CashbackToUse > 0)
             {
-                await _cashbackService.UseCashbackAsync(request.CustomerId, order.Id, request.CashbackToUse);
+                var used = await _cashbackService.UseCashbackAsync(request.CustomerId, order.Id, request.CashbackToUse);
+                if (!used.IsSuccess)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return Result<OrderDetailDto>.BadRequest(used.Message);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync();
@@ -365,21 +384,7 @@ public class OrderService : IOrderService
             order.UpdatedBy = userId;
             order.MarkAsUpdated();
 
-            // Restore stock
-            foreach (var item in order.OrderItems)
-            {
-                var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
-                product.AddStock(item.Quantity);
-                await _unitOfWork.Products.Update(product, product.Id);
-            }
-
-            // Refund cashback if used
-            if (order.CashbackUsed > 0)
-            {
-                var customer = await _unitOfWork.Customers.GetByIdAsync(order.CustomerId);
-                customer.AddCashback(order.CashbackUsed);
-                await _unitOfWork.Customers.Update(customer, customer.Id);
-            }
+            await RestoreStockAndCashbackAsync(order);
 
             await _unitOfWork.Orders.Update(order, orderId);
             await _unitOfWork.SaveChangesAsync();
@@ -396,19 +401,32 @@ public class OrderService : IOrderService
     {
         try
         {
-            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            var order = await _unitOfWork.Orders
+                .SelectAsync(o => o.Id == orderId && o.DeletedAt == null, new[] { "OrderItems" });
             if (order == null)
                 return Result.NotFound("Order not found");
 
-            order.Status = Enum.Parse<OrderStatus>(status);
+            if (!Enum.TryParse<OrderStatus>(status, ignoreCase: true, out var newStatus))
+                return Result.BadRequest($"Invalid status: {status}");
+
+            // Ilgari istalgan o'tishga ruxsat bor edi: Delivered → Pending → Delivered qilib
+            // keshbekni qayta-qayta olish, Cancelled'ni ombor qaytarilmagan holda qilish mumkin edi
+            if (order.Status is OrderStatus.Delivered or OrderStatus.Cancelled)
+                return Result.BadRequest($"Order is already {order.Status}");
+
+            order.Status = newStatus;
             order.UpdatedBy = updatedBy;
             order.MarkAsUpdated();
 
+            if (newStatus == OrderStatus.Cancelled)
+                await RestoreStockAndCashbackAsync(order);
+
             // If delivered, earn cashback
-            if (order.Status == OrderStatus.Delivered && order.PaidAt != null)
+            if (newStatus == OrderStatus.Delivered && order.PaidAt != null)
             {
-                var cashbackAmount = order.FinalPrice * 0.02m;
-                await _cashbackService.EarnCashbackAsync(order.CustomerId, order.Id, cashbackAmount);
+                // EarnCashbackAsync 2% ni o'zi hisoblaydi — ilgari bu yerda ham 0.02 ga
+                // ko'paytirilib, mijoz 2% o'rniga 0.04% olardi
+                await _cashbackService.EarnCashbackAsync(order.CustomerId, order.Id, order.FinalPrice);
             }
 
             await _unitOfWork.Orders.Update(order, orderId);
@@ -420,6 +438,46 @@ public class OrderService : IOrderService
         {
             return Result.InternalError($"Error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Bekor qilingan buyurtma mahsulotlarini omborga, ishlatilgan keshbekni mijozga qaytaradi.
+    /// OrderItems yuklangan bo'lishi kerak.
+    /// </summary>
+    private async Task RestoreStockAndCashbackAsync(Order order)
+    {
+        foreach (var item in order.OrderItems)
+        {
+            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId);
+            product.AddStock(item.Quantity);
+            await _unitOfWork.Products.Update(product, product.Id);
+        }
+
+        if (order.CashbackUsed > 0)
+        {
+            var customer = await _unitOfWork.Customers.GetByIdAsync(order.CustomerId);
+            customer.AddCashback(order.CashbackUsed);
+            await _unitOfWork.Customers.Update(customer, customer.Id);
+        }
+    }
+
+    /// <summary>
+    /// Sotuvchi chegirmasi: musbat, umumiy chegirma 20% dan (Manager uchun buyurtma summasidan)
+    /// oshmasin va keshbek bilan birga narxni manfiy qilmasin.
+    /// </summary>
+    private static string? ValidateSellerDiscount(ZiyoMarket.Domain.Entities.Users.Seller seller, decimal amount, decimal existingDiscount, decimal cashbackUsed, decimal totalPrice)
+    {
+        if (amount <= 0)
+            return "Discount must be greater than zero";
+
+        var totalDiscount = existingDiscount + amount;
+        if (totalDiscount + cashbackUsed > totalPrice)
+            return "Discount exceeds order total";
+
+        if (!seller.IsManager && totalDiscount > totalPrice * 0.20m)
+            return "Discount exceeds 20% limit";
+
+        return null;
     }
 
     public async Task<Result> ConfirmOrderAsync(int orderId, int sellerId)
@@ -452,16 +510,17 @@ public class OrderService : IOrderService
             if (order == null)
                 return Result.NotFound("Order not found");
 
-            if (request.DiscountAmount > order.TotalPrice)
-                return Result.BadRequest("Discount exceeds order total");
+            if (order.Status is OrderStatus.Delivered or OrderStatus.Cancelled)
+                return Result.BadRequest("Cannot apply discount to a finished order");
 
             var seller = await _unitOfWork.Sellers.GetByIdAsync(sellerId);
             if (seller == null)
                 return Result.BadRequest("Invalid seller");
 
-            // Check discount limit
-            if (seller.Role != "Manager" && request.DiscountAmount > order.TotalPrice * 0.20m)
-                return Result.BadRequest("Discount exceeds 20% limit");
+            // Ilgari limit har bir chegirmaga alohida tekshirilardi: 5 marta 20% = bepul buyurtma
+            var discountError = ValidateSellerDiscount(seller, request.DiscountAmount, order.DiscountApplied, order.CashbackUsed, order.TotalPrice);
+            if (discountError != null)
+                return Result.BadRequest(discountError);
 
             var orderDiscount = new OrderDiscount
             {

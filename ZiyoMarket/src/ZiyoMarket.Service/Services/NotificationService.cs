@@ -420,10 +420,10 @@ public class NotificationService : INotificationService
             var query = _unitOfWork.Notifications.Table.Where(n => n.DeletedAt == null);
 
             if (startDate.HasValue)
-                query = query.Where(n => DateTime.Parse(n.CreatedAt) >= startDate.Value);
+                query = query.Where(n => n.CreatedAt.CompareTo(startDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
 
             if (endDate.HasValue)
-                query = query.Where(n => DateTime.Parse(n.CreatedAt) <= endDate.Value);
+                query = query.Where(n => n.CreatedAt.CompareTo(endDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
 
             var notifications = await query.ToListAsync();
 

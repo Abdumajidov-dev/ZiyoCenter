@@ -353,10 +353,10 @@ public class CustomerService : ICustomerService
             var query = _unitOfWork.Customers.Table.Where(c => c.DeletedAt == null);
 
             if (startDate.HasValue)
-                query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
+                query = query.Where(c => c.CreatedAt.CompareTo(startDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
 
             if (endDate.HasValue)
-                query = query.Where(c => DateTime.Parse(c.CreatedAt) <= endDate.Value);
+                query = query.Where(c => c.CreatedAt.CompareTo(endDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
 
             var customers = await query.ToListAsync();
 
