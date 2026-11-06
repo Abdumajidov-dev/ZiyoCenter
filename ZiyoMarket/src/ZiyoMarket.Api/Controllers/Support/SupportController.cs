@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Api.Controllers;
 using ZiyoMarket.Service.DTOs.Content;
@@ -41,7 +42,34 @@ public class SupportController : BaseController
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
 
+        if (!CanAccessChat(result.Data!.CustomerId))
+            return StatusCode(403, new { message = "Access denied" });
+
         return Ok(new { success = true, data = result.Data });
+    }
+
+    /// <summary>
+    /// Ilgari faqat [Authorize] bor edi — istalgan mijoz ID bo'yicha boshqalarning chatini o'qiy olardi.
+    /// Admin hamma chatni ko'radi, mijoz faqat o'zinikini, sotuvchi support'da qatnashmaydi.
+    /// </summary>
+    private bool CanAccessChat(int chatCustomerId)
+    {
+        var userType = GetCurrentUserType();
+        if (userType == "Admin")
+            return true;
+        return userType == "Customer" && chatCustomerId == GetCurrentUserId();
+    }
+
+    private async Task<IActionResult?> EnsureChatAccessAsync(int chatId)
+    {
+        if (GetCurrentUserType() == "Admin")
+            return null;
+
+        var chat = await _supportService.GetChatByIdAsync(chatId);
+        if (!chat.IsSuccess)
+            return StatusCode(chat.StatusCode, new { message = chat.Message });
+
+        return CanAccessChat(chat.Data!.CustomerId) ? null : StatusCode(403, new { message = "Access denied" });
     }
 
     /// <summary>
@@ -112,6 +140,9 @@ public class SupportController : BaseController
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ReopenChat(int id)
     {
+        if (await EnsureChatAccessAsync(id) is { } denied)
+            return denied;
+
         var reopenedBy = GetCurrentUserId();
         var result = await _supportService.ReopenChatAsync(id, reopenedBy);
 
@@ -175,7 +206,15 @@ public class SupportController : BaseController
     public async Task<IActionResult> GetChatMessages(
         int chatId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50)
     {
+        if (await EnsureChatAccessAsync(chatId) is { } denied)
+            return denied;
+
         var result = await _supportService.GetChatMessagesAsync(chatId, pageNumber, pageSize);
+
+        // Ilgari xato bo'lsa ham 200 + data:null qaytarilardi
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
         return Ok(new { success = true, data = result.Data });
     }
 
@@ -191,6 +230,11 @@ public class SupportController : BaseController
     {
         var senderId = GetCurrentUserId();
         var senderType = GetCurrentUserType();
+
+        // Servis faqat Customer va Admin'ni tekshiradi — sotuvchi istalgan chatga yoza olardi
+        if (senderType != "Customer" && senderType != "Admin")
+            return StatusCode(403, new { message = "Access denied" });
+
         var result = await _supportService.SendMessageAsync(request, senderId, senderType);
 
         if (!result.IsSuccess)
@@ -554,6 +598,7 @@ public class SupportController : BaseController
     /// <param name="count">Number of chats to create</param>
     /// <response code="201">Mock chats created successfully</response>
     [HttpPost("seed/chats")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(List<SupportChatDetailDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> SeedMockChats([FromQuery] int count = 10)
@@ -579,6 +624,7 @@ public class SupportController : BaseController
     /// <param name="count">Number of messages to create</param>
     /// <response code="201">Mock messages created successfully</response>
     [HttpPost("seed/messages/{chatId}")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(List<SupportMessageDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> SeedMockMessages(int chatId, [FromQuery] int count = 10)
