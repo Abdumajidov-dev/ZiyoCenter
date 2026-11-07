@@ -16,8 +16,8 @@ public interface ISupportService
     // Message operations
     Task<Result<List<SupportMessageDto>>> GetChatMessagesAsync(int chatId, int pageNumber = 1, int pageSize = 50);
     Task<Result<SupportMessageDto>> SendMessageAsync(SendMessageDto request, int senderId, string senderType);
-    Task<Result> DeleteMessageAsync(int messageId, int deletedBy);
-    Task<Result> EditMessageAsync(int messageId, string newMessage, int editedBy);
+    Task<Result> DeleteMessageAsync(int messageId, int deletedBy, string userType);
+    Task<Result> EditMessageAsync(int messageId, string newMessage, int editedBy, string userType);
     Task<Result> MarkMessageAsReadAsync(int messageId, int userId);
 
     // Customer support

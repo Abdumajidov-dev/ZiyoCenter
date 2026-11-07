@@ -193,12 +193,16 @@ For production deployment to Railway.app, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 Located in `src/ZiyoMarket.Api/appsettings.json`.
 
-**WARNING:** The current `appsettings.json` has a Railway.app production connection string committed to source control. For local development, override it using user secrets:
+`appsettings.json` holds no secrets: the connection string, `JwtSettings:SecretKey` and the `S3Settings` keys are all empty. (Earlier versions committed real values, so they remain in git history and must be rotated.)
+- Production: they come from environment variables (`DATABASE_URL`, `JwtSettings__SecretKey`, `S3Settings__AccessKey`, `S3Settings__SecretKey`). See DEPLOYMENT.md.
+- Development: `appsettings.Development.json` has a dev-only JWT key; docker-compose passes the connection string. For `dotnet run`, set the rest with user secrets:
 
 ```bash
 dotnet user-secrets init --project src/ZiyoMarket.Api
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=ZiyoDb;User Id=postgres;Password=YOUR_PASSWORD;" --project src/ZiyoMarket.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=ziyomarket;Username=postgres;Password=YOUR_PASSWORD;" --project src/ZiyoMarket.Api
 ```
+
+`[DevelopmentOnly]` (Api/Helpers) makes seed and test-data endpoints return 404 outside Development.
 
 ### JWT Settings
 
@@ -215,9 +219,24 @@ Three distinct user types with different capabilities:
 
 1. **Customer** - End users who purchase products online
 2. **Seller** - Staff who create offline orders in physical stores
-3. **Admin** - System administrators with full access
+3. **Admin** - System administrators (`Role`: `Admin` or `SuperAdmin`)
 
 **JWT Claims:** Token includes `UserId`, `Email`, `UserType` claims for authorization
+
+### Admin Permissions
+
+Coarse access is still role-based (`[Authorize(Roles = ...)]`). On top of that, admin actions are gated per permission:
+- **Catalog:** `Domain/Common/AdminPermissions.cs` holds the 17 permissions (`orders.manage`, `finance.payment_cards`, …). Their ids are stable, so append new entries only at the end.
+- **Storage:** an admin's permissions live in `Admin.Permissions` as a comma-separated list. `null` means unrestricted (admins that existed before the system); `""` means none. SuperAdmin always passes.
+- **Enforcement:** `[RequirePermission(AdminPermissions.X)]` (`Api/Helpers`) reads permissions from the DB on each request, so revoking one takes effect immediately. It checks only Admin callers, so it can sit on `Admin,Seller` endpoints and on class level (`SupportController`, `ExpenseController`) without affecting sellers or customers.
+- **API:** `GET /api/permission` (catalog), `GET /api/permission/my`, `GET|POST /api/admin/{id}/permissions` (SuperAdmin).
+- **New admin endpoints:** add the matching `[RequirePermission]`. The dashboard (`report/dashboard*`) is intentionally open to every admin.
+
+### News & FAQ
+
+- **News** (`/api/news`) is `Content` with `ContentType.Article`: `Description` holds the body, `ContentUrl` the image, `IsActive` the published flag and `ValidFrom` the publish date. There is no separate table.
+- **FAQ** (`/api/faqs`) has its own `Faq` entity.
+- **Access:** reads are public (published/active items only; admins also see drafts). Writes need `content.manage`.
 
 ### Product Entity Extended Fields
 
@@ -270,10 +289,11 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 ### Authentication Flow
 
 **Public endpoints (no auth required):**
-- `POST /api/auth/login` — login with `{phone_or_email, password, user_type}`; returns `AccessToken`. Admin uses username or email; Customer/Seller use phone or email.
-- `POST /api/auth/register` — universal registration with `{first_name, last_name, phone, password, user_type, username?, address?}`. Customer: open. Admin/Seller: requires Admin JWT.
+- `POST /api/auth/login` — login with `{phone_or_email, password, user_type}`; returns `AccessToken`. Admin uses username or email; Customer/Seller use phone or email. Seller and Admin always need a password. A Customer may log in without a password only right after a successful `verify-otp` for the same phone (single-use mark, 15 min — `IEskizSmsService.ConsumeVerifiedPhone`).
+- `POST /api/auth/register` — universal registration with `{first_name, last_name, phone, password, user_type, username?, address?}`. Customer: needs a prior `verify-otp`. Admin/Seller: requires Admin JWT.
+- `POST /api/auth/send-otp` / `POST /api/auth/verify-otp` — mobile OTP (`phone_number`, `code`); max 5 wrong attempts per code
 - `POST /api/auth/password-reset/request` — request password reset code
-- `POST /api/auth/password-reset/confirm` — confirm reset with code and new password
+- `POST /api/auth/password-reset/confirm` — confirm reset with the code sent to the user's own phone. With SMS disabled, only customers can reset this way.
 - `POST /api/auth/verification/send` — send verification code to phone/email
 - `POST /api/auth/verification/verify` — verify the code
 - `POST /api/auth/validate-token` — validate a JWT token
@@ -289,7 +309,7 @@ Pending → Confirmed → Preparing → ReadyForPickup/Shipped → Delivered/Can
 
 **Logout** is stateless — JWT is removed client-side. Server-side logout only logs the action.
 
-**Password reset / verification codes** are currently printed to the console (`Console.WriteLine`) only — SMS/Email integration is not yet implemented (marked as TODO in `AuthService`). When integrating a real SMS provider, update `RequestPasswordResetAsync` and `SendVerificationCodeAsync` in `AuthService.cs`.
+**OTP / SMS** go through `EskizSmsService`. With `EskizSettings:Enabled=false` (test mode), no SMS is sent and every code equals `OtpSettings:DefaultCode`. Production must enable Eskiz. When it is enabled, a failed SMS send is an error; the code never falls back to the default.
 
 ### Seed Data for Testing
 

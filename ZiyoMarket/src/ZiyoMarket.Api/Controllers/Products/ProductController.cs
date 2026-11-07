@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.Interfaces;
@@ -144,6 +146,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> CreateProduct([FromBody] CreateProductDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -171,6 +174,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto request)
     {
         request.Id = id; // Ensure ID from route is used
@@ -198,6 +202,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> DeleteProduct(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -225,6 +230,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> UpdateStock([FromBody] UpdateStockDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -250,6 +256,7 @@ public class ProductController : BaseController
     [HttpPost("{productId}/stock/add")]
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> AddStock(int productId, [FromQuery] int quantity, [FromQuery] string? reason = null)
     {
         var updatedBy = GetCurrentUserId();
@@ -275,6 +282,7 @@ public class ProductController : BaseController
     [HttpPost("{productId}/stock/remove")]
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> RemoveStock(int productId, [FromQuery] int quantity, [FromQuery] string? reason = null)
     {
         var updatedBy = GetCurrentUserId();
@@ -396,7 +404,9 @@ public class ProductController : BaseController
     /// Kategoriya bo'yicha barcha mahsulot narxini foizga oshirish
     /// </summary>
     [HttpPost("bulk-price-increase")]
-    [Authorize]
+    // Ilgari faqat [Authorize] edi — istalgan mijoz butun kategoriya narxini o'zgartira olardi
+    [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ProductsPrices)]
     public async Task<IActionResult> BulkPriceIncrease([FromBody] BulkPriceIncreaseDto dto)
     {
         if (!ModelState.IsValid)

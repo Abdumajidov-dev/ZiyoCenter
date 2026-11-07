@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.Interfaces;
 
@@ -54,6 +55,7 @@ public class CashbackController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     public async Task<IActionResult> SeedMockCashback([FromQuery] int count = 10)
     {
         var customerId = GetCurrentUserId();

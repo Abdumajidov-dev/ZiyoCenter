@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Service.Interfaces;
@@ -18,6 +20,7 @@ public class SellerController : BaseController
     }
 
     [HttpGet("{id}")]
+    [RequirePermission(AdminPermissions.SellersView)]
     public async Task<IActionResult> GetSellerById(int id)
     {
         var result = await _sellerService.GetSellerByIdAsync(id);
@@ -29,6 +32,7 @@ public class SellerController : BaseController
     }
 
     [HttpGet]
+    [RequirePermission(AdminPermissions.SellersView)]
     public async Task<IActionResult> GetSellers([FromQuery] SellerFilterRequest request)
     {
         var result = await _sellerService.GetSellersAsync(request);
@@ -36,6 +40,7 @@ public class SellerController : BaseController
     }
 
     [HttpPut("{id}")]
+    [RequirePermission(AdminPermissions.SellersManage)]
     public async Task<IActionResult> UpdateSeller(int id, [FromBody] UpdateSellerDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -48,6 +53,7 @@ public class SellerController : BaseController
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission(AdminPermissions.SellersManage)]
     public async Task<IActionResult> DeleteSeller(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -60,6 +66,7 @@ public class SellerController : BaseController
     }
 
     [HttpGet("{id}/performance")]
+    [RequirePermission(AdminPermissions.SellersView)]
     public async Task<IActionResult> GetSellerPerformance(int id, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var result = await _sellerService.GetSellerPerformanceAsync(id, startDate, endDate);
@@ -71,13 +78,31 @@ public class SellerController : BaseController
     }
 
     [HttpGet("top")]
+    [RequirePermission(AdminPermissions.SellersView)]
     public async Task<IActionResult> GetTopSellers([FromQuery] int count = 10)
     {
         var result = await _sellerService.GetTopSellersAsync(count);
         return Ok(new { success = true, data = result.Data });
     }
 
+    /// <summary>
+    /// Sotuvchi rolini o'zgartirish (Seller / Manager). Servis bor edi, lekin endpoint yo'q edi —
+    /// admin paneldagi "Rolni o'zgartirish" tugmasi 404 olardi.
+    /// </summary>
+    [HttpPut("{id}/change-role")]
+    [RequirePermission(AdminPermissions.SellersManage)]
+    public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeRoleRequest request)
+    {
+        var result = await _sellerService.ChangeSellerRoleAsync(id, request.NewRole, GetCurrentUserId());
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message });
+    }
+
     [HttpPost("{id}/toggle-status")]
+    [RequirePermission(AdminPermissions.SellersManage)]
     public async Task<IActionResult> ToggleStatus(int id)
     {
         var updatedBy = GetCurrentUserId();
@@ -90,6 +115,7 @@ public class SellerController : BaseController
     }
 
     [HttpDelete("bulk")]
+    [RequirePermission(AdminPermissions.SellersManage)]
     public async Task<IActionResult> DeleteAllSellers([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();
@@ -102,6 +128,7 @@ public class SellerController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     public async Task<IActionResult> SeedMockSellers([FromQuery] int count = 10)
     {
         var createdBy = GetCurrentUserId();

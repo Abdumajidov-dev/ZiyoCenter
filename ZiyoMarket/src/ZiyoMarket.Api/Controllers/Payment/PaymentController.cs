@@ -1,3 +1,5 @@
+using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Api.Controllers;
@@ -21,7 +23,11 @@ public class PaymentController : BaseController
     /// <summary>
     /// Barcha to'lov kartalarini olish (Admin)
     /// </summary>
+    // Ilgari faqat [Authorize] edi: istalgan mijoz o'z kartasini qo'shib, uni do'konning
+    // faol to'lov kartasi qilib qo'ya olardi — barcha mijozlar to'lovi o'sha kartaga ketardi
+    [Authorize(Roles = "Admin")]
     [HttpGet("cards")]
+    [RequirePermission(AdminPermissions.FinancePaymentCards)]
     public async Task<IActionResult> GetAll()
     {
         var result = await _paymentCardService.GetAllAsync();
@@ -48,7 +54,9 @@ public class PaymentController : BaseController
     /// <summary>
     /// Yangi karta qo'shish (Admin)
     /// </summary>
+    [Authorize(Roles = "Admin")]
     [HttpPost("cards")]
+    [RequirePermission(AdminPermissions.FinancePaymentCards)]
     public async Task<IActionResult> Create([FromBody] CreatePaymentCardDto dto)
     {
         if (!ModelState.IsValid)
@@ -64,7 +72,9 @@ public class PaymentController : BaseController
     /// <summary>
     /// Kartani aktiv qilish (Admin)
     /// </summary>
+    [Authorize(Roles = "Admin")]
     [HttpPut("cards/{id}/set-active")]
+    [RequirePermission(AdminPermissions.FinancePaymentCards)]
     public async Task<IActionResult> SetActive(int id)
     {
         var result = await _paymentCardService.SetActiveAsync(id);
@@ -77,7 +87,9 @@ public class PaymentController : BaseController
     /// <summary>
     /// Kartani o'chirish (Admin)
     /// </summary>
+    [Authorize(Roles = "Admin")]
     [HttpDelete("cards/{id}")]
+    [RequirePermission(AdminPermissions.FinancePaymentCards)]
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _paymentCardService.DeleteAsync(id);

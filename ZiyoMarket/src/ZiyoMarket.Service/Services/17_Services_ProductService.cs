@@ -286,19 +286,29 @@ namespace ZiyoMarket.Service.Services
             if (product == null)
                 return Result.NotFound("Product not found");
 
-            switch (request.Operation.ToLower())
+            // Domen metodlari noto'g'ri miqdorda istisno tashlaydi — ilgari bu 500 bo'lib chiqardi
+            try
             {
-                case "add":
-                    product.AddStock(request.Quantity);
-                    break;
-                case "remove":
-                    product.DecreaseStock(request.Quantity);
-                    break;
-                case "set":
-                    product.StockQuantity = request.Quantity;
-                    break;
-                default:
-                    return Result.BadRequest("Invalid operation");
+                switch (request.Operation.ToLower())
+                {
+                    case "add":
+                        product.AddStock(request.Quantity);
+                        break;
+                    case "remove":
+                        product.DecreaseStock(request.Quantity);
+                        break;
+                    case "set":
+                        if (request.Quantity < 0)
+                            return Result.BadRequest("Miqdor manfiy bo'lishi mumkin emas");
+                        product.StockQuantity = request.Quantity;
+                        break;
+                    default:
+                        return Result.BadRequest("Invalid operation");
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                return Result.BadRequest(ex.Message);
             }
 
             product.UpdatedBy = updatedBy;

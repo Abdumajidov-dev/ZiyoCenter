@@ -11,12 +11,15 @@ using ZiyoMarket.Domain.Entities.Systems;
 using ZiyoMarket.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
+using ZiyoMarket.Api.Helpers;
 using ContentEntity = ZiyoMarket.Domain.Entities.Content.Content;
 
 namespace ZiyoMarket.Api.Controllers;
 
+// Avtorizatsiyasiz edi: production'da har kim clear-all bilan bazani o'chira olardi
 [ApiController]
 [Route("api/[controller]")]
+[DevelopmentOnly]
 public class SeedDataController : ControllerBase
 {
     private readonly ZiyoMarketDbContext _context;

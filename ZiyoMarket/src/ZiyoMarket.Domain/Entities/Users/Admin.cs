@@ -103,7 +103,8 @@ public class Admin : BaseAuditableEntity
     /// </summary>
     public void ChangeRole(string newRole)
     {
-        var allowedRoles = new[] { "Admin", "SuperAdmin", "Sotuvchi" };
+        // "Sotuvchi" bu yerda yo'q: sotuvchilar Sellers jadvalida (UserType.Seller) yuradi
+        var allowedRoles = new[] { "Admin", "SuperAdmin" };
 
         if (!allowedRoles.Contains(newRole))
             throw new ArgumentException($"Noto'g'ri rol: {newRole}");
@@ -133,16 +134,35 @@ public class Admin : BaseAuditableEntity
         if (IsSuperAdmin)
             return true;
 
-        // Oddiy Admin'ning cheklangan huquqlari
-        var allowedActions = new[]
-        {
-            "ViewProducts", "CreateProduct", "UpdateProduct",
-            "ViewOrders", "UpdateOrderStatus",
-            "ViewCustomers", "ViewReports",
-            "ViewNotifications", "RespondToSupport"
-        };
+        // null — ruxsatlar hali biriktirilmagan (tizim joriy etilishidan oldingi adminlar): cheklovsiz.
+        // "" — SuperAdmin barcha ruxsatlarni olib tashlagan.
+        if (Permissions == null)
+            return true;
 
-        return allowedActions.Contains(action);
+        return GetPermissionCodes().Contains(action);
+    }
+
+    /// <summary>
+    /// Biriktirilgan ruxsat kodlari (AdminPermissions katalogidan).
+    /// </summary>
+    public IReadOnlyCollection<string> GetPermissionCodes()
+    {
+        if (Permissions == null)
+            return AdminPermissions.All.Select(p => p.Code).ToList();
+
+        return Permissions
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(AdminPermissions.IsKnown)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Ruxsatlarni almashtirish. Noma'lum kodlar tashlab yuboriladi.
+    /// </summary>
+    public void SetPermissions(IEnumerable<string> codes)
+    {
+        Permissions = string.Join(",", codes.Where(AdminPermissions.IsKnown).Distinct());
+        MarkAsUpdated();
     }
 
     /// <summary>

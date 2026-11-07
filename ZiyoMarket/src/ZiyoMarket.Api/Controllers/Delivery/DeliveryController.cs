@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.Interfaces;
@@ -47,6 +49,7 @@ public class DeliveryController : BaseController
 
     [HttpPost("partners")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> CreateDeliveryPartner([FromBody] SaveDeliveryPartnerDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -60,6 +63,7 @@ public class DeliveryController : BaseController
 
     [HttpPut("partners/{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> UpdateDeliveryPartner(int id, [FromBody] SaveDeliveryPartnerDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -73,6 +77,7 @@ public class DeliveryController : BaseController
 
     [HttpDelete("partners/{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> DeleteDeliveryPartner(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -82,6 +87,26 @@ public class DeliveryController : BaseController
             return StatusCode(result.StatusCode, new { message = result.Message });
 
         return Ok(new { success = true, message = result.Message });
+    }
+
+    /// <summary>
+    /// Hamkorni faollashtirish/o'chirish. Admin panel shu endpointni chaqirardi, lekin u yo'q edi.
+    /// </summary>
+    [HttpPut("partners/{id}/toggle-status")]
+    [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
+    public async Task<IActionResult> ToggleDeliveryPartnerStatus(int id)
+    {
+        var partner = await _deliveryService.GetDeliveryPartnerByIdAsync(id);
+        if (!partner.IsSuccess)
+            return StatusCode(partner.StatusCode, new { message = partner.Message });
+
+        var result = await _deliveryService.SetPartnerActiveStatusAsync(id, !partner.Data!.IsActive);
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        var updated = await _deliveryService.GetDeliveryPartnerByIdAsync(id);
+        return Ok(new { success = true, message = result.Message, data = updated.Data });
     }
 
     [HttpGet("orders/{orderId}")]
@@ -98,6 +123,7 @@ public class DeliveryController : BaseController
 
     [HttpPost("orders")]
     [Authorize(Roles = "Admin,Seller")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> CreateOrderDelivery([FromBody] CreateOrderDeliveryDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -111,6 +137,7 @@ public class DeliveryController : BaseController
 
     [HttpPut("{id}/status")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] string status)
     {
         var updatedBy = GetCurrentUserId();
@@ -136,6 +163,7 @@ public class DeliveryController : BaseController
 
     [HttpDelete("partners/bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> DeleteAllDeliveryPartners([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();
@@ -148,6 +176,7 @@ public class DeliveryController : BaseController
     }
 
     [HttpPost("partners/seed")]
+    [DevelopmentOnly]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SeedMockDeliveryPartners([FromQuery] int count = 3)
     {

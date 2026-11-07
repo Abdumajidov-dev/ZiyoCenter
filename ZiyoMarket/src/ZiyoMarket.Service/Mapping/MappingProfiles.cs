@@ -16,6 +16,9 @@ using ZiyoMarket.Service.DTOs.Delivery;
 using ZiyoMarket.Service.DTOs.Admins;
 using ZiyoMarket.Service.DTOs.Sellers;
 using ZiyoMarket.Domain.Enums;
+using ZiyoMarket.Domain.Entities.Support;
+// DTOs.Notifications'da ham SupportMessageDto bor, shuning uchun alias
+using SupportDtos = ZiyoMarket.Service.DTOs.Support;
 
 namespace ZiyoMarket.Service.Mapping;
 
@@ -290,5 +293,49 @@ public class ContentProfile : Profile
             .ForMember(dest => dest.ValidFrom, opt => opt.MapFrom(src => src.StartDate ?? DateTime.UtcNow))
             .ForMember(dest => dest.ValidUntil, opt => opt.MapFrom(src => src.EndDate))
             .ForMember(dest => dest.VideoDuration, opt => opt.MapFrom(src => src.DurationSeconds));
+
+        // Support moduli uchun xaritalar umuman yo'q edi — chatni ochish 500 qaytarardi
+        CreateMap<SupportChat, SupportDtos.SupportChatDetailDto>()
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.FirstName + " " + src.Customer.LastName : string.Empty))
+            .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Phone : string.Empty))
+            .ForMember(dest => dest.AdminName, opt => opt.MapFrom(src => src.Admin != null ? src.Admin.FirstName + " " + src.Admin.LastName : null))
+            .ForMember(dest => dest.Subject, opt => opt.MapFrom(src => src.Subject ?? string.Empty))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => PriorityToInt(src.Priority)))
+            .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.StartedAt ?? ParseTimestamp(src.CreatedAt)))
+            .ForMember(dest => dest.Messages, opt => opt.Ignore())
+            .ForMember(dest => dest.MessageCount, opt => opt.Ignore())
+            .ForMember(dest => dest.UnreadCount, opt => opt.Ignore());
+
+        CreateMap<SupportChat, SupportDtos.SupportChatListDto>()
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.FirstName + " " + src.Customer.LastName : string.Empty))
+            .ForMember(dest => dest.AdminName, opt => opt.MapFrom(src => src.Admin != null ? src.Admin.FirstName + " " + src.Admin.LastName : null))
+            .ForMember(dest => dest.Subject, opt => opt.MapFrom(src => src.Subject ?? string.Empty))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => PriorityToInt(src.Priority)))
+            .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.StartedAt ?? ParseTimestamp(src.CreatedAt)))
+            .ForMember(dest => dest.MessageCount, opt => opt.MapFrom(src => src.Messages.Count(m => m.DeletedAt == null)))
+            .ForMember(dest => dest.UnreadCount, opt => opt.MapFrom(src => src.Messages.Count(m => m.DeletedAt == null && !m.IsRead)));
+
+        CreateMap<SupportMessage, SupportDtos.SupportMessageDto>()
+            .ForMember(dest => dest.SenderType, opt => opt.MapFrom(src => src.SenderType.ToString()))
+            .ForMember(dest => dest.SenderName, opt => opt.Ignore())
+            .ForMember(dest => dest.AttachmentUrl, opt => opt.MapFrom(src => src.AttachmentUrl ?? src.FileUrl))
+            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => ParseTimestamp(src.CreatedAt)));
     }
+
+    private static int PriorityToInt(string? priority) => priority switch
+    {
+        "Low" => 1,
+        "High" => 3,
+        "Urgent" => 4,
+        _ => 2 // Normal
+    };
+
+    /// <summary>
+    /// BaseEntity vaqtlari "yyyy-MM-dd HH:mm:ss" satr sifatida saqlanadi.
+    /// </summary>
+    private static DateTime ParseTimestamp(string? value)
+        => DateTime.TryParse(value, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : DateTime.MinValue;
 }

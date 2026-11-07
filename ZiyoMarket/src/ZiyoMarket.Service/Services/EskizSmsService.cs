@@ -18,7 +18,11 @@ public class EskizSmsService : IEskizSmsService
 
     private const string BaseUrl = "https://notify.eskiz.uz";
     private const string CacheKeyPrefix = "otp:";
+    private const string VerifiedKeyPrefix = "otp-verified:";
+    private const int MaxFailedAttempts = 5;
     private static readonly TimeSpan OtpExpiry = TimeSpan.FromMinutes(5);
+    // Tasdiqlangandan keyin ro'yxatdan o'tish formasini to'ldirishga yetadigan vaqt
+    private static readonly TimeSpan VerifiedExpiry = TimeSpan.FromMinutes(15);
 
     public bool IsEnabled => _settings.Enabled;
 
@@ -49,33 +53,68 @@ public class EskizSmsService : IEskizSmsService
         var message = $"ZiyoMarket tasdiqlash kodi: {code}. 5 daqiqa ichida foydalaning.";
 
         var sent = await SendSmsAsync(phone, message);
-        if (sent)
+        if (!sent)
         {
-            StoreOtp(phone, code);
-            _logger.LogInformation("OTP sent to {Phone}", phone);
-        }
-        else
-        {
-            _logger.LogWarning("Eskiz SMS failed for {Phone}, falling back to default code", phone);
-            StoreOtp(phone, _otpSettings.DefaultCode);
+            // Ilgari bu yerda default kod saqlanardi — SMS ishlamay qolsa hamma "1111" bilan kirardi
+            _logger.LogWarning("Eskiz SMS failed for {Phone}", phone);
+            throw new InvalidOperationException("SMS yuborib bo'lmadi");
         }
 
+        StoreOtp(phone, code);
+        _logger.LogInformation("OTP sent to {Phone}", phone);
         return code;
     }
 
     public Task<bool> VerifyOtpAsync(string phone, string code)
     {
-        var key = CacheKeyPrefix + phone;
-        if (_cache.TryGetValue(key, out string? stored))
+        var key = CacheKeyPrefix + NormalizePhone(phone);
+        if (!_cache.TryGetValue(key, out OtpEntry? entry) || entry == null)
         {
-            var valid = stored == code;
+            // Kod yuborilmagan bo'lsa default kod faqat test rejimida (SMS o'chiq) qabul qilinadi
+            var valid = !_settings.Enabled && code == _otpSettings.DefaultCode;
             if (valid)
-                _cache.Remove(key);
+                MarkVerified(phone);
             return Task.FromResult(valid);
         }
 
-        // Cache da yo'q — test mode uchun default code ni tekshir
-        return Task.FromResult(code == _otpSettings.DefaultCode);
+        if (entry.Code != code)
+        {
+            // 6 xonali kodni ketma-ket taxmin qilib topishning oldini olish
+            if (++entry.FailedAttempts >= MaxFailedAttempts)
+                _cache.Remove(key);
+            return Task.FromResult(false);
+        }
+
+        _cache.Remove(key);
+        MarkVerified(phone);
+        return Task.FromResult(true);
+    }
+
+    public bool ConsumeVerifiedPhone(string phone)
+    {
+        var key = VerifiedKeyPrefix + NormalizePhone(phone);
+        if (!_cache.TryGetValue(key, out _))
+            return false;
+
+        _cache.Remove(key);
+        return true;
+    }
+
+    private void MarkVerified(string phone)
+    {
+        _cache.Set(VerifiedKeyPrefix + NormalizePhone(phone), true, VerifiedExpiry);
+    }
+
+    /// <summary>
+    /// "+998 90 123" va "99890123" bir xil kalitga tushishi uchun faqat raqamlar qoldiriladi.
+    /// </summary>
+    private static string NormalizePhone(string phone)
+        => new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
+
+    private sealed class OtpEntry
+    {
+        public string Code { get; init; } = string.Empty;
+        public int FailedAttempts { get; set; }
     }
 
     private async Task<bool> SendSmsAsync(string phone, string message)
@@ -152,12 +191,13 @@ public class EskizSmsService : IEskizSmsService
 
     private void StoreOtp(string phone, string code)
     {
-        var key = CacheKeyPrefix + phone;
-        _cache.Set(key, code, OtpExpiry);
+        var key = CacheKeyPrefix + NormalizePhone(phone);
+        _cache.Set(key, new OtpEntry { Code = code }, OtpExpiry);
     }
 
     private static string GenerateCode()
     {
-        return Random.Shared.Next(100000, 999999).ToString();
+        // OTP taxmin qilinmasligi kerak, shuning uchun kriptografik RNG
+        return System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     }
 }

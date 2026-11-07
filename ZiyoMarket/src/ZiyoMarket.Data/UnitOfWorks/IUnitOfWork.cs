@@ -48,6 +48,7 @@ public interface IUnitOfWork : IDisposable
     IRepository<DailySalesSummary> DailySalesSummaries { get; }
     IRepository<PaymentCard> PaymentCards { get; }
     IRepository<Expense> Expenses { get; }
+    IRepository<Faq> Faqs { get; }
 
     // Transaction Management
     Task<int> SaveChangesAsync();

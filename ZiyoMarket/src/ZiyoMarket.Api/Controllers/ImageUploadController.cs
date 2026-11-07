@@ -36,8 +36,9 @@ public class ImageUploadController : ControllerBase
         _logger = logger;
     }
 
+    // [AllowAnonymous] olib tashlandi: har kim S3 bucket'ga fayl yuklay olardi.
+    // Admin panel ham, mobil ilova (to'lov cheki) ham token bilan chaqiradi.
     [HttpPost]
-    [AllowAnonymous]
     public async Task<IActionResult> UploadImage(
         IFormFile file,
         [FromQuery] string type = "product")
@@ -55,6 +56,13 @@ public class ImageUploadController : ControllerBase
         type = type.ToLowerInvariant();
         if (!AllowedTypes.Contains(type))
             return BadRequest(new { message = $"Ruxsat etilgan turlar: {string.Join(", ", AllowedTypes)}" });
+
+        // Kalitlar endi repoda emas — S3Settings__AccessKey / S3Settings__SecretKey muhit o'zgaruvchilari
+        if (string.IsNullOrWhiteSpace(_s3.AccessKey) || string.IsNullOrWhiteSpace(_s3.SecretKey))
+        {
+            _logger.LogError("S3Settings AccessKey/SecretKey sozlanmagan");
+            return StatusCode(503, new { message = "Rasm saqlash xizmati sozlanmagan" });
+        }
 
         try
         {
