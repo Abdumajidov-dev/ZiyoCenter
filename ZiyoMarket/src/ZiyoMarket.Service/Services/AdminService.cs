@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using ZiyoMarket.Data.UnitOfWorks;
 using ZiyoMarket.Domain.Entities.Users;
@@ -270,14 +270,18 @@ public class AdminService : IAdminService
             // Username = phone raqami (+ belgisi olib tashlanadi)
             var username = customer.Phone.Replace("+", "").Replace(" ", "");
 
+            // Sotuvchi Admin emas: seller endpointlari token ID'sini Sellers jadvalidan
+            // qidiradi (Order.SellerId), shuning uchun u Sellers jadvaliga yoziladi.
+            if (role == "Sotuvchi")
+                return await PromoteCustomerToSellerAsync(customer, username, createdBy);
+
             var existingUsername = await _unitOfWork.Admins
                 .AnyAsync(a => a.Username == username && a.DeletedAt == null);
 
             if (existingUsername)
                 return Result<AdminDetailDto>.BadRequest($"Bu telefon raqam ({customer.Phone}) allaqachon admin sifatida ro'yxatdan o'tgan");
 
-            var validRole = (role == "SuperAdmin") ? "SuperAdmin" : 
-                            (role == "Sotuvchi") ? "Sotuvchi" : "Admin";
+            var validRole = (role == "SuperAdmin") ? "SuperAdmin" : "Admin";
 
             var admin = new ZiyoMarket.Domain.Entities.Users.Admin
             {
@@ -342,4 +346,43 @@ public class AdminService : IAdminService
 
     private static IEnumerable<string> SplitPermissionCodes(string permissions)
         => permissions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private async Task<Result<AdminDetailDto>> PromoteCustomerToSellerAsync(Customer customer, string username, int createdBy)
+    {
+        var phone = "+" + username;
+        var existingSeller = await _unitOfWork.Sellers
+            .AnyAsync(s => (s.Phone == phone || s.Phone == username) && s.DeletedAt == null);
+
+        if (existingSeller)
+            return Result<AdminDetailDto>.BadRequest($"Bu telefon raqam ({customer.Phone}) allaqachon sotuvchi sifatida ro'yxatdan o'tgan");
+
+        var seller = new Seller
+        {
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            Phone = phone,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(username), // default parol = telefon raqami
+            Role = "Seller",
+            IsActive = true,
+            CreatedBy = createdBy
+        };
+
+        await _unitOfWork.Sellers.InsertAsync(seller);
+        await _unitOfWork.SaveChangesAsync();
+
+        // Admin panel bu endpointdan AdminDetailDto kutadi; Id bu yerda Seller ID'si
+        var dto = new AdminDetailDto
+        {
+            Id = seller.Id,
+            FirstName = seller.FirstName,
+            LastName = seller.LastName,
+            Username = username,
+            Phone = seller.Phone,
+            Role = "Sotuvchi",
+            IsActive = seller.IsActive,
+            CreatedAt = seller.CreatedAt,
+            CreatedBy = createdBy
+        };
+        return Result<AdminDetailDto>.Success(dto, $"Mijoz muvaffaqiyatli sotuvchi qilindi. Login: {username}, default parol: {username}");
+    }
 }

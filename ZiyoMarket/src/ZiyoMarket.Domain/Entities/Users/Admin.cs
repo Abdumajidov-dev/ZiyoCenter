@@ -103,7 +103,8 @@ public class Admin : BaseAuditableEntity
     /// </summary>
     public void ChangeRole(string newRole)
     {
-        var allowedRoles = new[] { "Admin", "SuperAdmin", "Sotuvchi" };
+        // "Sotuvchi" bu yerda yo'q: sotuvchilar Sellers jadvalida (UserType.Seller) yuradi
+        var allowedRoles = new[] { "Admin", "SuperAdmin" };
 
         if (!allowedRoles.Contains(newRole))
             throw new ArgumentException($"Noto'g'ri rol: {newRole}");
