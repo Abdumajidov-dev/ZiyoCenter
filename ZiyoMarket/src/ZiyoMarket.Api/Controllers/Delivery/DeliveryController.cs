@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Delivery;
@@ -48,6 +49,7 @@ public class DeliveryController : BaseController
 
     [HttpPost("partners")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> CreateDeliveryPartner([FromBody] SaveDeliveryPartnerDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -61,6 +63,7 @@ public class DeliveryController : BaseController
 
     [HttpPut("partners/{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> UpdateDeliveryPartner(int id, [FromBody] SaveDeliveryPartnerDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -74,6 +77,7 @@ public class DeliveryController : BaseController
 
     [HttpDelete("partners/{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> DeleteDeliveryPartner(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -90,6 +94,7 @@ public class DeliveryController : BaseController
     /// </summary>
     [HttpPut("partners/{id}/toggle-status")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> ToggleDeliveryPartnerStatus(int id)
     {
         var partner = await _deliveryService.GetDeliveryPartnerByIdAsync(id);
@@ -118,6 +123,7 @@ public class DeliveryController : BaseController
 
     [HttpPost("orders")]
     [Authorize(Roles = "Admin,Seller")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> CreateOrderDelivery([FromBody] CreateOrderDeliveryDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -131,6 +137,7 @@ public class DeliveryController : BaseController
 
     [HttpPut("{id}/status")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> UpdateDeliveryStatus(int id, [FromBody] string status)
     {
         var updatedBy = GetCurrentUserId();
@@ -156,6 +163,7 @@ public class DeliveryController : BaseController
 
     [HttpDelete("partners/bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.DeliveryManage)]
     public async Task<IActionResult> DeleteAllDeliveryPartners([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();

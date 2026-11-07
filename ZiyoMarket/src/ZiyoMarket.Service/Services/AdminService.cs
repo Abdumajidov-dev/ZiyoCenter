@@ -95,11 +95,14 @@ public class AdminService : IAdminService
                 Username = request.Username,
                 Phone = request.Phone,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                Role = request.Role ?? "Admin",
-                Permissions = request.Permissions,
+                Role = request.Role == "SuperAdmin" ? "SuperAdmin" : "Admin",
                 IsActive = true,
                 CreatedBy = createdBy
             };
+
+            // null — cheklovsiz; berilgan bo'lsa faqat katalogdagi kodlar saqlanadi
+            if (request.Permissions != null)
+                admin.SetPermissions(SplitPermissionCodes(request.Permissions));
 
             await _unitOfWork.Admins.InsertAsync(admin);
             await _unitOfWork.SaveChangesAsync();
@@ -131,8 +134,17 @@ public class AdminService : IAdminService
             admin.LastName = request.LastName;
             admin.Username = request.Username;
             admin.Phone = request.Phone;
-            admin.Role = request.Role;
-            admin.Permissions = request.Permissions;
+            // Rol ChangeRole orqali tekshiriladi (ilgari istalgan satr yozilardi)
+            if (!string.IsNullOrWhiteSpace(request.Role) && request.Role != admin.Role)
+            {
+                try { admin.ChangeRole(request.Role); }
+                catch (ArgumentException ex) { return Result<AdminDetailDto>.BadRequest(ex.Message); }
+            }
+
+            // Ilgari permissions yuborilmasa null yozilib, SuperAdmin qo'ygan barcha cheklovlar o'chib ketardi
+            if (request.Permissions != null)
+                admin.SetPermissions(SplitPermissionCodes(request.Permissions));
+
             admin.UpdatedBy = updatedBy;
             admin.MarkAsUpdated();
 
@@ -290,4 +302,44 @@ public class AdminService : IAdminService
             return Result<AdminDetailDto>.InternalError($"Xatolik: {ex.Message}");
         }
     }
+    // ============ Permissions ============
+
+    public async Task<Result<List<PermissionDto>>> GetAdminPermissionsAsync(int adminId)
+    {
+        var admin = await _unitOfWork.Admins.GetByIdAsync(adminId);
+        if (admin == null)
+            return Result<List<PermissionDto>>.NotFound("Admin topilmadi");
+
+        var codes = admin.IsSuperAdmin
+            ? ZiyoMarket.Domain.Common.AdminPermissions.All.Select(p => p.Code).ToHashSet()
+            : admin.GetPermissionCodes().ToHashSet();
+
+        return Result<List<PermissionDto>>.Success(
+            ZiyoMarket.Domain.Common.AdminPermissions.All.Where(p => codes.Contains(p.Code)).Select(PermissionDto.From).ToList());
+    }
+
+    public async Task<Result> SetAdminPermissionsAsync(int adminId, List<int> permissionIds, int updatedBy)
+    {
+        var admin = await _unitOfWork.Admins.GetByIdAsync(adminId);
+        if (admin == null)
+            return Result.NotFound("Admin topilmadi");
+
+        if (admin.IsSuperAdmin)
+            return Result.BadRequest("SuperAdmin barcha ruxsatlarga ega, unga ruxsat biriktirilmaydi");
+
+        var unknown = permissionIds.Where(id => ZiyoMarket.Domain.Common.AdminPermissions.CodeById(id) == null).ToList();
+        if (unknown.Any())
+            return Result.BadRequest($"Noma'lum ruxsat ID: {string.Join(", ", unknown)}");
+
+        admin.SetPermissions(permissionIds.Select(id => ZiyoMarket.Domain.Common.AdminPermissions.CodeById(id)!));
+        admin.UpdatedBy = updatedBy;
+
+        await _unitOfWork.Admins.Update(admin, adminId);
+        await _unitOfWork.SaveChangesAsync();
+
+        return Result.Success($"{permissionIds.Distinct().Count()} ta ruxsat biriktirildi");
+    }
+
+    private static IEnumerable<string> SplitPermissionCodes(string permissions)
+        => permissions.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

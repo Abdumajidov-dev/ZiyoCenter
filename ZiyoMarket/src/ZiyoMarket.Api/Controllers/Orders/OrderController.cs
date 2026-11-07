@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet("{id}")]
+    [RequirePermission(AdminPermissions.OrdersView)]
     public async Task<IActionResult> GetOrderById(int id)
     {
         var userId = GetCurrentUserId();
@@ -60,6 +62,7 @@ public class OrderController : BaseController
     }
 
     [HttpGet]
+    [RequirePermission(AdminPermissions.OrdersView)]
     public async Task<IActionResult> GetOrders([FromQuery] OrderFilterRequest request)
     {
         var userId = GetCurrentUserId();
@@ -96,6 +99,7 @@ public class OrderController : BaseController
     }
 
     [HttpPost("{id}/cancel")]
+    [RequirePermission(AdminPermissions.OrdersManage)]
     public async Task<IActionResult> CancelOrder(int id, [FromBody] string? reason)
     {
         var userId = GetCurrentUserId();
@@ -110,6 +114,7 @@ public class OrderController : BaseController
 
     [HttpPut("{id}/status")]
     [Authorize(Roles = "Admin,Seller")]
+    [RequirePermission(AdminPermissions.OrdersManage)]
     public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] string status)
     {
         var updatedBy = GetCurrentUserId();
@@ -149,6 +154,7 @@ public class OrderController : BaseController
 
     [HttpGet("summary")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.OrdersView)]
     public async Task<IActionResult> GetOrderSummary([FromQuery] DateTime dateFrom, [FromQuery] DateTime dateTo)
     {
         var result = await _orderService.GetOrderSummaryAsync(dateFrom, dateTo);
@@ -157,6 +163,7 @@ public class OrderController : BaseController
 
     [HttpDelete("bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.OrdersManage)]
     public async Task<IActionResult> DeleteAllOrders([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();
@@ -189,6 +196,7 @@ public class OrderController : BaseController
     /// </summary>
     [HttpPost("{id}/approve-payment")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [RequirePermission(AdminPermissions.OrdersPayments)]
     public async Task<IActionResult> ApprovePayment(int id)
     {
         var adminId = GetCurrentUserId();
@@ -205,6 +213,7 @@ public class OrderController : BaseController
     /// </summary>
     [HttpPost("{id}/reject-payment")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [RequirePermission(AdminPermissions.OrdersPayments)]
     public async Task<IActionResult> RejectPayment(int id, [FromBody] RejectPaymentDto request)
     {
         var adminId = GetCurrentUserId();

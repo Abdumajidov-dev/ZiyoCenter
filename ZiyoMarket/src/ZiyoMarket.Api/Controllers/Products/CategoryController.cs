@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Products;
@@ -55,6 +56,7 @@ public class CategoryController : BaseController
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> CreateCategory([FromBody] SaveCategoryDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -68,6 +70,7 @@ public class CategoryController : BaseController
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> UpdateCategory(int id, [FromBody] SaveCategoryDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -81,6 +84,7 @@ public class CategoryController : BaseController
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> DeleteCategory(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -102,6 +106,7 @@ public class CategoryController : BaseController
 
     [HttpPost("reorder")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> ReorderCategories([FromBody] List<ReorderCategoryDto> categories)
     {
         var updatedBy = GetCurrentUserId();
@@ -115,6 +120,7 @@ public class CategoryController : BaseController
 
     [HttpPost("{id}/toggle-status")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> ToggleStatus(int id)
     {
         var updatedBy = GetCurrentUserId();
@@ -128,6 +134,7 @@ public class CategoryController : BaseController
 
     [HttpDelete("bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.CategoriesManage)]
     public async Task<IActionResult> DeleteAllCategories([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();

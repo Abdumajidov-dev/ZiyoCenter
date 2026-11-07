@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Notifications;
@@ -76,6 +77,7 @@ public class NotificationController : BaseController
 
     [HttpPost("send")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.NotificationsSend)]
     public async Task<IActionResult> SendNotification([FromBody] CreateNotificationDto request)
     {
         var result = await _notificationService.SendNotificationAsync(request);
@@ -91,6 +93,7 @@ public class NotificationController : BaseController
     /// </summary>
     [HttpPost("send-bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.NotificationsSend)]
     public async Task<IActionResult> SendBulkNotification([FromBody] List<CreateNotificationDto> requests)
     {
         var result = await _notificationService.SendBulkNotificationAsync(requests);
@@ -103,6 +106,7 @@ public class NotificationController : BaseController
 
     [HttpDelete("bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.NotificationsSend)]
     public async Task<IActionResult> DeleteAllNotifications([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();

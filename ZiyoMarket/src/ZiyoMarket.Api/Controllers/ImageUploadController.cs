@@ -57,6 +57,13 @@ public class ImageUploadController : ControllerBase
         if (!AllowedTypes.Contains(type))
             return BadRequest(new { message = $"Ruxsat etilgan turlar: {string.Join(", ", AllowedTypes)}" });
 
+        // Kalitlar endi repoda emas — S3Settings__AccessKey / S3Settings__SecretKey muhit o'zgaruvchilari
+        if (string.IsNullOrWhiteSpace(_s3.AccessKey) || string.IsNullOrWhiteSpace(_s3.SecretKey))
+        {
+            _logger.LogError("S3Settings AccessKey/SecretKey sozlanmagan");
+            return StatusCode(503, new { message = "Rasm saqlash xizmati sozlanmagan" });
+        }
+
         try
         {
             // WebP ga o'tkazish va resize

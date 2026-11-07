@@ -1,3 +1,5 @@
+using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Domain.Enums;
@@ -8,7 +10,9 @@ namespace ZiyoMarket.Api.Controllers.Finance;
 
 [ApiController]
 [Route("api/expenses")]
-[Authorize]
+// Ilgari faqat [Authorize] edi — mijozlar ham do'kon xarajatlarini ko'rib, o'zgartira olardi
+[Authorize(Roles = "Admin")]
+[RequirePermission(AdminPermissions.FinanceExpenses)]
 public class ExpenseController : BaseController
 {
     private readonly IExpenseService _expenseService;

@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Content;
@@ -73,6 +74,7 @@ public class ContentController : BaseController
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> CreateContent([FromBody] SaveContentDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -86,6 +88,7 @@ public class ContentController : BaseController
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> UpdateContent(int id, [FromBody] SaveContentDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -99,6 +102,7 @@ public class ContentController : BaseController
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> DeleteContent(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -112,6 +116,7 @@ public class ContentController : BaseController
 
     [HttpPost("{id}/publish")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> PublishContent(int id)
     {
         var publishedBy = GetCurrentUserId();
@@ -125,6 +130,7 @@ public class ContentController : BaseController
 
     [HttpPost("{id}/unpublish")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> UnpublishContent(int id)
     {
         var unpublishedBy = GetCurrentUserId();
@@ -138,6 +144,7 @@ public class ContentController : BaseController
 
     [HttpDelete("bulk")]
     [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ContentManage)]
     public async Task<IActionResult> DeleteAllContent([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
         var deletedBy = GetCurrentUserId();

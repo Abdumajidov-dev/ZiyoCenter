@@ -104,6 +104,10 @@ public class OrderService : IOrderService
 
     public async Task<Result<OrderDetailDto>> CreateOrderAsync(CreateOrderDto request, int customerId)
     {
+        var requestError = ValidateOrderRequest(request, itemsRequired: !request.CreateFromCart);
+        if (requestError != null)
+            return Result<OrderDetailDto>.BadRequest(requestError);
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
@@ -252,6 +256,11 @@ public class OrderService : IOrderService
 
     public async Task<Result<OrderDetailDto>> CreateOrderBySellerAsync(CreateOrderDto request, int sellerId)
     {
+        // Sotuvchi buyurtmasi savatdan emas, har doim items'dan tuziladi
+        var requestError = ValidateOrderRequest(request, itemsRequired: true);
+        if (requestError != null)
+            return Result<OrderDetailDto>.BadRequest(requestError);
+
         await _unitOfWork.BeginTransactionAsync();
 
         try
@@ -459,6 +468,30 @@ public class OrderService : IOrderService
             customer.AddCashback(order.CashbackUsed);
             await _unitOfWork.Customers.Update(customer, customer.Id);
         }
+    }
+
+    /// <summary>
+    /// Validatorlar ulanmagan, shuning uchun kirish shu yerda tekshiriladi: noto'g'ri payment_method /
+    /// delivery_type ilgari Enum.Parse'da 500 berardi, manfiy miqdor esa ombor xatosiga olib kelardi.
+    /// </summary>
+    private static string? ValidateOrderRequest(CreateOrderDto request, bool itemsRequired)
+    {
+        if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var payment) || !Enum.IsDefined(payment))
+            return $"Invalid payment method: {request.PaymentMethod}";
+
+        if (!Enum.TryParse<DeliveryType>(request.DeliveryType, out var delivery) || !Enum.IsDefined(delivery))
+            return $"Invalid delivery type: {request.DeliveryType}";
+
+        if (request.CashbackToUse < 0)
+            return "Cashback amount cannot be negative";
+
+        if (itemsRequired && (request.Items == null || request.Items.Count == 0))
+            return "Order must contain at least one item";
+
+        if (itemsRequired && request.Items!.Any(i => i.Quantity <= 0))
+            return "Quantity must be greater than zero";
+
+        return null;
     }
 
     /// <summary>

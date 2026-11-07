@@ -1,4 +1,5 @@
-﻿using ZiyoMarket.Api.Helpers;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Api.Controllers;
@@ -14,6 +15,7 @@ namespace ZiyoMarket.Api.Controllers.Support;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[RequirePermission(AdminPermissions.SupportManage)]
 public class SupportController : BaseController
 {
     private readonly ISupportService _supportService;
@@ -259,7 +261,7 @@ public class SupportController : BaseController
     public async Task<IActionResult> DeleteMessage(int messageId)
     {
         var deletedBy = GetCurrentUserId();
-        var result = await _supportService.DeleteMessageAsync(messageId, deletedBy);
+        var result = await _supportService.DeleteMessageAsync(messageId, deletedBy, GetCurrentUserType());
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
@@ -279,7 +281,7 @@ public class SupportController : BaseController
     public async Task<IActionResult> EditMessage(int messageId, [FromBody] string newMessage)
     {
         var editedBy = GetCurrentUserId();
-        var result = await _supportService.EditMessageAsync(messageId, newMessage, editedBy);
+        var result = await _supportService.EditMessageAsync(messageId, newMessage, editedBy, GetCurrentUserType());
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });

@@ -21,4 +21,8 @@ public interface IAdminService
 
     // Promote
     Task<Result<AdminDetailDto>> PromoteCustomerToAdminAsync(int customerId, string role, int createdBy);
+
+    // Permissions
+    Task<Result<List<PermissionDto>>> GetAdminPermissionsAsync(int adminId);
+    Task<Result> SetAdminPermissionsAsync(int adminId, List<int> permissionIds, int updatedBy);
 }
