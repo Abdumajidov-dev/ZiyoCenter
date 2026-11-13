@@ -14,7 +14,7 @@ namespace ZiyoMarket.Service.Interfaces
         Task<Result<ProductDetailDto>> GetProductByQRCodeAsync(string qrCode, int? customerId = null);
 
         Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(
-            ProductFilterRequest request, int? customerId = null);
+            ProductFilterRequest request, int? customerId = null, bool customerView = false);
 
         Task<Result<ProductDetailDto>> CreateProductAsync(CreateProductDto request, int createdBy);
 

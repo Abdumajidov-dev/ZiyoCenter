@@ -37,7 +37,7 @@ public class ProductController : BaseController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductById(int id)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductByIdAsync(id, customerId);
 
         if (!result.IsSuccess)
@@ -62,7 +62,7 @@ public class ProductController : BaseController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductByQRCode(string qrCode)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductByQRCodeAsync(qrCode, customerId);
 
         if (!result.IsSuccess)
@@ -85,8 +85,10 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(PaginationResponse<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProducts([FromQuery] ProductFilterRequest request)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
-        var result = await _productService.GetProductsAsync(request, customerId);
+        var customerId = CurrentCustomerIdOrNull();
+        // Admin va sotuvchi barcha mahsulotlarni boshqaradi; mijoz va mehmon faqat sotuvdagilarni ko'radi
+        var isStaff = GetCurrentUserType() is "Admin" or "Seller";
+        var result = await _productService.GetProductsAsync(request, customerId, customerView: !isStaff);
 
         return Ok(new
         {
@@ -106,7 +108,7 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchProducts([FromQuery(Name = "search_term")] string searchTerm, [FromQuery(Name = "category_id")] int? categoryId = null)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.SearchProductsAsync(searchTerm, categoryId, customerId);
 
         return Ok(new
@@ -126,7 +128,7 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProductsByCategory(int categoryId)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductsByCategoryAsync(categoryId, customerId);
 
         return Ok(new
@@ -418,4 +420,8 @@ public class ProductController : BaseController
 
         return Ok(new { success = true, data = result.Data, message = $"{result.Data!.UpdatedCount} ta mahsulot narxi {dto.Percentage}% ga oshirildi" });
     }
+
+    // Like belgilari faqat mijozga tegishli: admin/sotuvchi ID'si mijoz ID'si bilan adashmasin
+    private int? CurrentCustomerIdOrNull()
+        => IsAuthenticated() && GetCurrentUserType() == "Customer" ? GetCurrentUserId() : null;
 }

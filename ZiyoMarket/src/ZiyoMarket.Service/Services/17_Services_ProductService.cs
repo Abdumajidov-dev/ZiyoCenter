@@ -66,6 +66,28 @@ namespace ZiyoMarket.Service.Services
             dto.ImageUrl = ToAbsoluteUrl(dto.ImageUrl);
         }
 
+        /// <summary>
+        /// Mijozga ko'rinadigan mahsulotlar: o'chirilgan va nofaol (Inactive/Deleted) mahsulotlar
+        /// ro'yxatlarda chiqmaydi. OutOfStock ko'rinadi — mijoz "tugagan" belgisini ko'radi.
+        /// </summary>
+        private static IQueryable<Product> VisibleToCustomers(IQueryable<Product> query)
+            => query.Where(p => p.DeletedAt == null && p.IsActive
+                                && p.Status != ProductStatus.Inactive && p.Status != ProductStatus.Deleted);
+
+        private async Task MarkLikedAsync(List<ProductListDto> dtos, int? customerId)
+        {
+            if (!customerId.HasValue || dtos.Count == 0) return;
+
+            var productIds = dtos.Select(d => d.Id).ToList();
+            var likedIds = await _unitOfWork.ProductLikes
+                .SelectAll(l => l.CustomerId == customerId.Value && productIds.Contains(l.ProductId) && l.DeletedAt == null)
+                .Select(l => l.ProductId)
+                .ToListAsync();
+
+            foreach (var dto in dtos)
+                dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
+        }
+
         // ===================== CRUD =====================
 
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
@@ -107,9 +129,11 @@ namespace ZiyoMarket.Service.Services
             return Result<ProductDetailDto>.Success(dto);
         }
 
-        public async Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(ProductFilterRequest request, int? customerId = null)
+        public async Task<Result<PaginationResponse<ProductListDto>>> GetProductsAsync(ProductFilterRequest request, int? customerId = null, bool customerView = false)
         {
             var query = _unitOfWork.Products.SelectAll(p => p.DeletedAt == null, new[] { "Category" });
+            if (customerView)
+                query = VisibleToCustomers(query);
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
@@ -149,19 +173,11 @@ namespace ZiyoMarket.Service.Services
             var resultDtos = _mapper.Map<List<ProductListDto>>(products);
             foreach (var d in resultDtos) ApplyAbsoluteUrl(d);
 
-            if (customerId.HasValue)
-            {
-                var likedIds = await _unitOfWork.ProductLikes
-                    .SelectAll(l => l.CustomerId == customerId.Value && l.DeletedAt == null)
-                    .Select(l => l.ProductId)
-                    .ToListAsync();
+            await MarkLikedAsync(resultDtos, customerId);
 
-                foreach (var dto in resultDtos)
-                    dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
-            }
-
+            var pageIds = resultDtos.Select(d => d.Id).ToList();
             var likes = await _unitOfWork.ProductLikes
-                .SelectAll(l => l.DeletedAt == null)
+                .SelectAll(l => l.DeletedAt == null && pageIds.Contains(l.ProductId))
                 .GroupBy(l => l.ProductId)
                 .Select(g => new { g.Key, Count = g.Count() })
                 .ToListAsync();
@@ -385,7 +401,10 @@ namespace ZiyoMarket.Service.Services
 
             var dtos = _mapper.Map<List<ProductListDto>>(products);
             foreach (var dto in dtos)
+            {
                 dto.IsLikedByCurrentUser = true;
+                ApplyAbsoluteUrl(dto);
+            }
 
             return Result<List<ProductListDto>>.Success(dtos);
         }
@@ -404,27 +423,32 @@ namespace ZiyoMarket.Service.Services
 
             var ids = likeCounts.Select(x => x.ProductId).ToList();
 
-            var products = await _unitOfWork.Products
-                .SelectAll(p => ids.Contains(p.Id) && p.DeletedAt == null && p.IsActive, new[] { "Category" })
+            var products = await VisibleToCustomers(_unitOfWork.Products
+                    .SelectAll(p => ids.Contains(p.Id), new[] { "Category" }))
                 .ToListAsync();
 
             var dtos = _mapper.Map<List<ProductListDto>>(products);
 
             foreach (var dto in dtos)
+            {
                 dto.LikesCount = likeCounts.FirstOrDefault(l => l.ProductId == dto.Id)?.Count ?? 0;
+                ApplyAbsoluteUrl(dto);
+            }
 
             return Result<List<ProductListDto>>.Success(dtos.OrderByDescending(d => d.LikesCount).ToList());
         }
 
         public async Task<Result<List<ProductListDto>>> GetNewArrivalsAsync(int count = 10)
         {
-            var products = await _unitOfWork.Products
-                .SelectAll(p => p.DeletedAt == null && p.IsActive, new[] { "Category" })
+            var products = await VisibleToCustomers(_unitOfWork.Products.SelectAll(includes: new[] { "Category" }))
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(count)
                 .ToListAsync();
 
-            return Result<List<ProductListDto>>.Success(_mapper.Map<List<ProductListDto>>(products));
+            var dtos = _mapper.Map<List<ProductListDto>>(products);
+            foreach (var dto in dtos) ApplyAbsoluteUrl(dto);
+
+            return Result<List<ProductListDto>>.Success(dtos);
         }
 
         public async Task<Result<List<ProductListDto>>> SearchProductsAsync(
@@ -432,10 +456,7 @@ namespace ZiyoMarket.Service.Services
         {
             try
             {
-                var query = _unitOfWork.Products.Table
-                            .Include(p => p.Category)
-                            .Where(p => p.DeletedAt == null && p.IsActive);
-
+                var query = VisibleToCustomers(_unitOfWork.Products.Table.Include(p => p.Category));
 
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
@@ -457,24 +478,8 @@ namespace ZiyoMarket.Service.Services
                     .ToListAsync();
 
                 var dtos = _mapper.Map<List<ProductListDto>>(products);
-
-                // Like ma'lumotlarini qo�shish
-                if (customerId.HasValue && dtos.Any())
-                {
-                    var productIds = products.Select(p => p.Id).ToList();
-
-                    var likedIds = await _unitOfWork.ProductLikes
-                        .SelectAll(l => l.CustomerId == customerId.Value &&
-                                    productIds.Contains(l.ProductId) &&
-                                    l.DeletedAt == null)
-                        .Select(l => l.ProductId)
-                        .ToListAsync();
-
-                    foreach (var dto in dtos)
-                    {
-                        dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
-                    }
-                }
+                foreach (var dto in dtos) ApplyAbsoluteUrl(dto);
+                await MarkLikedAsync(dtos, customerId);
 
                 return Result<List<ProductListDto>>.Success(dtos);
             }
@@ -490,30 +495,31 @@ namespace ZiyoMarket.Service.Services
         {
             try
             {
-                var query = _unitOfWork.Products.Table
-                            .Include(p => p.Category)
-                            .Where(p => p.DeletedAt == null && p.IsActive);
+                // Ilgari categoryId umuman ishlatilmasdi — har qanday kategoriya barcha mahsulotlarni qaytarardi.
+                // Ota kategoriya ochilganda uning ichki kategoriyalaridagi mahsulotlar ham ko'rinadi.
+                var parents = await _unitOfWork.Categories
+                    .SelectAll(c => c.DeletedAt == null)
+                    .Select(c => new { c.Id, c.ParentId })
+                    .ToListAsync();
 
-
-                var dtos = _mapper.Map<List<ProductListDto>>(query);
-
-                // Liked mahsulotlarni belgilash
-                if (customerId.HasValue && dtos.Any())
+                var categoryIds = new HashSet<int> { categoryId };
+                var pending = new Queue<int>(categoryIds);
+                while (pending.Count > 0)
                 {
-                    var productIds = query.Select(p => p.Id).ToList();
-
-                    var likedIds = await _unitOfWork.ProductLikes
-                        .SelectAll(l => l.CustomerId == customerId.Value &&
-                                    productIds.Contains(l.ProductId) &&
-                                    l.DeletedAt == null)
-                        .Select(l => l.ProductId)
-                        .ToListAsync();
-
-                    foreach (var dto in dtos)
-                    {
-                        dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
-                    }
+                    var current = pending.Dequeue();
+                    foreach (var child in parents.Where(c => c.ParentId == current))
+                        if (categoryIds.Add(child.Id))
+                            pending.Enqueue(child.Id);
                 }
+
+                var products = await VisibleToCustomers(_unitOfWork.Products.Table.Include(p => p.Category))
+                    .Where(p => categoryIds.Contains(p.CategoryId))
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                var dtos = _mapper.Map<List<ProductListDto>>(products);
+                foreach (var dto in dtos) ApplyAbsoluteUrl(dto);
+                await MarkLikedAsync(dtos, customerId);
 
                 return Result<List<ProductListDto>>.Success(dtos);
             }
