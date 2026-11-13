@@ -27,4 +27,10 @@
     <ProjectReference Include="..\ZiyoMarket.Service\ZiyoMarket.Service.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Demo ma'lumotlar: DemoDataSeeder ularni ishga tushganda o'qiydi -->
+    <None Update="Seed\demo-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="Seed\DemoImages\*.webp" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

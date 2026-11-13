@@ -228,6 +228,10 @@ public class LowStockProductDto
 /// </summary>
 public class ProductFilterRequest : BaseFilterRequest
 {
+    /// <summary>Mobil ilova uchun SearchTerm'ning muqobil nomi</summary>
+    public string? Search { get; set; }
+    /// <summary>"asc" yoki "desc" (SortDescending o'rniga)</summary>
+    public string? SortOrder { get; set; }
     public int? CategoryId { get; set; }
     public string? Status { get; set; }
     public decimal? MinPrice { get; set; }

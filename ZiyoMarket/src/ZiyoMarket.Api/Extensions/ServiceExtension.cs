@@ -36,6 +36,7 @@ public static class ServiceExtension
 
         // ========== Product Management ==========
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<ICategoryService, CategoryService>();
 
         // ========== Shopping Cart ==========

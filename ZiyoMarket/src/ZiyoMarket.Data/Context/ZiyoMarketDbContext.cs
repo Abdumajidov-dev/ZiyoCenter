@@ -27,6 +27,8 @@ public class ZiyoMarketDbContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductLike> ProductLikes { get; set; }
+    public DbSet<ProductView> ProductViews { get; set; }
+    public DbSet<SearchQuery> SearchQueries { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
@@ -57,6 +59,18 @@ public class ZiyoMarketDbContext : DbContext
       .WithMany(o => o.CashbackTransactions)
       .HasForeignKey(ct => ct.OrderId)
       .OnDelete(DeleteBehavior.Restrict);
+
+        // Tavsiya signallari: har bir mijoz-mahsulot / mijoz-so'z juftligi bitta qator
+        modelBuilder.Entity<ProductView>(e =>
+        {
+            e.HasIndex(v => new { v.CustomerId, v.ProductId }).IsUnique();
+            e.HasIndex(v => v.ProductId);
+        });
+        modelBuilder.Entity<SearchQuery>(e =>
+        {
+            e.Property(q => q.Term).HasMaxLength(100);
+            e.HasIndex(q => new { q.CustomerId, q.Term }).IsUnique();
+        });
 
         // Global query filters for soft delete
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

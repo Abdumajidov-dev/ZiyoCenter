@@ -88,6 +88,36 @@ namespace ZiyoMarket.Service.Services
                 dto.IsLikedByCurrentUser = likedIds.Contains(dto.Id);
         }
 
+        /// <summary>
+        /// Berilgan id'lar tartibida mijozga ko'rinadigan mahsulotlar ro'yxati (tavsiyalar uchun).
+        /// Rasm manzillari, yoqtirishlar soni va "men yoqtirganman" belgisi to'ldiriladi.
+        /// </summary>
+        public async Task<List<ProductListDto>> GetListByIdsAsync(IReadOnlyList<int> ids, int? customerId = null)
+        {
+            if (ids.Count == 0) return new List<ProductListDto>();
+            var idList = ids.ToList();
+
+            var products = await VisibleToCustomers(_unitOfWork.Products
+                    .SelectAll(p => idList.Contains(p.Id), new[] { "Category" }))
+                .ToListAsync();
+
+            var likeCounts = await _unitOfWork.ProductLikes
+                .SelectAll(l => idList.Contains(l.ProductId) && l.DeletedAt == null)
+                .GroupBy(l => l.ProductId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+
+            var order = idList.Select((id, i) => (id, i)).ToDictionary(x => x.id, x => x.i);
+            var dtos = _mapper.Map<List<ProductListDto>>(products.OrderBy(p => order[p.Id]).ToList());
+            foreach (var dto in dtos)
+            {
+                dto.LikesCount = likeCounts.GetValueOrDefault(dto.Id);
+                ApplyAbsoluteUrl(dto);
+            }
+            await MarkLikedAsync(dtos, customerId);
+            return dtos;
+        }
+
         // ===================== CRUD =====================
 
         public async Task<Result<ProductDetailDto>> GetProductByIdAsync(int productId, int? customerId = null)
@@ -135,9 +165,11 @@ namespace ZiyoMarket.Service.Services
             if (customerView)
                 query = VisibleToCustomers(query);
 
-            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            // Mobil ilova qidiruvni "Search" nomi bilan yuboradi
+            var searchTerm = !string.IsNullOrWhiteSpace(request.SearchTerm) ? request.SearchTerm : request.Search;
+            if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var term = request.SearchTerm.ToLower();
+                var term = searchTerm.Trim().ToLower();
                 query = query.Where(p => 
                     p.Name.ToLower().Contains(term) || 
                     (p.Description != null && p.Description.ToLower().Contains(term)) ||
@@ -161,7 +193,21 @@ namespace ZiyoMarket.Service.Services
             if (request.LowStock == true)
                 query = query.Where(p => p.StockQuantity <= p.MinStockLevel && p.StockQuantity > 0);
 
-            query = query.OrderByDescending(p => p.CreatedAt);
+            if (!string.IsNullOrWhiteSpace(request.Status)
+                && Enum.TryParse<ProductStatus>(request.Status, true, out var status))
+                query = query.Where(p => p.Status == status);
+
+            // Ilgari SortBy/SortOrder e'tiborsiz qolardi: ro'yxat doim yangilari bo'yicha chiqardi
+            var descending = request.SortDescending
+                             || string.Equals(request.SortOrder, "desc", StringComparison.OrdinalIgnoreCase);
+            query = (request.SortBy ?? string.Empty).ToLowerInvariant() switch
+            {
+                "price" => descending ? query.OrderByDescending(p => p.Price) : query.OrderBy(p => p.Price),
+                "name" => descending ? query.OrderByDescending(p => p.Name) : query.OrderBy(p => p.Name),
+                "created_at" or "createdat" or "date" =>
+                    descending || string.IsNullOrEmpty(request.SortOrder) ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
+                _ => query.OrderByDescending(p => p.CreatedAt)
+            };
 
             var total = await query.CountAsync();
 
