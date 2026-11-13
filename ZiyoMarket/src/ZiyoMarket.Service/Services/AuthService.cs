@@ -92,12 +92,23 @@ public class AuthService : IAuthService
             if (user == null)
                 return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
 
-            // Password verification — only for Seller and Admin
+            // Seller va Admin har doim parol bilan kiradi
             if (request.UserType == "Seller" || request.UserType == "Admin")
             {
                 var passwordHash = GetPasswordHash(user, request.UserType!);
                 if (!VerifyPassword(request.Password, passwordHash))
                     return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
+            }
+            else if (!string.IsNullOrEmpty(request.Password))
+            {
+                if (!VerifyPassword(request.Password, GetPasswordHash(user, "Customer")))
+                    return Result<LoginResponseDto>.Unauthorized("Invalid credentials");
+            }
+            // Parolsiz mijoz faqat telefonini OTP bilan tasdiqlagandan keyin kira oladi —
+            // ilgari telefon raqamini bilgan har kim istalgan mijoz hisobiga kirardi
+            else if (!_smsService.ConsumeVerifiedPhone(GetUserPhone(user, "Customer")))
+            {
+                return Result<LoginResponseDto>.Unauthorized("Telefon raqami tasdiqlanmagan. Avval SMS kodni kiriting");
             }
 
             // Check if user is active
@@ -168,6 +179,10 @@ public class AuthService : IAuthService
 
             if (existingCustomer != null || existingSeller != null || existingAdmin != null)
                 return Result<LoginResponseDto>.Conflict("Phone number already registered");
+
+            // Mijoz o'zi ro'yxatdan o'tganda telefon unga tegishli ekani OTP bilan isbotlanadi
+            if (request.UserType == "Customer" && !_smsService.ConsumeVerifiedPhone(request.Phone))
+                return Result<LoginResponseDto>.BadRequest("Telefon raqami tasdiqlanmagan. Avval SMS kodni kiriting");
 
             // For Admin, check if username already exists
             if (request.UserType == "Admin")
@@ -537,9 +552,6 @@ public class AuthService : IAuthService
     {
         try
         {
-            // TODO: Verify code from cache/database
-            // For now, accept any 6-digit code for demo
-
             // Find user
             object? user = null;
             string userType = "";
@@ -570,8 +582,20 @@ public class AuthService : IAuthService
                 }
             }
 
+            // Foydalanuvchi bor-yo'qligini oshkor qilmaslik uchun ikkala holatda bir xil javob
             if (user == null)
-                return Result.NotFound("User not found");
+                return Result.BadRequest("Invalid verification code");
+
+            // Kod request'dagi identifikatorga emas, foydalanuvchining o'z telefoniga yuborilgan
+            // (admin "Bek" kabi username bilan ham so'rashi mumkin)
+            // SMS o'chiq bo'lsa kod hamma uchun bir xil (DefaultCode) — xodim hisobini shu bilan
+            // egallab olish mumkin bo'lardi. Xodim parolini SuperAdmin admin panel orqali tiklaydi.
+            if (!_smsService.IsEnabled && userType != "Customer")
+                return Result.BadRequest("Parolni SMS orqali tiklash o'chirilgan. Administratorga murojaat qiling");
+
+            var userPhone = GetUserPhone(user, userType);
+            if (!await _smsService.VerifyOtpAsync(userPhone, request.VerificationCode))
+                return Result.BadRequest("Invalid verification code");
 
             // Update password
             var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
@@ -668,7 +692,7 @@ public class AuthService : IAuthService
                 issuer: _jwtSettings.Issuer,
                 audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: TimeHelper.GetCurrentServerTime().AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
                 signingCredentials: credentials
             );
 

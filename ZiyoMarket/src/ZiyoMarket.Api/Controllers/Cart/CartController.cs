@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Orders;
 using ZiyoMarket.Service.Interfaces;
@@ -135,6 +136,7 @@ public class CartController : BaseController
     }
 
     [HttpPost("seed")]
+    [DevelopmentOnly]
     public async Task<IActionResult> SeedMockCartItems([FromQuery] int count = 10)
     {
         var accessCheck = CheckCustomerAccess();

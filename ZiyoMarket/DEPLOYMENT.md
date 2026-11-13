@@ -81,6 +81,15 @@ JwtSettings__Issuer=ZiyoMarket
 JwtSettings__Audience=ZiyoMarketUsers
 JwtSettings__AccessTokenExpirationMinutes=1440
 
+# Rasm saqlash (Backblaze B2 / S3) — kalitlar repoda saqlanmaydi
+S3Settings__AccessKey=...
+S3Settings__SecretKey=...
+
+# SMS (Eskiz) — o'chiq bo'lsa OTP hamma uchun OtpSettings__DefaultCode bo'ladi
+EskizSettings__Enabled=true
+EskizSettings__Email=...
+EskizSettings__Password=...
+
 # ASP.NET Core Settings
 ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://+:8080

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.Interfaces;
 
@@ -18,6 +20,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("sales")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetSalesReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         var result = await _reportService.GetSalesReportAsync(startDate, endDate);
@@ -29,6 +32,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("sales/daily")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetDailySales([FromQuery] DateTime date)
     {
         var result = await _reportService.GetDailySalesAsync(date);
@@ -40,6 +44,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("sales/chart")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetSalesChartData([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         var result = await _reportService.GetSalesChartDataAsync(startDate, endDate);
@@ -51,6 +56,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("products/top")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetTopSellingProducts([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] int count = 10)
     {
         var result = await _reportService.GetTopSellingProductsAsync(startDate, endDate, count);
@@ -62,6 +68,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("inventory")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetInventoryReport()
     {
         var result = await _reportService.GetInventoryReportAsync();
@@ -73,6 +80,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("inventory/low-stock")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetLowStockReport()
     {
         var result = await _reportService.GetLowStockReportAsync();
@@ -84,6 +92,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("customers/analytics")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetCustomerAnalytics([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         var result = await _reportService.GetCustomerAnalyticsAsync(startDate, endDate);
@@ -95,6 +104,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("customers/top")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetTopCustomers([FromQuery] int count = 10)
     {
         var result = await _reportService.GetTopCustomersReportAsync(count);
@@ -128,6 +138,7 @@ public class ReportController : BaseController
     }
 
     [HttpGet("sellers/performance")]
+    [RequirePermission(AdminPermissions.ReportsView)]
     public async Task<IActionResult> GetSellerPerformanceReport([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
     {
         var result = await _reportService.GetSellerPerformanceReportAsync(startDate, endDate);

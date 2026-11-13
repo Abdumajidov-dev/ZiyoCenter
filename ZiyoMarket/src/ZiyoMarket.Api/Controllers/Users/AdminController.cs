@@ -117,4 +117,32 @@ public class AdminController : BaseController
 
         return StatusCode(201, new { success = true, message = result.Message, data = result.Data });
     }
+
+    /// <summary>
+    /// Adminga biriktirilgan ruxsatlar (SuperAdmin uchun hammasi).
+    /// </summary>
+    [HttpGet("{id}/permissions")]
+    public async Task<IActionResult> GetPermissions(int id)
+    {
+        var result = await _adminService.GetAdminPermissionsAsync(id);
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, data = result.Data });
+    }
+
+    /// <summary>
+    /// Admin ruxsatlarini almashtirish (berilgan ro'yxat to'liq o'rnini bosadi).
+    /// </summary>
+    [HttpPost("{id}/permissions")]
+    public async Task<IActionResult> SetPermissions(int id, [FromBody] AssignPermissionsRequest request)
+    {
+        var result = await _adminService.SetAdminPermissionsAsync(id, request.PermissionIds, GetCurrentUserId());
+
+        if (!result.IsSuccess)
+            return StatusCode(result.StatusCode, new { message = result.Message });
+
+        return Ok(new { success = true, message = result.Message, data = true });
+    }
 }

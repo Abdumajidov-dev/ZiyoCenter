@@ -33,9 +33,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=ziyomarket;Username=postgres;Password=postgres123
-      - Jwt__Key=YourSuperSecretKeyHere123456789012
-      - Jwt__Issuer=ZiyoMarket
-      - Jwt__Audience=ZiyoMarket
+      # Jwt__Key nomi noto'g'ri edi (sozlamalar bo'limi JwtSettings) — faqat lokal uchun kalit
+      - JwtSettings__SecretKey=local-dev-only-jwt-key-change-me-0123456789
     depends_on:
       postgres:
         condition: service_healthy

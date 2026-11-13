@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Products;
 using ZiyoMarket.Service.Interfaces;
@@ -35,7 +37,7 @@ public class ProductController : BaseController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductById(int id)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductByIdAsync(id, customerId);
 
         if (!result.IsSuccess)
@@ -60,7 +62,7 @@ public class ProductController : BaseController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProductByQRCode(string qrCode)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductByQRCodeAsync(qrCode, customerId);
 
         if (!result.IsSuccess)
@@ -83,8 +85,10 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(PaginationResponse<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProducts([FromQuery] ProductFilterRequest request)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
-        var result = await _productService.GetProductsAsync(request, customerId);
+        var customerId = CurrentCustomerIdOrNull();
+        // Admin va sotuvchi barcha mahsulotlarni boshqaradi; mijoz va mehmon faqat sotuvdagilarni ko'radi
+        var isStaff = GetCurrentUserType() is "Admin" or "Seller";
+        var result = await _productService.GetProductsAsync(request, customerId, customerView: !isStaff);
 
         return Ok(new
         {
@@ -104,7 +108,7 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchProducts([FromQuery(Name = "search_term")] string searchTerm, [FromQuery(Name = "category_id")] int? categoryId = null)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.SearchProductsAsync(searchTerm, categoryId, customerId);
 
         return Ok(new
@@ -124,7 +128,7 @@ public class ProductController : BaseController
     [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProductsByCategory(int categoryId)
     {
-        var customerId = IsAuthenticated() ? GetCurrentUserId() : (int?)null;
+        var customerId = CurrentCustomerIdOrNull();
         var result = await _productService.GetProductsByCategoryAsync(categoryId, customerId);
 
         return Ok(new
@@ -144,6 +148,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> CreateProduct([FromBody] CreateProductDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -171,6 +176,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductDto request)
     {
         request.Id = id; // Ensure ID from route is used
@@ -198,6 +204,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> DeleteProduct(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -225,6 +232,7 @@ public class ProductController : BaseController
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> UpdateStock([FromBody] UpdateStockDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -250,6 +258,7 @@ public class ProductController : BaseController
     [HttpPost("{productId}/stock/add")]
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> AddStock(int productId, [FromQuery] int quantity, [FromQuery] string? reason = null)
     {
         var updatedBy = GetCurrentUserId();
@@ -275,6 +284,7 @@ public class ProductController : BaseController
     [HttpPost("{productId}/stock/remove")]
     [Authorize(Roles = "Admin,Seller")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [RequirePermission(AdminPermissions.ProductsManage)]
     public async Task<IActionResult> RemoveStock(int productId, [FromQuery] int quantity, [FromQuery] string? reason = null)
     {
         var updatedBy = GetCurrentUserId();
@@ -396,7 +406,9 @@ public class ProductController : BaseController
     /// Kategoriya bo'yicha barcha mahsulot narxini foizga oshirish
     /// </summary>
     [HttpPost("bulk-price-increase")]
-    [Authorize]
+    // Ilgari faqat [Authorize] edi — istalgan mijoz butun kategoriya narxini o'zgartira olardi
+    [Authorize(Roles = "Admin")]
+    [RequirePermission(AdminPermissions.ProductsPrices)]
     public async Task<IActionResult> BulkPriceIncrease([FromBody] BulkPriceIncreaseDto dto)
     {
         if (!ModelState.IsValid)
@@ -408,4 +420,8 @@ public class ProductController : BaseController
 
         return Ok(new { success = true, data = result.Data, message = $"{result.Data!.UpdatedCount} ta mahsulot narxi {dto.Percentage}% ga oshirildi" });
     }
+
+    // Like belgilari faqat mijozga tegishli: admin/sotuvchi ID'si mijoz ID'si bilan adashmasin
+    private int? CurrentCustomerIdOrNull()
+        => IsAuthenticated() && GetCurrentUserType() == "Customer" ? GetCurrentUserId() : null;
 }

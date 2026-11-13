@@ -1,3 +1,5 @@
+using ZiyoMarket.Domain.Common;
+using ZiyoMarket.Api.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZiyoMarket.Service.DTOs.Customers;
@@ -21,6 +23,7 @@ public class CustomerController : BaseController
     /// Mijozlar ro'yxatini olish (filtr va pagination bilan)
     /// </summary>
     [HttpGet]
+    [RequirePermission(AdminPermissions.CustomersView)]
     public async Task<IActionResult> GetCustomers([FromQuery] CustomerFilterRequest request)
     {
         var result = await _customerService.GetCustomersAsync(request);
@@ -35,6 +38,7 @@ public class CustomerController : BaseController
     /// Bitta mijozni ID bo'yicha olish
     /// </summary>
     [HttpGet("{id}")]
+    [RequirePermission(AdminPermissions.CustomersView)]
     public async Task<IActionResult> GetCustomerById(int id)
     {
         var result = await _customerService.GetCustomerByIdAsync(id);
@@ -49,6 +53,7 @@ public class CustomerController : BaseController
     /// Mijoz buyurtmalarini olish
     /// </summary>
     [HttpGet("{id}/orders")]
+    [RequirePermission(AdminPermissions.CustomersView)]
     public async Task<IActionResult> GetCustomerOrders(int id)
     {
         var result = await _customerService.GetCustomerByIdAsync(id);
@@ -63,6 +68,7 @@ public class CustomerController : BaseController
     /// Yangi mijoz yaratish
     /// </summary>
     [HttpPost]
+    [RequirePermission(AdminPermissions.CustomersManage)]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto request)
     {
         var createdBy = GetCurrentUserId();
@@ -79,6 +85,7 @@ public class CustomerController : BaseController
     /// </summary>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [RequirePermission(AdminPermissions.CustomersManage)]
     public async Task<IActionResult> UpdateCustomer(int id, [FromBody] UpdateCustomerDto request)
     {
         var updatedBy = GetCurrentUserId();
@@ -95,6 +102,7 @@ public class CustomerController : BaseController
     /// </summary>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [RequirePermission(AdminPermissions.CustomersManage)]
     public async Task<IActionResult> DeleteCustomer(int id)
     {
         var deletedBy = GetCurrentUserId();
@@ -111,6 +119,7 @@ public class CustomerController : BaseController
     /// </summary>
     [HttpPost("{id}/toggle-status")]
     [Authorize(Roles = "Admin,SuperAdmin")]
+    [RequirePermission(AdminPermissions.CustomersManage)]
     public async Task<IActionResult> ToggleStatus(int id)
     {
         var updatedBy = GetCurrentUserId();
@@ -126,6 +135,7 @@ public class CustomerController : BaseController
     /// Mijozlarni qidirish
     /// </summary>
     [HttpGet("search")]
+    [RequirePermission(AdminPermissions.CustomersView)]
     public async Task<IActionResult> SearchCustomers([FromQuery(Name = "search_term")] string searchTerm)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))

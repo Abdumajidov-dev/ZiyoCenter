@@ -128,11 +128,14 @@ public class CashbackService : ICashbackService
             if (customer.CashbackBalance < amount)
                 return Result.BadRequest($"Insufficient cashback balance. Available: {customer.CashbackBalance:N2}, Requested: {amount:N2}");
 
-            // FIFO: Eng eski cashback'ni birinchi ishlatish
+            // FIFO: Eng eski cashback'ni birinchi ishlatish.
+            // DateTime.Parse SQL'ga aylanmas edi va keshbek hech qachon yechilmasdi;
+            // "yyyy-MM-dd HH:mm:ss" satrlarini to'g'ridan-to'g'ri solishtirish mumkin.
+            var now = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
             var availableCashback = await _unitOfWork.CashbackTransactions
                 .SelectAll(c => c.CustomerId == customerId &&
                                c.RemainingAmount > 0 &&
-                               DateTime.Parse(c.ExpiresAt) > DateTime.UtcNow &&
+                               c.ExpiresAt.CompareTo(now) > 0 &&
                                c.DeletedAt == null)
                 .OrderBy(c => c.ExpiresAt) // FIFO
                 .ToListAsync();
@@ -191,7 +194,7 @@ public class CashbackService : ICashbackService
         {
             var expiredTransactions = await _unitOfWork.CashbackTransactions
                 .SelectAll(c => c.RemainingAmount > 0 &&
-                               DateTime.Parse(c.ExpiresAt) <= DateTime.UtcNow &&
+                               c.ExpiresAt.CompareTo(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")) <= 0 &&
                                c.DeletedAt == null)
                 .ToListAsync();
 
@@ -258,8 +261,8 @@ public class CashbackService : ICashbackService
             var expiringAmount = await _unitOfWork.CashbackTransactions
                 .SelectAll(c => c.CustomerId == customerId &&
                                c.RemainingAmount > 0 &&
-                               DateTime.Parse(c.ExpiresAt) <= expiryDate &&
-                               DateTime.Parse(c.ExpiresAt) > DateTime.UtcNow && // ✅ Hali muddati o'tmagan
+                               c.ExpiresAt.CompareTo(expiryDate.ToString("yyyy-MM-dd HH:mm:ss")) <= 0 &&
+                               c.ExpiresAt.CompareTo(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")) > 0 && // ✅ Hali muddati o'tmagan
                                c.DeletedAt == null)
                 .SumAsync(c => c.RemainingAmount);
 
@@ -279,10 +282,10 @@ public class CashbackService : ICashbackService
             var query = _unitOfWork.CashbackTransactions.Table.Where(c => c.DeletedAt == null);
 
             if (startDate.HasValue)
-                query = query.Where(c => DateTime.Parse(c.EarnedAt) >= startDate.Value);
+                query = query.Where(c => c.EarnedAt.CompareTo(startDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
 
             if (endDate.HasValue)
-                query = query.Where(c => DateTime.Parse(c.EarnedAt) <= endDate.Value);
+                query = query.Where(c => c.EarnedAt.CompareTo(endDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
 
             var transactions = await query.ToListAsync();
 

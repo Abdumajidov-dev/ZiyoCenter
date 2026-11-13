@@ -408,13 +408,17 @@ public class SupportService : ISupportService
 		}
 	}
 
-	public async Task<Result> DeleteMessageAsync(int messageId, int deletedBy)
+	public async Task<Result> DeleteMessageAsync(int messageId, int deletedBy, string userType)
 	{
 		try
 		{
 			var message = await _unitOfWork.SupportMessages.GetByIdAsync(messageId);
 			if (message == null)
 				return Result.NotFound("Message not found");
+
+			// Ilgari egasi umuman tekshirilmasdi — istalgan foydalanuvchi istalgan xabarni o'chira olardi
+			if (userType != "Admin" && !IsOwnMessage(message, deletedBy, userType))
+				return Result.Forbidden("You can only delete your own messages");
 
 			message.deletedBy = deletedBy;
 			message.Delete();
@@ -430,7 +434,7 @@ public class SupportService : ISupportService
 		}
 	}
 
-	public async Task<Result> EditMessageAsync(int messageId, string newMessage, int editedBy)
+	public async Task<Result> EditMessageAsync(int messageId, string newMessage, int editedBy, string userType)
 	{
 		try
 		{
@@ -438,7 +442,7 @@ public class SupportService : ISupportService
 			if (message == null)
 				return Result.NotFound("Message not found");
 
-			if (message.SenderId != editedBy)
+			if (!IsOwnMessage(message, editedBy, userType))
 				return Result.Forbidden("You can only edit your own messages");
 
 			message.Message = newMessage;
@@ -455,6 +459,13 @@ public class SupportService : ISupportService
 			return Result.InternalError($"Error updating message: {ex.Message}");
 		}
 	}
+
+	/// <summary>
+	/// ID'lar har bir foydalanuvchi turi jadvalida alohida — Customer #1 va Admin #1 boshqa odamlar,
+	/// shuning uchun faqat SenderId'ni solishtirish yetarli emas.
+	/// </summary>
+	private static bool IsOwnMessage(SupportMessage message, int userId, string userType)
+		=> message.SenderId == userId && message.SenderType.ToString() == userType;
 
 	public async Task<Result> MarkMessageAsReadAsync(int messageId, int userId)
 	{

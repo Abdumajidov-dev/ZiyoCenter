@@ -404,10 +404,10 @@ Count = g.Count(),
 var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
 
           if (startDate.HasValue)
-      query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
+      query = query.Where(c => c.CreatedAt.CompareTo(startDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
 
  if (endDate.HasValue)
-                query = query.Where(c => DateTime.Parse(c.CreatedAt) <= endDate.Value);
+                query = query.Where(c => c.CreatedAt.CompareTo(endDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
 
        var topContent = await query
           .OrderByDescending(c => c.ViewCount)
@@ -510,8 +510,8 @@ var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
         {
    var contents = await _unitOfWork.Contents.Table
        .Where(c => c.DeletedAt == null &&
-       DateTime.Parse(c.CreatedAt) >= startDate &&
-            DateTime.Parse(c.CreatedAt) <= endDate)
+       c.CreatedAt.CompareTo(startDate.ToString("yyyy-MM-dd HH:mm:ss")) >= 0 &&
+            c.CreatedAt.CompareTo(endDate.ToString("yyyy-MM-dd HH:mm:ss")) <= 0)
                 .Select(c => new ContentViewStatsDto
      {
     ContentId = c.Id,
@@ -577,7 +577,7 @@ var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
     {
    var contents = await _unitOfWork.Contents.Table
      .Where(c => c.DeletedAt == null &&
-       DateTime.Parse(c.CreatedAt) < olderThan)
+       c.CreatedAt.CompareTo(olderThan.ToString("yyyy-MM-dd HH:mm:ss")) < 0)
      .ToListAsync();
 
   foreach (var content in contents)
@@ -690,10 +690,10 @@ var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
        var query = _unitOfWork.Contents.Table.Where(c => c.DeletedAt == null);
 
          if (startDate.HasValue)
-        query = query.Where(c => DateTime.Parse(c.CreatedAt) >= startDate.Value);
+        query = query.Where(c => c.CreatedAt.CompareTo(startDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
 
        if (endDate.HasValue)
-     query = query.Where(c => DateTime.Parse(c.CreatedAt) <= endDate.Value);
+     query = query.Where(c => c.CreatedAt.CompareTo(endDate.Value.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
 
        var contents = await query.ToListAsync();
 
