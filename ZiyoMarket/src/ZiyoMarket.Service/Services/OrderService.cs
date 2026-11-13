@@ -64,6 +64,7 @@ public class OrderService : IOrderService
             var query = _unitOfWork.Orders.Table
                 .Include(o => o.Customer)
                 .Include(o => o.Seller)
+                .Include(o => o.OrderItems) // ItemsCount ro'yxatda 0 chiqardi
                 .Where(o => o.DeletedAt == null);
 
             // Filter by user type
