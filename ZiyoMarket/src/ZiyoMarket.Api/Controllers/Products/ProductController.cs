@@ -17,10 +17,12 @@ namespace ZiyoMarket.Api.Controllers.Products;
 public class ProductController : BaseController
 {
     private readonly IProductService _productService;
+    private readonly IRecommendationService _recommendations;
 
-    public ProductController(IProductService productService)
+    public ProductController(IProductService productService, IRecommendationService recommendations)
     {
         _productService = productService;
+        _recommendations = recommendations;
     }
 
     // ===================== CRUD =====================
@@ -42,6 +44,10 @@ public class ProductController : BaseController
 
         if (!result.IsSuccess)
             return StatusCode(result.StatusCode, new { message = result.Message });
+
+        // Tavsiyalar uchun: mijoz shu mahsulotga qiziqdi
+        if (customerId.HasValue)
+            await _recommendations.TrackViewAsync(customerId.Value, id);
 
         return Ok(new
         {
@@ -86,6 +92,9 @@ public class ProductController : BaseController
     public async Task<IActionResult> GetProducts([FromQuery] ProductFilterRequest request)
     {
         var customerId = CurrentCustomerIdOrNull();
+        var term = !string.IsNullOrWhiteSpace(request.SearchTerm) ? request.SearchTerm : request.Search;
+        if (customerId.HasValue && !string.IsNullOrWhiteSpace(term) && request.PageNumber <= 1)
+            await _recommendations.TrackSearchAsync(customerId.Value, term);
         // Admin va sotuvchi barcha mahsulotlarni boshqaradi; mijoz va mehmon faqat sotuvdagilarni ko'radi
         var isStaff = GetCurrentUserType() is "Admin" or "Seller";
         var result = await _productService.GetProductsAsync(request, customerId, customerView: !isStaff);
@@ -109,6 +118,8 @@ public class ProductController : BaseController
     public async Task<IActionResult> SearchProducts([FromQuery(Name = "search_term")] string searchTerm, [FromQuery(Name = "category_id")] int? categoryId = null)
     {
         var customerId = CurrentCustomerIdOrNull();
+        if (customerId.HasValue && !string.IsNullOrWhiteSpace(searchTerm))
+            await _recommendations.TrackSearchAsync(customerId.Value, searchTerm);
         var result = await _productService.SearchProductsAsync(searchTerm, categoryId, customerId);
 
         return Ok(new
@@ -381,6 +392,32 @@ public class ProductController : BaseController
             success = true,
             data = result.Data
         });
+    }
+
+    /// <summary>
+    /// "Siz uchun": mijoz ko'rgan, yoqtirgan, savatga qo'shgan, sotib olgan va qidirgan
+    /// narsalarga o'xshash mahsulotlar. Token bo'lmasa, ommabop mahsulotlar qaytadi.
+    /// </summary>
+    [HttpGet("recommended")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRecommended([FromQuery] int count = 20)
+    {
+        var data = await _recommendations.GetRecommendedAsync(CurrentCustomerIdOrNull(), count);
+        return Ok(new { success = true, data });
+    }
+
+    /// <summary>
+    /// Mahsulot sahifasi uchun "O'xshash mahsulotlar": shu va qo'shni kategoriya, brend, nom,
+    /// narx, "buni olganlar buni ham oldi" va "buni ko'rganlar buni ham ko'rdi".
+    /// </summary>
+    [HttpGet("{id:int}/similar")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<ProductListDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSimilar(int id, [FromQuery] int count = 12)
+    {
+        var data = await _recommendations.GetSimilarAsync(id, CurrentCustomerIdOrNull(), count);
+        return Ok(new { success = true, data });
     }
 
     /// <summary>

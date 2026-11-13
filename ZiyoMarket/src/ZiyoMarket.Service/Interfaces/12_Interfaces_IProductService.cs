@@ -43,6 +43,7 @@ namespace ZiyoMarket.Service.Interfaces
         Task<Result<List<ProductListDto>>> GetFeaturedProductsAsync(int count = 10);
 
         Task<Result<List<ProductListDto>>> GetNewArrivalsAsync(int count = 10);
+        Task<List<ProductListDto>> GetListByIdsAsync(IReadOnlyList<int> ids, int? customerId = null);
 
         // ============ Product Likes ============
 

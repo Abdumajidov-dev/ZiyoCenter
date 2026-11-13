@@ -150,6 +150,11 @@ using (var scope = app.Services.CreateScope())
     {
         await db.Database.MigrateAsync();
         await DataSeeder.SeedAsync(db);
+
+        // Sinov uchun demo akkauntlar, rasmli mahsulotlar va bannerlar (DemoData__Enabled=true bo'lsa)
+        var demo = app.Configuration.GetSection("DemoData").Get<ZiyoMarket.Api.Seed.DemoDataSettings>() ?? new();
+        var s3Options = app.Configuration.GetSection("S3Settings").Get<S3Settings>() ?? new();
+        await ZiyoMarket.Api.Seed.DemoDataSeeder.SeedAsync(db, demo, s3Options, app.Logger);
     }
     catch (Exception ex)
     {

@@ -1019,6 +1019,86 @@ namespace ZiyoMarket.Data.Migrations
                     b.ToTable("ProductLikes");
                 });
 
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Products.ProductView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DeletedAt")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastViewedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UpdatedAt")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("CustomerId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("ProductViews");
+                });
+
+            modelBuilder.Entity("ZiyoMarket.Domain.Entities.Products.SearchQuery", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CustomerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DeletedAt")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastSearchedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("SearchCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Term")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("UpdatedAt")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId", "Term")
+                        .IsUnique();
+
+                    b.ToTable("SearchQueries");
+                });
+
             modelBuilder.Entity("ZiyoMarket.Domain.Entities.Support.SupportChat", b =>
                 {
                     b.Property<int>("Id")
