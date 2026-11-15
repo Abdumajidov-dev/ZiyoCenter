@@ -46,6 +46,17 @@ public class DashboardStatsDto
     public int ProductsSoldToday { get; set; }
     public int ProductsSoldThisMonth { get; set; }
 
+    // Admin panel dashboard kutadigan maydonlar (ilgari yuborilmasdi, ekranda 0 chiqardi)
+    public int LowStockProductsCount { get; set; }
+    public decimal RevenueGrowthPercent { get; set; }
+    public decimal OrdersGrowthPercent { get; set; }
+    public decimal CustomersGrowthPercent { get; set; }
+    public List<DashboardRecentOrderDto> RecentOrders { get; set; } = new();
+    public List<DashboardTopProductDto> TopProducts { get; set; } = new();
+    public List<DashboardMonthlyPointDto> MonthlyRevenue { get; set; } = new();
+    public List<DashboardMonthlyPointDto> MonthlyOrders { get; set; } = new();
+
+
     // Payment methods
     public decimal CashPayments { get; set; }
     public decimal CardPayments { get; set; }

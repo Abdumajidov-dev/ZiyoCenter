@@ -40,9 +40,11 @@ public class ReportService : IReportService
                 .ToListAsync();
 
             stats.TotalOrders = orders.Count;
-            stats.TotalRevenue = orders.Sum(o => o.FinalPrice);
-            stats.TotalDiscounts = orders.Sum(o => o.DiscountApplied);
-            stats.AverageOrderValue = orders.Any() ? orders.Average(o => o.FinalPrice) : 0;
+            // Bekor qilingan buyurtmalar daromadga kirmaydi
+            var valid = orders.Where(o => o.Status != Domain.Enums.OrderStatus.Cancelled).ToList();
+            stats.TotalRevenue = valid.Sum(o => o.FinalPrice);
+            stats.TotalDiscounts = valid.Sum(o => o.DiscountApplied);
+            stats.AverageOrderValue = valid.Any() ? Math.Round(valid.Average(o => o.FinalPrice)) : 0;
 
             stats.OnlineOrders = orders.Count(o => o.SellerId == null);
             stats.OfflineOrders = orders.Count(o => o.SellerId != null);
@@ -53,6 +55,12 @@ public class ReportService : IReportService
             stats.ProductCount = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null);
             stats.TotalProducts = stats.ProductCount;
             stats.LowStockProducts = await _unitOfWork.Products.CountAsync(p => p.DeletedAt == null && p.StockQuantity <= p.MinStockLevel); // IsLowStock SQL'ga aylanmaydi
+            stats.LowStockProductsCount = stats.LowStockProducts;
+            stats.PendingOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Pending
+                                                    || o.Status == Domain.Enums.OrderStatus.AwaitingConfirmation);
+            stats.CompletedOrders = orders.Count(o => o.Status == Domain.Enums.OrderStatus.Delivered);
+
+            await FillPeriodStatsAsync(stats);
 
             return Result<DashboardStatsDto>.Success(stats);
         }
@@ -827,6 +835,101 @@ return Result<DiscountAnalyticsDto>.InternalError($"Error: {ex.Message}");
     }
 
     // Additional methods for controller compatibility
+    /// <summary>
+    /// Bugun / shu hafta / shu oy ko'rsatkichlari, o'tgan oyning shu davriga nisbatan o'sish,
+    /// so'nggi buyurtmalar, eng ko'p sotilganlar va 6 oylik grafik. Ilgari bu maydonlar to'ldirilmasdi.
+    /// OrderDate UTC'da "yyyy-MM-dd HH:mm:ss" ko'rinishida saqlanadi.
+    /// </summary>
+    private async Task FillPeriodStatsAsync(DashboardStatsDto stats)
+    {
+        var now = DateTime.UtcNow;
+        var today = now.Date;
+        var weekStart = today.AddDays(-(((int)today.DayOfWeek + 6) % 7)); // dushanba
+        var monthStart = new DateTime(now.Year, now.Month, 1);
+        var lastMonthStart = monthStart.AddMonths(-1);
+        var chartStart = monthStart.AddMonths(-5);
+        var chartStartStr = chartStart.ToDbString();
+        const Domain.Enums.OrderStatus cancelled = Domain.Enums.OrderStatus.Cancelled;
+
+        var rows = await _unitOfWork.Orders
+            .SelectAll(o => o.DeletedAt == null && o.Status != cancelled && o.OrderDate.CompareTo(chartStartStr) >= 0)
+            .Select(o => new { o.OrderDate, o.FinalPrice })
+            .ToListAsync();
+        var points = rows.Select(r => (Date: SafeTypeHelper.ToDateTime(r.OrderDate, DateTime.MinValue), r.FinalPrice)).ToList();
+
+        decimal Revenue(DateTime from, DateTime to) => points.Where(p => p.Date >= from && p.Date < to).Sum(p => p.FinalPrice);
+        int Count(DateTime from, DateTime to) => points.Count(p => p.Date >= from && p.Date < to);
+        static decimal Growth(decimal current, decimal previous)
+            => previous == 0 ? (current > 0 ? 100 : 0) : Math.Round((current - previous) / previous * 100, 1);
+
+        stats.TodayRevenue = Revenue(today, today.AddDays(1));
+        stats.TodayOrders = Count(today, today.AddDays(1));
+        stats.ThisWeekRevenue = Revenue(weekStart, today.AddDays(1));
+        stats.ThisWeekOrders = Count(weekStart, today.AddDays(1));
+        stats.ThisMonthRevenue = Revenue(monthStart, today.AddDays(1));
+        stats.ThisMonthOrders = Count(monthStart, today.AddDays(1));
+        stats.LastMonthRevenue = Revenue(lastMonthStart, monthStart);
+
+        // O'sish: shu oyning o'tgan qismi o'tgan oyning xuddi shuncha kuni bilan solishtiriladi
+        var elapsed = now - monthStart;
+        stats.RevenueGrowth = stats.RevenueGrowthPercent = Growth(stats.ThisMonthRevenue, Revenue(lastMonthStart, lastMonthStart + elapsed));
+        stats.RevenueGrowthTrend = stats.RevenueGrowth > 0 ? "Up" : stats.RevenueGrowth < 0 ? "Down" : "Stable";
+        stats.OrderGrowth = stats.OrdersGrowthPercent = Growth(stats.ThisMonthOrders, Count(lastMonthStart, lastMonthStart + elapsed));
+
+        var customerDates = (await _unitOfWork.Customers.SelectAll(c => c.DeletedAt == null).Select(c => c.CreatedAt).ToListAsync())
+            .Select(d => SafeTypeHelper.ToDateTime(d, DateTime.MinValue)).ToList();
+        stats.NewCustomersToday = customerDates.Count(d => d >= today);
+        stats.NewCustomersThisWeek = customerDates.Count(d => d >= weekStart);
+        stats.NewCustomersThisMonth = customerDates.Count(d => d >= monthStart);
+        stats.CustomerGrowth = stats.CustomersGrowthPercent = Growth(stats.NewCustomersThisMonth,
+            customerDates.Count(d => d >= lastMonthStart && d < lastMonthStart + elapsed));
+
+        string[] months = { "Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek" };
+        for (var i = 0; i < 6; i++)
+        {
+            var from = chartStart.AddMonths(i);
+            var label = months[from.Month - 1];
+            stats.MonthlyRevenue.Add(new DashboardMonthlyPointDto { Month = label, Value = Revenue(from, from.AddMonths(1)) });
+            stats.MonthlyOrders.Add(new DashboardMonthlyPointDto { Month = label, Value = Count(from, from.AddMonths(1)) });
+        }
+
+        var recent = await _unitOfWork.Orders.Table
+            .Include(o => o.Customer)
+            .Where(o => o.DeletedAt == null)
+            .OrderByDescending(o => o.OrderDate)
+            .Take(8)
+            .ToListAsync();
+        stats.RecentOrders = recent.Select(o => new DashboardRecentOrderDto
+        {
+            Id = o.Id,
+            OrderNumber = o.OrderNumber,
+            CustomerName = o.Customer == null ? string.Empty : $"{o.Customer.FirstName} {o.Customer.LastName}".Trim(),
+            TotalAmount = o.TotalPrice,
+            FinalAmount = o.FinalPrice,
+            Status = o.Status.ToString(),
+            PaymentMethod = o.PaymentMethod.ToString(),
+            CreatedAt = SafeTypeHelper.ToDateTime(o.OrderDate, DateTime.MinValue)
+        }).ToList();
+
+        var since = now.AddDays(-30).ToDbString();
+        var top = await _unitOfWork.OrderItems.Table
+            .Where(i => i.Order.DeletedAt == null && i.Order.Status != cancelled && i.Order.OrderDate.CompareTo(since) >= 0)
+            .GroupBy(i => i.ProductId)
+            .Select(g => new { ProductId = g.Key, Sold = g.Sum(i => i.Quantity) })
+            .OrderByDescending(x => x.Sold)
+            .Take(5)
+            .ToListAsync();
+        var topIds = top.Select(t => t.ProductId).ToList();
+        var topProducts = await _unitOfWork.Products.Table.Where(p => topIds.Contains(p.Id)).ToListAsync();
+        stats.TopProducts = top
+            .Select(t => (t, p: topProducts.FirstOrDefault(p => p.Id == t.ProductId)))
+            .Where(x => x.p != null)
+            .Select(x => new DashboardTopProductDto
+            {
+                Id = x.p!.Id, Name = x.p.Name, Price = x.p.Price, SalesCount = x.t.Sold, ImageUrl = x.p.ImageUrl
+            }).ToList();
+    }
+
     public async Task<Result<DashboardStatsDto>> GetDashboardStatisticsAsync()
     {
         var endDate = DateTime.UtcNow;
