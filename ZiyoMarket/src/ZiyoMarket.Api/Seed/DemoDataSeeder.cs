@@ -228,6 +228,9 @@ public static class DemoDataSeeder
                 db.ProductLikes.Add(new ProductLike { CustomerId = newCustomer.Id, ProductId = id });
             await db.SaveChangesAsync();
         }
+
+        // Admin panelni sinash uchun buyurtmalar, mijozlar, xarajatlar, chatlar va boshqalar (bir marta)
+        await DemoMockDataSeeder.SeedAsync(db, settings, UploadAsync, logger);
     }
 
     private static AmazonS3Client? BuildS3Client(S3Settings s3)
